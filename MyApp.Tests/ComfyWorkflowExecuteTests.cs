@@ -21,7 +21,7 @@ namespace MyApp.Tests;
  * Text Encoders: http://localhost:7860/api/experiment/models/text_encoders
  */
 [Explicit("Integration tests")]
-public class ComfyWorkflowExecuteTests
+public class ComfyWorkflowExecuteTests : TestBase
 {
     private IServiceProvider serviceProvider;
     // string ComfyEndpoint = "http://localhost:7860";

@@ -9,7 +9,7 @@ using ServiceStack.OrmLite;
 namespace MyApp.Tests;
 
 [Explicit("IntegrationTest")]
-public class ComfyAgentTests
+public class ComfyAgentTests : TestBase
 {
     private IServiceProvider serviceProvider;
 

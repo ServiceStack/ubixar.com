@@ -7,7 +7,7 @@ using ServiceStack.Text;
 
 namespace MyApp.Tests;
 
-public class UnitTest
+public class UnitTest : TestBase
 {
     private readonly ServiceStackHost appHost;
 

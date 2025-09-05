@@ -12,7 +12,7 @@ using JsonSerializer = ServiceStack.Text.JsonSerializer;
 namespace MyApp.Tests;
 
 [Explicit("Integration tests")]
-public class NodeComfyConverterTests
+public class NodeComfyConverterTests : TestBase
 {
     [Test]
     public void Can_deserialize_Api_Prompt()

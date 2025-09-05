@@ -6,7 +6,7 @@ using ServiceStack.Text;
 namespace MyApp.Tests;
 
 [Explicit("Integration tests")]
-public class OllamaGenerateTests
+public class OllamaGenerateTests : TestBase
 {
     const string BaseUrl = "https://localhost:5001";
     private string ApiKey = Environment.GetEnvironmentVariable("AI_SERVER_API_KEY");

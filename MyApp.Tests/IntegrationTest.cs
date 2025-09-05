@@ -6,7 +6,7 @@ using MyApp.ServiceModel;
 
 namespace MyApp.Tests;
 
-public class IntegrationTest
+public class IntegrationTest : TestBase
 {
     const string BaseUri = "http://localhost:2000/";
     private readonly ServiceStackHost appHost;

@@ -7,7 +7,7 @@ using MyApp.ServiceModel;
 
 namespace MyApp.Tests;
 
-public class ComfyMergeWorkflowTests
+public class ComfyMergeWorkflowTests : TestBase
 {
     private IServiceProvider serviceProvider;
     string ComfyEndpoint = "http://localhost:7860";

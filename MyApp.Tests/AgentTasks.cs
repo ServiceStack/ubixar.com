@@ -5,7 +5,7 @@ using ServiceStack;
 namespace MyApp.Tests;
 
 [Explicit("Integration tests")]
-public class AgentTasks
+public class AgentTasks : TestBase
 {
     /** Initialize VMs:
      # curl -fsSL -O http://192.168.4.200:8000/comfy/init.sh && bash ./init.sh comfy1 f16764eda958450d978b28356795cf8b ak-b75b80d3a11c46e29622cdf42c8cfe2c

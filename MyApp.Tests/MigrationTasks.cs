@@ -7,7 +7,7 @@ using ServiceStack.Data;
 namespace MyApp.Tests;
 
 [TestFixture, Explicit, Category(nameof(MigrationTasks))]
-public class MigrationTasks
+public class MigrationTasks : TestBase
 {
     IDbConnectionFactory ResolveDbFactory() => new ConfigureDb().ConfigureAndResolve<IDbConnectionFactory>();
     Migrator CreateMigrator() => new(ResolveDbFactory(), typeof(Migration1000).Assembly); 

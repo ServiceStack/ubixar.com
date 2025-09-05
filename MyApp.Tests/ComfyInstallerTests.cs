@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using NUnit.Framework;
 using ServiceStack;
 
-namespace AiServer.Tests;
+namespace MyApp.Tests;
 
 /* Using Comfy Manager:
  * Install Model: POST http://localhost:7860/api/manager/queue/install_model
@@ -26,7 +26,7 @@ namespace AiServer.Tests;
  * Node List: https://github.com/Comfy-Org/ComfyUI-Manager/blob/main/custom-node-list.json
  */
 [Explicit("Integration tests")]
-public class ComfyInstallerTests
+public class ComfyInstallerTests : TestBase
 {
     string ComfyEndpoint = "http://localhost:8188";
 
