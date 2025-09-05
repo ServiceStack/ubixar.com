@@ -1,0 +1,73 @@
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject IWebHostEnvironment Env
+@inject IServiceGatewayFactory GatewayFactory
+@inject AppConfig AppConfig
+
+@if (Env.IsDevelopment())
+{
+    <script>window.Server = @metadataHtml</script>
+}
+<script type="module">
+import { useAuth, useMetadata } from "@@servicestack/vue"
+const { signIn } = useAuth()
+signIn(@authJson)
+
+const { loadMetadata } = useMetadata()
+loadMetadata({
+    olderThan: window.Server ? null : location.search.includes('clear=metadata') ? 0 : 60 * 60 * 1000 //1hr
+})
+
+globalThis.appConfig = @configJson
+globalThis.info = @infoJson
+</script>
+
+<Header />
+
+<div class="min-h-screen">
+    <main role="main">
+    <CascadingValue Value="this">
+        @Body
+    </CascadingValue>
+    </main>
+</div>
+
+@if (ShowFooter)
+{
+    <Footer />
+}
+
+<script type="module">
+import { remount } from "/mjs/app.mjs"
+remount()
+</script>
+
+<BlazorErrorUi />
+
+@code {
+    MarkupString? metadataHtml = null;
+    MarkupString? authJson = null;
+    MarkupString? configJson = null;
+    MarkupString? infoJson = null;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    public bool ShowFooter { get; set; } = true;
+
+    public void HideFooter()
+    {
+        ShowFooter = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        var gateway = GatewayFactory.GetServiceGateway(HttpContext.ToRequest());
+        metadataHtml = await gateway.ApiAsJsonAsync(new MetadataApp());
+        authJson = await gateway.ApiAsJsonAsync(new Authenticate());
+        configJson = BlazorHtml.RawJson(AppConfig.ToVueAppConfig());
+        infoJson = await gateway.ApiAsJsonAsync(new MyInfo());
+    }
+}

@@ -1,0 +1,10 @@
+@page "/old-images/{**Page}"
+@layout Layout.VueLayout
+
+<PageTitle>Images</PageTitle>
+
+<div id="app" data-component="App"></div>
+
+@code {
+    [Parameter] public string? Page { get; set; }
+}

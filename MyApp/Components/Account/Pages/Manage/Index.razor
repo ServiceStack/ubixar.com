@@ -1,0 +1,237 @@
+@page "/Account/Manage"
+@using Microsoft.AspNetCore.Identity
+@using MyApp.Data
+@using System.IO
+@using ServiceStack.OrmLite
+@using ServiceStack.Text
+@using SkiaSharp
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject IWebHostEnvironment WebHostEnvironment
+@inject ServiceStack.Data.IDbConnectionFactory DbFactory
+
+<PageTitle>Profile</PageTitle>
+
+<div class="flex justify-between">
+    <Heading3>Profile</Heading3>
+
+    <div class="flex gap-x-2">
+        <div>
+            <SecondaryButton id="btnReset">Reset Caches</SecondaryButton>
+            <script type="module">
+                import store from "/pages/lib/store.mjs"
+                document.querySelector('#btnReset').onclick = function() {
+                    if (confirm('Sign out and clear all caches?\n\nPlease close all other windows before continuing.')) {
+                        console.log('reset store', store)
+                        store.resetAndDestroy().then(() =>
+                            document.querySelector('#formLogout').submit())
+                    }
+                };
+            </script>
+        </div>
+        <form id="formLogout" action="Account/Logout" method="post" onsubmit="preSignOut()">
+            <AntiforgeryToken />
+            <input type="hidden" name="ReturnUrl" value="" />
+            <SecondaryButton type="submit">
+                Sign Out
+            </SecondaryButton>
+        </form>
+    </div>
+</div>
+
+<div class="max-w-xl">
+    <StatusMessage class="mb-3" />
+    <div class="shadow overflow-hidden sm:rounded-md">
+        <EditForm id="profile-form" Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post"
+                  class="px-4 bg-white dark:bg-black sm:p-6" enctype="multipart/form-data">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="mb-3 text-danger text-center font-semibold" />
+
+            <div class="flex flex-col gap-y-4">
+                <div>
+                    <label for="username" class="@TextInput.LabelClasses">Username</label>
+                    <div class="mt-1 relative">
+                        <input id="username" type="text" value="@username" class="@TextInput.InputClasses" placeholder="Please choose your username." disabled />
+                    </div>
+                </div>
+                <div class="w-full flex justify-between gap-x-4">
+                    <div class="w-1/2">
+                        <label for="FirstName" class="@TextInput.LabelClasses">First Name</label>
+                        <div class="mt-1 relative">
+                            <InputText id="FirstName" type="text" @bind-Value="Input.FirstName" class="@TextInput.InputClasses" />
+                        </div>
+                        <ValidationMessage For="() => Input.FirstName" class="mt-2 text-danger text-sm" />
+                    </div>
+                    <div class="w-1/2">
+                        <label for="LastName" class="@TextInput.LabelClasses">Last Name</label>
+                        <div class="mt-1 relative">
+                            <InputText id="LastName" type="text" @bind-Value="Input.LastName" class="@TextInput.InputClasses" />
+                        </div>
+                        <ValidationMessage For="() => Input.LastName" class="mt-2 text-danger text-sm" />
+                    </div>
+                </div>
+                <div>
+                    <div data-component="FileInput" data-props="{id:'Avatar',modelValue:@BlazorHtml.Raw(Input.ProfileUrl.Quoted() ?? "''")}"></div>
+                </div>
+                <div>
+                    <PrimaryButton id="update-profile-button" type="submit">Save</PrimaryButton>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private ApplicationUser? user;
+    private string? username;
+    private string? avatarUrl;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // The existing InputModel for EditForm.Model
+    [SupplyParameterFromForm(FormName = "profile")]
+    private InputModel Input { get; set; } = new();
+
+    // New direct property for the file upload
+    [SupplyParameterFromForm(FormName = "profile")]
+    private IBrowserFile? Avatar { get; set; }
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        Input ??= new InputModel();
+        await base.SetParametersAsync(parameters);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (user == null)
+        {
+            user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+            username = await UserManager.GetUserNameAsync(user);
+            if (HttpContext.Request.Method != "POST")
+            {
+                Input.FirstName = user.FirstName;
+                Input.LastName = user.LastName;
+                Input.ProfileUrl = user.ProfileUrl; // InputModel.Avatar is still used for display logic if needed
+            }
+        }
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        bool profileChanged = false;
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+
+        // Handle avatar upload if a file was selected, using the new direct property
+        if (Avatar != null || user.FirstName != Input.FirstName || user.LastName != Input.LastName)
+        {
+            if (Avatar != null)
+            {
+                // Save the file
+                string avatarPath = await SaveAvatarAsync(Avatar, username!);
+            
+                // Update user's Avatar property
+                user.ProfileUrl = avatarPath;
+
+                using var db = DbFactory.OpenDbConnection();
+                db.UpdateOnly(() => new User
+                {
+                    ProfileUrl = user.ProfileUrl,
+                }, where: x => x.Id == user.Id);
+            }
+
+            if (user.FirstName != Input.FirstName || user.LastName != Input.LastName)
+            {
+                user.FirstName = Input.FirstName;
+                user.LastName = Input.LastName;
+            }
+
+            var updateResult = await UserManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to update avatar.", HttpContext);
+                return;
+            }
+        
+            profileChanged = true;
+            avatarUrl = user.ProfileUrl; // Update avatarUrl to reflect the new avatar
+        }
+
+        if (profileChanged)
+        {
+            await SignInManager.RefreshSignInAsync(user);
+            RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        }
+        else
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("No changes were made", HttpContext);
+        }
+    }
+
+    private async Task<string> SaveAvatarAsync(IBrowserFile file, string currentUsername)
+    {
+        var relativePath = $"/avatars/{currentUsername[..2]}/{currentUsername}.webp";
+        var avatarPath = WebHostEnvironment.WebRootPath.CombineWith(relativePath);
+
+        avatarPath.LastLeftPart('/').AssertDir();
+
+        // Load and process the image
+        await using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024); // Max 2MB
+
+        using var inputBitmap = SKBitmap.Decode(stream);
+        if (inputBitmap == null)
+            throw new InvalidOperationException("Unable to decode the uploaded image.");
+
+        var targetSize = 128;
+        var sourceWidth = inputBitmap.Width;
+        var sourceHeight = inputBitmap.Height;
+
+        // Calculate the scale factor to fill the target size (crop mode)
+        var scale = Math.Max((float)targetSize / sourceWidth, (float)targetSize / sourceHeight);
+        var scaledWidth = (int)(sourceWidth * scale);
+        var scaledHeight = (int)(sourceHeight * scale);
+
+        // Calculate crop position to center the image
+        var cropX = (scaledWidth - targetSize) / 2;
+        var cropY = (scaledHeight - targetSize) / 2;
+
+        // Create the output bitmap
+        using var outputBitmap = new SKBitmap(targetSize, targetSize);
+        using var canvas = new SKCanvas(outputBitmap);
+
+        // Set high quality rendering
+        using var paint = new SKPaint();
+        paint.IsAntialias = true;
+
+        // Clear the canvas with transparent background
+        canvas.Clear(SKColors.Transparent);
+
+        // Calculate source and destination rectangles for center crop
+        var sourceRect = new SKRect(0, 0, sourceWidth, sourceHeight);
+        var destRect = new SKRect(-cropX, -cropY, scaledWidth - cropX, scaledHeight - cropY);
+
+        // Draw the scaled and cropped image
+        // var sampling = new SKSamplingOptions(SKFilterMode.Linear);
+        canvas.DrawBitmap(inputBitmap, sourceRect, destRect, paint);
+
+        // Save the processed image as PNG
+        using var outputImage = SKImage.FromBitmap(outputBitmap);
+        using var data = outputImage.Encode(SKEncodedImageFormat.Webp, 90);
+        await using var fileStream = File.Create(avatarPath);
+        data.SaveTo(fileStream);
+
+        return $"{relativePath}?v={DateTime.UtcNow.ToUnixTimeMs()}";
+    }
+
+    // InputModel is simplified
+    private sealed class InputModel
+    {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? ProfileUrl { get; set; } // This can remain if used elsewhere or by OnInitializedAsync
+    }
+}

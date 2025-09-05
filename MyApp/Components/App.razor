@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="css/typography.css">
+    <link rel="stylesheet" href="css/highlight.css">
+    <link rel="stylesheet" href="css/lite-yt-embed.css">
+    @BlazorHtml.ImportMap(new()
+    {
+        ["app.mjs"] =              ("/mjs/app.mjs",                     "/mjs/app.mjs"),
+        ["vue"] =                  ("/lib/mjs/vue.mjs",                 "/lib/mjs/vue.min.mjs"),
+        ["@servicestack/client"] = ("/lib/mjs/servicestack-client.mjs", "/lib/mjs/servicestack-client.min.mjs"),
+        ["@servicestack/vue"] =    ("/lib/mjs/servicestack-vue.mjs",    "/lib/mjs/servicestack-vue.min.mjs"),
+        ["dtos.mjs"] =             ("/mjs/dtos.mjs",                    "/mjs/dtos.mjs"),
+
+        ["vue-router"] =           ("/lib/mjs/vue-router.mjs",          "/lib/mjs/vue-router.min.mjs"),
+        // Used in dev version of vue-router
+        ["@vue/devtools-api"] =    ("https://unpkg.com/@vue/devtools-api@6.2.1/lib/esm/index.js","https://unpkg.com/@vue/devtools-api@6.2.1/lib/esm/index.js")
+    })
+
+    <HeadOutlet />
+</head>
+
+<body class="bg-white dark:bg-gray-800 dark:text-white min-h-screen">
+    <Routes />
+    @* <script src="_framework/blazor.web.js"></script> *@
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script>
+      Blazor.start({
+        ssr: { disableDomPreservation: true }
+      });
+    </script>
+    <script src="js/servicestack-blazor.js"></script>
+    <script>JS.init({ colorScheme:false })</script>
+    <script src="lib/js/lite-yt-embed.js"></script>
+    <script src="lib/js/highlight.js"></script>
+    <script>hljs.highlightAll()</script>
+</body>
+
+</html>

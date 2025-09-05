@@ -1,0 +1,10 @@
+@page "/old-generate/{**Page}"
+@layout Layout.VueLayout
+
+<PageTitle>Generate</PageTitle>
+
+<div id="app" data-component="App"></div>
+
+@code {
+    [Parameter] public string? Page { get; set; }
+}

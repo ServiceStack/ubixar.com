@@ -1,0 +1,67 @@
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject IWebHostEnvironment Env
+@inject IServiceGatewayFactory GatewayFactory
+
+@if (Env.IsDevelopment())
+{
+    <script>window.Server = @metadataHtml</script>
+}
+<script type="module">
+import { useAuth, useMetadata } from "@@servicestack/vue"
+const { signIn } = useAuth()
+signIn(@authJson)
+
+const { loadMetadata } = useMetadata()
+loadMetadata({
+    olderThan: window.Server ? null : location.search.includes('clear=metadata') ? 0 : 60 * 60 * 1000 //1hr
+})
+</script>
+
+<script>
+// Default to dark mode
+let colorScheme = localStorage.getItem('color-scheme')
+if (!colorScheme) {
+    localStorage.setItem('color-scheme', 'dark')
+}
+</script>
+
+<div id="app"></div>
+
+<script type="module">
+import { mount } from "/mjs/app.mjs"
+import Header from "/pages/components/Header.mjs"
+const App = {
+    components: {
+        Header,
+    },
+    template: `
+<div id="app">
+    <Header />
+    <div class="min-h-screen">
+        <main role="main">
+            <RouterView />
+        </main>
+    </div>
+</div>
+    `
+}
+mount(document.getElementById('app'), App)
+</script>
+
+<BlazorErrorUi />
+
+@code {
+    MarkupString? metadataHtml = null;
+    MarkupString? authJson = null;
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        var gateway = GatewayFactory.GetServiceGateway(HttpContext.ToRequest());
+        metadataHtml = await gateway.ApiAsJsonAsync(new MetadataApp());
+        authJson = await gateway.ApiAsJsonAsync(new Authenticate());
+    }
+}

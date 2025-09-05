@@ -1,0 +1,65 @@
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using MyApp.Data
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityRedirectManager RedirectManager
+
+@if (externalLogins.Length == 0)
+{
+    <div>
+        <p>
+            There are no external authentication services configured.
+            See this <HyperLink href="https://go.microsoft.com/fwlink/?LinkID=532715">article
+            about setting up this ASP.NET application to support logging in via external services</HyperLink>.
+        </p>
+    </div>
+}
+else
+{
+    <style>
+        .Google {
+            background-color: blue;
+            color: #fff;
+            border: 1px solid blue;
+            display: flex;
+            align-items: center;
+        }
+        .Google span {
+            background: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTQ0LjU5IDQuMjFhNjMuMjggNjMuMjggMCAwIDAgNC4zMyAxMjAuOWE2Ny42IDY3LjYgMCAwIDAgMzIuMzYuMzVhNTcuMTMgNTcuMTMgMCAwIDAgMjUuOS0xMy40NmE1Ny40NCA1Ny40NCAwIDAgMCAxNi0yNi4yNmE3NC4zIDc0LjMgMCAwIDAgMS42MS0zMy41OEg2NS4yN3YyNC42OWgzNC40N2EyOS43MiAyOS43MiAwIDAgMS0xMi42NiAxOS41MmEzNi4yIDM2LjIgMCAwIDEtMTMuOTMgNS41YTQxLjMgNDEuMyAwIDAgMS0xNS4xIDBBMzcuMiAzNy4yIDAgMCAxIDQ0IDk1Ljc0YTM5LjMgMzkuMyAwIDAgMS0xNC41LTE5LjQyYTM4LjMgMzguMyAwIDAgMSAwLTI0LjYzYTM5LjI1IDM5LjI1IDAgMCAxIDkuMTgtMTQuOTFBMzcuMTcgMzcuMTcgMCAwIDEgNzYuMTMgMjdhMzQuMyAzNC4zIDAgMCAxIDEzLjY0IDhxNS44My01LjggMTEuNjQtMTEuNjNjMi0yLjA5IDQuMTgtNC4wOCA2LjE1LTYuMjJBNjEuMiA2MS4yIDAgMCAwIDg3LjIgNC41OWE2NCA2NCAwIDAgMC00Mi42MS0uMzgiLz48L3N2Zz4=) no-repeat;
+            background-size: contain;
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+    </style>
+    <form id="external-account" class="form-horizontal" action="Account/PerformExternalLogin" method="post">
+        <div>
+            <AntiforgeryToken />
+            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+            <div class="space-x-2 pl-1">
+                @foreach (var provider in externalLogins)
+                {
+                    <button type="submit" class="@provider.Name @SecondaryButton.Classes" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">
+                        <span></span>
+                        Sign in with @provider.DisplayName
+                    </button>
+                }
+            </div>
+        </div>
+    </form>
+}
+
+@code {
+    private AuthenticationScheme[] externalLogins = [];
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
+    }
+}

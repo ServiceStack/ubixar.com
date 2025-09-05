@@ -1,0 +1,261 @@
+@page "/Account/ExternalLogin"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using MyApp.Data
+@using ServiceStack.OrmLite
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<ExternalLogin> Logger
+@inject ServiceStack.Data.IDbConnectionFactory DbFactory
+
+<PageTitle>Register</PageTitle>
+
+<div class="mt-8 mx-auto max-w-lg">
+    <StatusMessage class="mb-3" Message="@message" />
+    <Heading1>Register</Heading1>
+    <Heading2 id="external-login-title">Associate your @CurrentProviderDisplayName account.</Heading2>
+
+    <Alert id="external-login-description" Type="AlertType.Information" class="my-4">
+        You've successfully authenticated with <strong>@CurrentProviderDisplayName</strong>.
+        Please enter an email address for this site below and click the Register button to finish
+        logging in.
+    </Alert>
+
+    <div class="mt-3 shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 bg-white dark:bg-black sm:p-6">
+            <EditForm id="confirmation" Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="confirmation" method="post">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="mb-3 text-danger text-center font-semibold" />
+
+                <!-- Hidden fields to preserve external login info across POST -->
+                <input type="hidden" name="LoginProvider" value="@LoginProvider" />
+                <input type="hidden" name="ProviderKey" value="@ProviderKey" />
+                <input type="hidden" name="ProviderDisplayName" value="@ProviderDisplayName" />
+
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label for="userName" class="@TextInput.LabelClasses">Username</label>
+                        <div class="mt-1 relative">
+                            <InputText id="userName" type="text" @bind-Value="Input.UserName" class="@TextInput.InputClasses" autocomplete="username" placeholder="Please enter your username." />
+                        </div>
+                        <ValidationMessage For="() => Input.UserName" class="mt-2 text-danger text-sm" />
+                    </div>
+                    <div>
+                        <label for="email" class="@TextInput.LabelClasses">Email</label>
+                        <div class="mt-1 relative">
+                            <InputText id="email" type="text" @bind-Value="Input.Email" class="@TextInput.InputClasses" autocomplete="email" placeholder="Please enter your email." />
+                        </div>
+                        <ValidationMessage For="() => Input.Email" class="mt-2 text-danger text-sm" />
+                    </div>
+                    <div>
+                        <PrimaryButton type="submit">Register</PrimaryButton>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    public const string LoginCallbackAction = "LoginCallback";
+
+    private string? message;
+    private ExternalLoginInfo externalLoginInfo = default!;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private string? LoginProvider { get; set; }
+
+    [SupplyParameterFromForm]
+    private string? ProviderKey { get; set; }
+
+    [SupplyParameterFromForm]
+    private string? ProviderDisplayName { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? RemoteError { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Action { get; set; }
+
+    private string? CurrentProviderDisplayName => ProviderDisplayName ?? externalLoginInfo?.ProviderDisplayName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RemoteError is not null)
+        {
+            RedirectManager.RedirectToWithStatus("Account/Login", $"Error from external provider: {RemoteError}", HttpContext);
+        }
+
+        // Only get external login info on GET requests (cookie is consumed after first read)
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            var info = await SignInManager.GetExternalLoginInfoAsync();
+            if (info is null)
+            {
+                RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
+            }
+
+            externalLoginInfo = info;
+
+            // Store in form parameters for POST requests
+            LoginProvider = info.LoginProvider;
+            ProviderKey = info.ProviderKey;
+            ProviderDisplayName = info.ProviderDisplayName;
+
+            if (Action == LoginCallbackAction)
+            {
+                await OnLoginCallbackAsync();
+                return;
+            }
+
+            // We should only reach this page via the login callback, so redirect back to
+            // the login page if we get here some other way.
+            RedirectManager.RedirectTo("Account/Login");
+        }
+        else
+        {
+            // On POST, reconstruct external login info from form data
+            if (string.IsNullOrEmpty(LoginProvider) || string.IsNullOrEmpty(ProviderKey))
+            {
+                RedirectManager.RedirectToWithStatus("Account/Login", "Error: External login session expired. Please try logging in again.", HttpContext);
+            }
+        }
+    }
+
+    private async Task OnLoginCallbackAsync()
+    {
+        // Sign in the user with this external login provider if the user already has a login.
+        var result = await SignInManager.ExternalLoginSignInAsync(
+            externalLoginInfo.LoginProvider,
+            externalLoginInfo.ProviderKey,
+            isPersistent: false,
+            bypassTwoFactor: true);
+
+        if (result.Succeeded)
+        {
+            Logger.LogInformation(
+                "{Name} logged in with {LoginProvider} provider.",
+                externalLoginInfo.Principal.Identity?.Name,
+                externalLoginInfo.LoginProvider);
+            RedirectManager.RedirectTo(ReturnUrl);
+        }
+        else if (result.IsLockedOut)
+        {
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+
+        // If the user does not have an account, then ask the user to create an account.
+        if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+        {
+            Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+        }
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        // Create external login info from form data for POST request
+        var loginInfo = new ExternalLoginInfo(
+            new ClaimsPrincipal(),
+            LoginProvider!,
+            ProviderKey!,
+            ProviderDisplayName!);
+
+        var emailStore = GetEmailStore();
+        var user = CreateUser();
+
+        await UserStore.SetUserNameAsync(user, Input.UserName, CancellationToken.None);
+        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+        var result = await UserManager.CreateAsync(user);
+        if (result.Succeeded)
+        {
+            result = await UserManager.AddLoginAsync(user, loginInfo);
+            if (result.Succeeded)
+            {
+                Logger.LogInformation("User created an account using {Name} provider.", LoginProvider);
+
+                var userId = await UserManager.GetUserIdAsync(user);
+                using var db = DbFactory.OpenDbConnection();
+                await db.InsertAsync(user.ToUser());
+                await db.InsertAsync(new CreditLog
+                {
+                    UserId = user.Id,
+                    Credits = 5_000,
+                    Reason = CreditReason.SignupBonus,
+                    Description = "Signup bonus",
+                    CreatedDate = DateTime.UtcNow,
+                });
+                
+                var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+                var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+                    NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+                    new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
+                await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+                // If account confirmation is required, we need to show the link if we don't have a real email sender
+                if (UserManager.Options.SignIn.RequireConfirmedAccount)
+                {
+                    RedirectManager.RedirectTo("Account/RegisterConfirmation", new() { ["email"] = Input.Email });
+                }
+
+                await SignInManager.SignInAsync(user, isPersistent: false, LoginProvider);
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
+        }
+
+        message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
+    }
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return Activator.CreateInstance<ApplicationUser>();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor");
+        }
+    }
+
+    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    {
+        if (!UserManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("The default UI requires a user store with email support.");
+        }
+        return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        public string UserName { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+    }
+}

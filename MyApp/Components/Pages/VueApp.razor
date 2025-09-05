@@ -1,0 +1,70 @@
+@layout Layout.EmptyLayout
+@* @page "/" *@
+@page "/generate/{**Page}"
+@page "/images/{**Page}"
+@page "/audio/{**Page}"
+@page "/gallery/{**Page}"
+@page "/generations/{**Page}"
+@page "/test/{**Page}"
+
+@inject IWebHostEnvironment Env
+@inject IServiceGatewayFactory GatewayFactory
+@inject AppConfig AppConfig
+
+<PageTitle>ubixar</PageTitle>
+
+@if (Env.IsDevelopment())
+{
+    <script>window.Server = @metadataHtml</script>
+}
+<script type="module">
+import { useAuth, useMetadata } from "@@servicestack/vue"
+const { signIn } = useAuth()
+signIn(@authJson)
+
+const { loadMetadata } = useMetadata()
+loadMetadata({
+    olderThan: window.Server ? null : location.search.includes('clear=metadata') ? 0 : 60 * 60 * 1000 //1hr
+})
+
+window.appConfig = @configJson
+window.info = @infoJson
+</script>
+
+<div id="app">
+    <Header />
+    <div class="min-h-screen">
+        <main role="main"></main>
+    </div>
+</div>
+
+<script type="module">
+import { configure, mount, App } from "/mjs/app.mjs"
+const { store } = await configure()
+// Capturing Blazor's AntiForgery Token to inject it when re-rendering it in Header.mjs
+store.csrfToken = document.querySelector('[name=__RequestVerificationToken]')?.value
+mount('#app', App)
+</script>
+
+<BlazorErrorUi />
+
+@code {
+    [Parameter] public string? Page { get; set; }
+
+    MarkupString? metadataHtml = null;
+    MarkupString? authJson = null;
+    MarkupString? configJson = null;
+    MarkupString? infoJson = null;
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        var gateway = GatewayFactory.GetServiceGateway(HttpContext.ToRequest());
+        metadataHtml = await gateway.ApiAsJsonAsync(new MetadataApp());
+        authJson = await gateway.ApiAsJsonAsync(new Authenticate());
+        configJson = BlazorHtml.RawJson(AppConfig.ToVueAppConfig());
+        infoJson = await gateway.ApiAsJsonAsync(new MyInfo());
+    }
+}

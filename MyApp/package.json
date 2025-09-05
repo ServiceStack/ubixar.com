@@ -1,0 +1,25 @@
+{
+    "scripts": {
+        "postinstall": "node postinstall.js && npm run migrate",
+        "dtos": "x mjs",
+        "dev": "dotnet watch",
+        "ui:dev": "tailwindcss -i ./tailwind.input.css -o ./wwwroot/css/app.css --watch",
+        "ui:build": "tailwindcss -i ./tailwind.input.css -o ./wwwroot/css/app.css --minify",
+        "build": "npm run ui:build",
+        "init-ef": "node -e 'fs.readdirSync(`Migrations`).filter(x => !x.startsWith(`Migration`)).forEach(x => fs.rmSync(`Migrations/${x}`))' && dotnet ef migrations add CreateIdentitySchema",
+        "migrate": "dotnet run --AppTasks=migrate",
+        "revert:last": "dotnet run --AppTasks=migrate.revert:last",
+        "revert:all": "dotnet run --AppTasks=migrate.revert:all",
+        "rerun:last": "npm run revert:last && npm run migrate",
+        "metadata": "dotnet run --AppTasks=metadata",
+        "adhoc": "dotnet run --AppTasks=adhoc"
+    },
+    "devDependencies": {
+        "@comfyorg/litegraph": "^0.16.3",
+        "@servicestack/client": "^2.1.11",
+        "@servicestack/vue": "^3.0.125",
+        "@types/bun": "^1.2.17",
+        "zod": "^3.25.67",
+        "zod-validation-error": "^3.5.2"
+    }
+}

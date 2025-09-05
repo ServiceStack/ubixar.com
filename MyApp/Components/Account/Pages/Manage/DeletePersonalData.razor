@@ -1,0 +1,130 @@
+@page "/Account/Manage/DeletePersonalData"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using MyApp.Data
+@using ServiceStack.OrmLite
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<DeletePersonalData> Logger
+@inject ServiceStack.Data.IDbConnectionFactory DbFactory
+@inject AppConfig appConfig
+
+<PageTitle>Delete Personal Data</PageTitle>
+
+<Heading3>Delete Personal Data</Heading3>
+
+<div class="max-w-xl">
+    <Alert Type="AlertType.Error" class="mb-3">
+        Deleting this data permanently removes your account, and cannot be recovered.
+    </Alert>
+
+    <div class="mt-3 shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 bg-white dark:bg-black sm:p-6">
+            <StatusMessage Message="@message" />
+
+            <EditForm class="mt-3" id="delete-user" Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="mt-2 text-danger text-sm" />
+
+                <div class="flex flex-col gap-4">
+                    @if (requirePassword)
+                    {
+                        <div>
+                            <label for="password" class="@TextInput.LabelClasses">Password</label>
+                            <div class="mt-1 relative">
+                                <InputText id="password" type="password" @bind-Value="Input.Password" class="@TextInput.InputClasses" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
+                            </div>
+                            <ValidationMessage For="() => Input.Password" class="mt-2 text-danger text-sm" />
+                        </div>
+                    }
+                    <PrimaryButton Style="ButtonStyle.Red" type="submit">Delete data and close my account</PrimaryButton>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? message;
+    private ApplicationUser user = default!;
+    private bool requirePassword;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        requirePassword = await UserManager.HasPasswordAsync(user);
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input.Password))
+        {
+            message = "Error: Incorrect password.";
+            return;
+        }
+
+        var result = await UserManager.DeleteAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException("Unexpected error occurred deleting user.");
+        }
+        var deletedUserId = appConfig.DeletedUserId;
+        using var db = DbFactory.OpenDbConnection();
+        await db.UpdateOnlyAsync(() => new CreditLog {
+            RefUserId = deletedUserId,
+        }, x => x.RefUserId == user.Id);
+        await db.DeleteAsync<CreditLog>(x => x.UserId == user.Id);
+        await db.UpdateOnlyAsync(() => new Notification {
+            RefUserId = deletedUserId,
+        }, x => x.RefUserId == user.Id);
+        await db.DeleteAsync<Notification>(x => x.UserId == user.Id);
+        await db.DeleteAsync<HiddenArtifact>(x => x.UserId == user.Id);
+        await db.DeleteAsync<ArtifactReaction>(x => x.UserId == user.Id);
+        await db.UpdateOnlyAsync(() => new Artifact {
+            CreatedBy = deletedUserId,
+            ModifiedBy = deletedUserId,
+        }, x => x.CreatedBy == user.Id);
+        await db.UpdateOnlyAsync(() => new WorkflowGeneration {
+            UserId = deletedUserId,
+            CreatedBy = deletedUserId,
+            ModifiedBy = deletedUserId,
+        }, x => x.UserId == user.Id);
+        await db.UpdateOnlyAsync(() => new Thread {
+            CreatedBy = deletedUserId,
+        }, x => x.CreatedBy == user.Id);
+        await db.UpdateOnlyAsync(() => new Comment {
+            CreatedBy = deletedUserId,
+        }, x => x.CreatedBy == user.Id);
+        await db.DeleteAsync<ThreadReaction>(x => x.UserId == user.Id);
+        await db.DeleteAsync<CommentReaction>(x => x.UserId == user.Id);
+        await db.DeleteAsync<CommentReport>(x => x.UserId == user.Id);
+        await db.DeleteAsync<CrudEvent>(x => x.UserAuthId == user.Id);
+        await db.DeleteAsync<ApiKeysFeature.ApiKey>(x => x.UserId == user.Id);
+        await db.DeleteAsync<ComfyAgent>(x => x.UserId == user.Id);
+        await db.DeleteByIdAsync<User>(user.Id);
+
+        await SignInManager.SignOutAsync();
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        Logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
+
+        RedirectManager.RedirectToCurrentPage();
+    }
+
+    private sealed class InputModel
+    {
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+    }
+}
