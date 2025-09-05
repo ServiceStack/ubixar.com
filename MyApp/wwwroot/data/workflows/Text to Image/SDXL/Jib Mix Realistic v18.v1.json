@@ -1,50 +1,9 @@
 {
   "id": "ad8676b3-6b6d-4140-81a2-a19395225b8a",
   "revision": 0,
-  "last_node_id": 19,
+  "last_node_id": 20,
   "last_link_id": 24,
   "nodes": [
-    {
-      "id": 6,
-      "type": "CLIPTextEncode",
-      "pos": [
-        219.4355010986328,
-        -154.3143768310547
-      ],
-      "size": [
-        421.6323547363281,
-        193.41989135742188
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 17
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "slot_index": 0,
-          "links": [
-            4
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CLIPTextEncode",
-        "cnr_id": "comfy-core",
-        "ver": "0.3.41",
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        "cinematic photo award-winning photo of a beautiful (masterpiece), (extremely intricate:1.3), (realistic), portrait of a girl, the most beautiful blonde girl in the world, (blue eyes), smiling at the camera (super intricately carved medieval armor), metal reflections, upper body, outdoors, intense sunlight, far away castle, professional photograph of a stunning woman detailed, sharp focus, dramatic, award winning, cinematic lighting, , volumetrics dtx, (film grain, blurry background, blurry foreground, bokeh, depth of field, sunset, motion blur:1.3), chainmail,.4k, 8k, highly detailed, cinematic, 8k, dramatic lighting, high detail, highly detailed, hyper realistic, intricate, intricate sharp details, 35mm photograph, film, bokeh, professional, 4k, highly detailed. 35mm photograph, film, bokeh, professional, 4k, highly detailed"
-      ]
-    },
     {
       "id": 7,
       "type": "CLIPTextEncode",
@@ -57,7 +16,7 @@
         180.6060791015625
       ],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -98,7 +57,7 @@
         46
       ],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -131,38 +90,6 @@
       "widgets_values": []
     },
     {
-      "id": 9,
-      "type": "SaveImage",
-      "pos": [
-        1271.621337890625,
-        -298.89215087890625
-      ],
-      "size": [
-        1838.06689453125,
-        962.5804443359375
-      ],
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 9
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "SaveImage",
-        "cnr_id": "comfy-core",
-        "ver": "0.3.41",
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        "ComfyUI"
-      ]
-    },
-    {
       "id": 3,
       "type": "KSampler",
       "pos": [
@@ -174,7 +101,7 @@
         262
       ],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -215,7 +142,7 @@
         "widget_ue_connectable": {}
       },
       "widgets_values": [
-        55139240530686,
+        746210660469116,
         "randomize",
         20,
         2.6,
@@ -236,7 +163,7 @@
         58
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -316,127 +243,6 @@
       ]
     },
     {
-      "id": 15,
-      "type": "Power Lora Loader (rgthree)",
-      "pos": [
-        -167.65538024902344,
-        -11.711173057556152
-      ],
-      "size": [
-        340.20001220703125,
-        142
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 24,
-          "dir": 3
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 16,
-          "dir": 3
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            21
-          ],
-          "dir": 4,
-          "shape": 3
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            17,
-            18
-          ],
-          "dir": 4,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "cnr_id": "rgthree-comfy",
-        "ver": "84a146fee39f7b3a8c6631dcac29bc13b077eb49",
-        "Show Strengths": "Single Strength",
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        {},
-        {
-          "type": "PowerLoraLoaderHeaderWidget"
-        },
-        {
-          "on": false,
-          "lora": "RealSkin_xxXL_v1.safetensors",
-          "strength": 0.75,
-          "strengthTwo": null
-        },
-        {},
-        ""
-      ]
-    },
-    {
-      "id": 19,
-      "type": "RequiresAsset",
-      "pos": [
-        -187.58206176757812,
-        -476.238037109375
-      ],
-      "size": [
-        372.4866638183594,
-        130
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "RequiresAsset",
-        "aux_id": "ServiceStack/comfy-agent",
-        "ver": "8666c425f247cd45ddeb0790e648a890230b8aa3"
-      },
-      "widgets_values": [
-        "https://civitai.com/api/download/models/1966530?type=Model&format=SafeTensor&size=pruned&fp=fp16",
-        "checkpoints",
-        "Jib_Mix_V18_F_00001_.safetensors",
-        "$CIVITAI_TOKEN"
-      ]
-    },
-    {
-      "id": 17,
-      "type": "RequiresCustomNode",
-      "pos": [
-        -88.54863739013672,
-        -289.341552734375
-      ],
-      "size": [
-        270,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "RequiresCustomNode"
-      },
-      "widgets_values": [
-        "rgthree/rgthree-comfy"
-      ]
-    },
-    {
       "id": 5,
       "type": "EmptyLatentImage",
       "pos": [
@@ -448,7 +254,7 @@
         106
       ],
       "flags": {},
-      "order": 3,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -471,6 +277,226 @@
         768,
         1344,
         1
+      ]
+    },
+    {
+      "id": 9,
+      "type": "SaveImage",
+      "pos": [
+        1316.351806640625,
+        -296.7657470703125
+      ],
+      "size": [
+        821.8323974609375,
+        1262.5494384765625
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "SaveImage",
+        "cnr_id": "comfy-core",
+        "ver": "0.3.41",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "ComfyUI"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        219.4355010986328,
+        -154.3143768310547
+      ],
+      "size": [
+        421.6323547363281,
+        193.41989135742188
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode",
+        "cnr_id": "comfy-core",
+        "ver": "0.3.41",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "cinematic photo award-winning photo of a beautiful (masterpiece), (extremely intricate:1.3), (realistic), portrait of a girl, the most beautiful blonde girl in the world, (blue eyes), smiling at the camera (super intricately carved medieval armor), metal reflections, upper body, outdoors, intense sunlight, far away castle, professional photograph of a stunning woman detailed, sharp focus, dramatic, award winning, cinematic lighting, , volumetrics dtx, (film grain, blurry background, blurry foreground, bokeh, depth of field, sunset, motion blur:1.3), chainmail,.4k, 8k, highly detailed, cinematic, 8k, dramatic lighting, high detail, highly detailed, hyper realistic, intricate, intricate sharp details, 35mm photograph, film, bokeh, professional, 4k, highly detailed. 35mm photograph, film, bokeh, professional, 4k, highly detailed"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "RequiresAsset",
+      "pos": [
+        -335.78387451171875,
+        -528.77294921875
+      ],
+      "size": [
+        372.4866638183594,
+        130
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "RequiresAsset",
+        "aux_id": "ServiceStack/comfy-agent",
+        "ver": "8666c425f247cd45ddeb0790e648a890230b8aa3"
+      },
+      "widgets_values": [
+        "https://civitai.com/api/download/models/1966530?type=Model&format=SafeTensor&size=pruned&fp=fp16",
+        "checkpoints",
+        "Jib_Mix_V18_F_00001_.safetensors",
+        "$CIVITAI_TOKEN"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "RequiresCustomNode",
+      "pos": [
+        -233.29718017578125,
+        -154.6561279296875
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "RequiresCustomNode"
+      },
+      "widgets_values": [
+        "rgthree/rgthree-comfy"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "RequiresAsset",
+      "pos": [
+        -336.57904052734375,
+        -341.67987060546875
+      ],
+      "size": [
+        373.2818603515625,
+        130
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "RequiresAsset"
+      },
+      "widgets_values": [
+        "https://civitai.com/api/download/models/1681921?type=Model&format=SafeTensor",
+        "loras",
+        "RealSkin_xxXL_v1.safetensors",
+        "$CIVITAI_TOKEN"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "Power Lora Loader (rgthree)",
+      "pos": [
+        -186.97837829589844,
+        48.611148834228516
+      ],
+      "size": [
+        340.20001220703125,
+        142
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "name": "model",
+          "type": "MODEL",
+          "link": 24
+        },
+        {
+          "dir": 3,
+          "name": "clip",
+          "type": "CLIP",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "dir": 4,
+          "name": "MODEL",
+          "shape": 3,
+          "type": "MODEL",
+          "links": [
+            21
+          ]
+        },
+        {
+          "dir": 4,
+          "name": "CLIP",
+          "shape": 3,
+          "type": "CLIP",
+          "links": [
+            17,
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Show Strengths": "Single Strength",
+        "cnr_id": "rgthree-comfy",
+        "ver": "84a146fee39f7b3a8c6631dcac29bc13b077eb49",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        {},
+        {
+          "type": "PowerLoraLoaderHeaderWidget"
+        },
+        {
+          "on": true,
+          "lora": "RealSkin_xxXL_v1.safetensors",
+          "strength": 0.75,
+          "strengthTwo": null
+        },
+        {},
+        ""
       ]
     }
   ],
@@ -577,10 +603,10 @@
       "id": 1,
       "title": "Download Dependencies",
       "bounding": [
-        -196.3575439453125,
-        -564.6476440429688,
-        389.2196960449219,
-        409.529052734375
+        -350.17987060546875,
+        -617.8054809570312,
+        412.0030517578125,
+        535.888916015625
       ],
       "color": "#3f789e",
       "font_size": 24,
@@ -592,8 +618,8 @@
     "ds": {
       "scale": 0.9229599817706574,
       "offset": [
-        487.4822983614106,
-        849.3941320518837
+        514.0577310968928,
+        766.1057357966348
       ]
     },
     "frontendVersion": "1.25.11",
