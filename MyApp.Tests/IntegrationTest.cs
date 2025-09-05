@@ -6,6 +6,7 @@ using MyApp.ServiceModel;
 
 namespace MyApp.Tests;
 
+[Explicit("Integration tests")]
 public class IntegrationTest : TestBase
 {
     const string BaseUri = "http://localhost:2000/";
