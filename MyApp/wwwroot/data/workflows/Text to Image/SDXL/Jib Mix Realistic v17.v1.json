@@ -1,0 +1,502 @@
+{
+  "id": "b4ebf8c9-cdb6-4a3b-8bfe-f26b0ab21c6e",
+  "revision": 0,
+  "last_node_id": 15,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "KSampler",
+      "pos": [
+        1359.199951171875,
+        600.3958740234375
+      ],
+      "size": [
+        315,
+        262
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 2
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 3
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        678829458873621,
+        "randomize",
+        25,
+        2.7,
+        "dpmpp_2m_sde_gpu",
+        "karras",
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAEDecode",
+      "pos": [
+        1705.199951171875,
+        602.3958740234375
+      ],
+      "size": [
+        210,
+        266
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 5
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [
+        1368.199951171875,
+        916.3958740234375
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "slot_index": 0,
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "sdxl_vae.safetensors"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        512.5999755859375,
+        610.7958984375
+      ],
+      "size": [
+        315,
+        98
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "slot_index": 0,
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "slot_index": 1,
+          "links": [
+            8,
+            9
+          ]
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "slot_index": 2,
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "jibMixRealisticXL_v170SmokeSheen.safetensors"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "EmptyLatentImage",
+      "pos": [
+        948.4000244140625,
+        1058.595947265625
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        768,
+        1344,
+        1
+      ]
+    },
+    {
+      "id": 9,
+      "type": "CLIPTextEncode",
+      "pos": [
+        893.2000122070312,
+        825.7958984375
+      ],
+      "size": [
+        425.27801513671875,
+        180.6060791015625
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            3
+          ]
+        }
+      ],
+      "title": "CLIP Text Encode (Negative Prompt)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "drawing, painting, crayon, sketch, graphite, impressionist, noisy, blurry, soft, deformed, ugly, ((bokeh)), Deviantart, jpeg , (worst quality, low quality, normal quality, lowres, low details, oversaturated, undersaturated, overexposed, underexposed, grayscale, bw, bad photo, bad photography, bad art:1.4), (watermark, signature, text font, username, error, logo, words, letters, digits, autograph, trademark, name:1.2), (blur, blurry, grainy), morbid, ugly, asymmetrical, mutated malformed, mutilated, poorly lit, bad shadow, draft, cropped, out of frame, cut off, censored, jpeg artifacts, out of focus, glitch, duplicate, (airbrushed, cartoon, anime, semi-realistic, cgi, render, blender, digital art, manga, amateur:1.3), (3D ,3D Game, 3D Game Scene, 3D Character:1.1), (bad hands, bad anatomy, bad body, bad face, bad teeth, bad arms, bad legs, deformities:1.3), ((bokeh)) Deviantart"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "pos": [
+        1357.39990234375,
+        1043.595947265625
+      ],
+      "size": [
+        540.3999633789062,
+        539.5999755859375
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "CLIPTextEncode",
+      "pos": [
+        890.4000244140625,
+        605.1958618164062
+      ],
+      "size": [
+        422.84503173828125,
+        164.31304931640625
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "slot_index": 0,
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.30",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "Ultra-photorealistic portrait of a stunning dark-haired beautiful American woman with sun-kissed skin, laughing joyfully while playing a vintage Gibson J-45 acoustic guitar. She wears a brown leather guitar strap with intricate Native American-inspired beadwork. Her bohemian style shines through: a flowy white cotton dress with delicate embroidery, layered turquoise and silver bracelets, and a small 'sunrise' tattoo on her right shoulder. The setting is a golden-hour meadow with wildflowers, dandelion seeds floating in the air. Every detail is razor-sharp: the gleam of sweat on her collarbone, individual strands of her chestnut hair (with subtle caramel highlights), the texture of the guitar's mahogany body, and the way her fingers press the steel strings. The composition focuses intimately on her upper body, with a shallow depth of field that softly blurs the background while maintaining realistic grass and oak tree details."
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 13,
+      "type": "RequiresAsset",
+      "pos": [
+        460.9622497558594,
+        820.9015502929688
+      ],
+      "size": [
+        372.4866638183594,
+        130
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "aux_id": "ServiceStack/comfy-agent",
+        "ver": "8666c425f247cd45ddeb0790e648a890230b8aa3",
+        "Node name for S&R": "RequiresAsset"
+      },
+      "widgets_values": [
+        "https://civitai.com/api/download/models/1809082?type=Model&format=SafeTensor&size=pruned&fp=fp16",
+        "checkpoints",
+        "jibMixRealisticXL_v170SmokeSheen.safetensors",
+        "$CIVITAI_TOKEN"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "RequiresAsset",
+      "pos": [
+        462.0244445800781,
+        1003.0398559570312
+      ],
+      "size": [
+        372.4866638183594,
+        130
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "aux_id": "ServiceStack/comfy-agent",
+        "ver": "8666c425f247cd45ddeb0790e648a890230b8aa3",
+        "Node name for S&R": "RequiresAsset"
+      },
+      "widgets_values": [
+        "https://huggingface.co/stabilityai/sdxl-vae/resolve/main/sdxl_vae.safetensors",
+        "vae",
+        "sdxl_vae.safetensors",
+        ""
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      7,
+      0,
+      1,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      10,
+      0,
+      1,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      3,
+      9,
+      0,
+      1,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      4,
+      8,
+      0,
+      1,
+      3,
+      "LATENT"
+    ],
+    [
+      5,
+      1,
+      0,
+      2,
+      0,
+      "LATENT"
+    ],
+    [
+      6,
+      3,
+      0,
+      2,
+      1,
+      "VAE"
+    ],
+    [
+      7,
+      2,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      7,
+      1,
+      9,
+      0,
+      "CLIP"
+    ],
+    [
+      9,
+      7,
+      1,
+      10,
+      0,
+      "CLIP"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Download Dependencies",
+      "bounding": [
+        452.1871032714844,
+        732.4916381835938,
+        389.2196960449219,
+        409.529052734375
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.131883317611325,
+      "offset": [
+        -293.0099641066502,
+        -443.8657263717423
+      ]
+    },
+    "frontendVersion": "1.23.4"
+  },
+  "version": 0.4
+}
