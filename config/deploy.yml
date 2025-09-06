@@ -50,10 +50,10 @@ accessories:
     port: "127.0.0.1:5432:5432"
     env:
       clear:
-        - POSTGRES_DB=ubixar
-        - POSTGRES_USER=ubixar
-        - DB_HOST: 127.0.0.1
-        - DB_PORT: 5432
+        POSTGRES_DB: ubixar
+        POSTGRES_USER: ubixar
+        DB_HOST: 127.0.0.1
+        DB_PORT: 5432
       secret:
         - POSTGRES_PASSWORD:PASSWORD
     directories:
