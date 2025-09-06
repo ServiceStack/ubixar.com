@@ -56,3 +56,4 @@ accessories:
         - POSTGRES_PASSWORD
     directories:
       - /opt/docker/ubixar.com/postgres:/var/lib/postgresql/data
+      - /opt/docker/ubixar.com/initdb.d:/docker-entrypoint-initdb.d
