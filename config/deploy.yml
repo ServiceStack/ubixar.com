@@ -44,17 +44,15 @@ volumes:
   - "/opt/docker/ubixar.com/App_Data:/app/App_Data"
 
 accessories:
-  db:
+  postgres:
     image: postgres
     host: 5.78.128.205
     port: "127.0.0.1:5432:5432"
     env:
       clear:
-        POSTGRES_DB: ubixar
-        POSTGRES_USER: ubixar
         DB_HOST: 127.0.0.1
         DB_PORT: 5432
       secret:
-        - POSTGRES_PASSWORD:PASSWORD
+        - POSTGRES_PASSWORD
     directories:
       - /opt/docker/ubixar.com/postgres:/var/lib/postgresql/data
