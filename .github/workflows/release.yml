@@ -88,6 +88,7 @@ jobs:
 
             echo "Fix app file permissions"
             kamal server exec "mkdir -p /opt/docker/${{ env.repository_name }}/App_Data /opt/docker/${{ env.repository_name }}/initdb.d /opt/docker/${{ env.repository_name }}/postgres && chown -R 1654:1654 /opt/docker/${{ env.repository_name }}"
+            
             echo "Fix postgres file permissions"
             kamal server exec "chown -R 999:999 /opt/docker/${{ env.repository_name }}/postgres"
 
