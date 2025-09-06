@@ -19,7 +19,6 @@ to-api-prompt
 infos/
 api-prompts/
 .DS_Store
-secrets
 
 # User-specific files
 *.suo
