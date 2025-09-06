@@ -1,0 +1,21 @@
+# Exclude runtime data directories
+App_Data/data/
+App_Data/backups/
+App_Data/__pycache__/
+
+# Exclude build artifacts
+**/bin/
+**/obj/
+**/node_modules/
+
+# Exclude IDE and OS files
+.vs/
+.vscode/
+*.user
+.DS_Store
+Thumbs.db
+
+# Exclude logs and temporary files
+*.log
+*.tmp
+*.temp
