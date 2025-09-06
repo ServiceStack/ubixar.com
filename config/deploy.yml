@@ -4,9 +4,13 @@ service: ubixar
 # Name of the container image.
 image: servicestack/ubixar.com
 
+# Custom Docker network for container-to-container communication
+network: ubixar-network
+
 # Required for use of ASP.NET Core with Kamal-Proxy.
 env:
-  ASPNETCORE_FORWARDEDHEADERS_ENABLED: true
+  clear:
+    ASPNETCORE_FORWARDEDHEADERS_ENABLED: true
 
 # Deploy to these servers.
 servers:
@@ -47,7 +51,9 @@ accessories:
   postgres:
     image: postgres
     host: 5.78.128.205
-    port: "5432:5432"
+    network: ubixar-network
+    # Remove port mapping for internal-only access via Docker network
+    # External access can be added later if needed with: port: "5432:5432"
     env:
       clear:
         DB_HOST: 0.0.0.0
