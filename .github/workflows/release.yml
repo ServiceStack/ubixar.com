@@ -17,7 +17,6 @@ env:
   KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
   KAMAL_REGISTRY_USERNAME: ${{ github.actor }}
   INIT_DB_SQL: ${{ secrets.INIT_DB_SQL }}
-  DB_NAME: ${{ secrets.DB_NAME }}
   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
 jobs:
@@ -83,19 +82,19 @@ jobs:
 
       - name: Ensure file permissions
         run: |
-          kamal server exec --no-interactive "mkdir -p /opt/docker/${{ env.repository_name }}/App_Data /opt/docker/${{ env.repository_name }}/initdb.d && chown -R 1654:1654 /opt/docker/${{ env.repository_name }}"
+          kamal server exec "mkdir -p /opt/docker/${{ env.repository_name }}/App_Data /opt/docker/${{ env.repository_name }}/initdb.d && chown -R 1654:1654 /opt/docker/${{ env.repository_name }}"
 
       - name: Check if first run and execute kamal app boot if necessary
         run: |
           FIRST_RUN_FILE=".${{ env.repository_name }}"
-          if ! kamal server exec --no-interactive -q "test -f $FIRST_RUN_FILE"; then
-            kamal server exec --no-interactive -q "touch $FIRST_RUN_FILE" || true
+          if ! kamal server exec -q "test -f $FIRST_RUN_FILE"; then
+            kamal server exec -q "touch $FIRST_RUN_FILE" || true
 
             if [ -n "${{env.INIT_DB_SQL}}" ]; then
               echo "Initializing DB..."
               # Save the SQL content to a temporary file
               echo "${{ env.INIT_DB_SQL }}" > init-db.sql
-              cat init-db.sql | kamal server exec -i "cat > /opt/docker/${{ env.repository_name }}/initdb.d" && rm init-db.sql || true              
+              cat init-db.sql | kamal server exec -i "cat > /opt/docker/${{ env.repository_name }}/initdb.d/${{ env.repository_name }.sql" && rm init-db.sql || true              
             fi
             # Start all kamal accessories
             kamal accessory boot all || true
@@ -109,9 +108,9 @@ jobs:
       - name: Migration
         if: env.HAS_MIGRATIONS == 'true'
         run: |
-          kamal server exec --no-interactive 'echo "${{ env.KAMAL_REGISTRY_PASSWORD }}" | docker login ghcr.io -u ${{ env.KAMAL_REGISTRY_USERNAME }} --password-stdin'
-          kamal server exec --no-interactive "docker pull ghcr.io/${{ env.image_repository_name }}:latest || true"
-          kamal app exec --no-reuse --no-interactive --version=latest "--AppTasks=migrate"
+          kamal server exec 'echo "${{ env.KAMAL_REGISTRY_PASSWORD }}" | docker login ghcr.io -u ${{ env.KAMAL_REGISTRY_USERNAME }} --password-stdin'
+          kamal server exec "docker pull ghcr.io/${{ env.image_repository_name }}:latest || true"
+          kamal app exec --no-reuse --version=latest "--AppTasks=migrate"
 
       - name: Deploy with Kamal
         run: |
