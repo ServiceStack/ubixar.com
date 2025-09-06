@@ -4,9 +4,6 @@ service: ubixar
 # Name of the container image.
 image: servicestack/ubixar.com
 
-# Custom Docker network for container-to-container communication
-network: ubixar-network
-
 # Required for use of ASP.NET Core with Kamal-Proxy.
 env:
   clear:
@@ -47,12 +44,14 @@ builder:
 volumes:
   - "/opt/docker/ubixar.com/App_Data:/app/App_Data"
 
+# Kamal 2 automatically creates and uses the 'kamal' network
+# No additional docker options needed for networking
+
 accessories:
   postgres:
     image: postgres
     host: 5.78.128.205
-    network: ubixar-network
-    # Remove port mapping for internal-only access via Docker network
+    # Remove port mapping for internal-only access via Kamal network
     # External access can be added later if needed with: port: "5432:5432"
     env:
       clear:
