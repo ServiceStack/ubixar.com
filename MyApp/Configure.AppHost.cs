@@ -31,9 +31,6 @@ public partial class AppHost() : AppHostBase("ubixar.com"), IHostingStartup
             var filesPath = Environment.GetEnvironmentVariable("AI_FILES_PATH");
             if (filesPath != null)
                 appConfig.FilesPath = filesPath;
-            var assetsBaseUrl = Environment.GetEnvironmentVariable("ASSETS_BASE_URL");
-            if (assetsBaseUrl != null)
-                appConfig.AssetsBaseUrl = assetsBaseUrl;
 
             appConfig.BunExePath ??= Environment.GetEnvironmentVariable("BUN_EXE_PATH")
                 ?? ProcessUtils.FindExePath("bun");
