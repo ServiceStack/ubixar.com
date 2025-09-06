@@ -24,7 +24,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up environment variables
         run: |
@@ -87,10 +87,27 @@ jobs:
           password: ${{ env.KAMAL_REGISTRY_PASSWORD }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # Build custom base image first
+      - name: Build custom base image
+        run: |
+          cat << 'EOF' > base.Dockerfile
+          FROM mcr.microsoft.com/dotnet/aspnet:8.0
+          RUN apt-get update && apt-get install -y curl unzip \
+           && curl -fsSL https://bun.sh/install | bash \
+           && mv /root/.bun/bin/bun /usr/local/bin/ \
+           && apt-get clean \
+           && rm -rf /var/lib/apt/lists/*
+          EOF
+          
+          docker build -f base.Dockerfile -t dotnet-bun-base .
+          
       - name: Build and push Docker image
         run: |
-          dotnet publish --os linux --arch x64 -c Release -p:ContainerRepository=${{ env.image_repository_name }} -p:ContainerRegistry=ghcr.io -p:ContainerImageTags=latest -p:ContainerPort=80
+          dotnet publish --os linux --arch x64 -c Release /p:ContainerBaseImage=dotnet-bun-base -p:ContainerRepository=${{ env.image_repository_name }} -p:ContainerRegistry=ghcr.io -p:ContainerImageTags=latest -p:ContainerPort=80
