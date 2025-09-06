@@ -43,14 +43,18 @@ builder:
 volumes:
   - "/opt/docker/ubixar.com/App_Data:/app/App_Data"
 
-#accessories:
-#  litestream:
-#    roles: ["web"]
-#    image: litestream/litestream
-#    files: ["config/litestream.yml:/etc/litestream.yml"]
-#    volumes: ["/opt/docker/MyApp/App_Data:/data"]
-#    cmd: replicate
-#    env:
-#      secret:
-#        - ACCESS_KEY_ID
-#        - SECRET_ACCESS_KEY
+accessories:
+  db:
+    image: postgres
+    host: 5.78.128.205
+    port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        - POSTGRES_DB=ubixar
+        - POSTGRES_USER=ubixar
+        - DB_HOST: 127.0.0.1
+        - DB_PORT: 5432
+      secret:
+        - POSTGRES_PASSWORD:PASSWORD
+    directories:
+      - /opt/docker/ubixar.com/postgres:/var/lib/postgresql/data
