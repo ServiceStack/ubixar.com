@@ -100,24 +100,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Build custom base image
-        run: |
-          cat << 'EOF' > base.Dockerfile
-          FROM mcr.microsoft.com/dotnet/aspnet:8.0
-          RUN apt-get update && apt-get install -y curl unzip \
-              && curl -fsSL https://bun.sh/install | bash \
-              && mv /root/.bun/bin/bun /usr/local/bin/ \
-              && apt-get clean \
-              && rm -rf /var/lib/apt/lists/*
-          EOF
-          docker build -f base.Dockerfile -t docker.io/dotnet-bun-base:latest .
 
-      - name: Publish container
-        run: |
-          dotnet publish --os linux --arch x64 /t:PublishContainer \
-            -p:ContainerBaseImage=docker.io/dotnet-bun-base:latest \
-            -p:ContainerRegistry=ghcr.io \
-            -p:ContainerImageTags=latest \
-            -p:ContainerPort=80 \
-            -p:ContainerRepository=${{ env.image_repository_name }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.image_repository_name }}:latest
+            ghcr.io/${{ env.image_repository_name }}:${{ github.sha }}
+          platforms: linux/amd64
