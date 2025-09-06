@@ -11,6 +11,7 @@ using MyApp.Data;
 using MyApp.Components.Account;
 using MyApp.ServiceInterface;
 
+AppHost.Register();
 var builder = WebApplication.CreateBuilder(args);
 
 var services = builder.Services;
