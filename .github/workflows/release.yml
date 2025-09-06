@@ -94,7 +94,7 @@ jobs:
               echo "Initializing DB..."
               # Save the SQL content to a temporary file
               echo "${{ env.INIT_DB_SQL }}" > init-db.sql
-              cat init-db.sql | kamal server exec -i "cat > /opt/docker/${{ env.repository_name }}/initdb.d/${{ env.repository_name }.sql" && rm init-db.sql || true              
+              cat init-db.sql | kamal server exec -i "cat > /opt/docker/${{ env.repository_name }}/initdb.d/${{ env.repository_name }}.sql" && rm init-db.sql || true              
             fi
             # Start all kamal accessories
             kamal accessory boot all || true
