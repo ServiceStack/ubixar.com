@@ -34,4 +34,5 @@ RUN dotnet publish "MyApp.csproj" -c Release -o /app/publish /p:UseAppHost=false
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+LABEL service="ubixar"
 ENTRYPOINT ["dotnet", "MyApp.dll"]
