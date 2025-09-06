@@ -80,16 +80,14 @@ jobs:
       - name: Kamal bootstrap
         run: kamal server bootstrap
 
-      - name: Ensure file permissions
-        run: |
-          kamal server exec "mkdir -p /opt/docker/${{ env.repository_name }}/App_Data /opt/docker/${{ env.repository_name }}/initdb.d && chown -R 1654:1654 /opt/docker/${{ env.repository_name }}"
-          kamal server exec "chown -R 999:999 /opt/docker/${{ env.repository_name }}/postgres"
-
       - name: Check if first run and execute kamal app boot if necessary
         run: |
           FIRST_RUN_FILE=".${{ env.repository_name }}"
           if ! kamal server exec -q "test -f $FIRST_RUN_FILE"; then
             kamal server exec -q "touch $FIRST_RUN_FILE" || true
+
+            echo "Fix app file permissions"
+            kamal server exec "mkdir -p /opt/docker/${{ env.repository_name }}/App_Data /opt/docker/${{ env.repository_name }}/initdb.d && chown -R 1654:1654 /opt/docker/${{ env.repository_name }}"
 
             if [ -n "${{env.INIT_DB_SQL}}" ]; then
               echo "Initializing DB with INIT_DB_SQL secret..."
@@ -99,6 +97,9 @@ jobs:
             fi
             # Start all kamal accessories
             kamal accessory boot all || true
+
+            echo "Fix postgres file permissions"
+            kamal server exec "chown -R 999:999 /opt/docker/${{ env.repository_name }}/postgres"
 
             # Deploy latest version
             kamal deploy -q -P --version latest || true
