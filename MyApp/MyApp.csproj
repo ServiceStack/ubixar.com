@@ -65,10 +65,6 @@
     <ItemGroup>
       <Folder Include="App_Data\artifacts\" />
       <Folder Include="App_Data\files\" />
-      <Folder Include="src\utils\" />
-      <Folder Include="wwwroot\data\api-prompts\" />
-      <Folder Include="wwwroot\data\api-prompts\Image to Image\SDXL\" />
-      <Folder Include="wwwroot\data\infos\" />
     </ItemGroup>
 
     <Target Name="tailwind" BeforeTargets="Publish">
