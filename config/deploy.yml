@@ -51,8 +51,6 @@ accessories:
   postgres:
     image: postgres
     host: 5.78.128.205
-    # Remove port mapping for internal-only access via Kamal network
-    # External access can be added later if needed with: port: "5432:5432"
     env:
       clear:
         DB_HOST: 0.0.0.0
