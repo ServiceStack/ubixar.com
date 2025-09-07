@@ -1184,6 +1184,27 @@ let o = {
         await Promise.all(artifacts.map(x => tx.store.put(x)))
         await tx.done
     },
+    
+    async loadBestArtifacts(artifacts, count) {
+        // cache artifacts with the most reactions until Tables.Artifact >= count
+        let dbCount = await this.db(Tables.Artifact).count(Tables.Artifact)
+        let skip = 0
+        console.log('loadBestArtifacts', dbCount, count)
+        while (dbCount < count) {
+            const api = await this._client.api(new QueryArtifacts({
+                skip,
+                take: count - dbCount,
+                orderBy: '-reactionsCount',
+                ratings: ['PG', 'PG13'],
+            }))
+            if (api.error) return
+            await this.saveArtifacts(api.response.results)
+            skip += api.response.results.length
+            dbCount = await this.db(Tables.Artifact).count(Tables.Artifact)
+            console.log('loadBestArtifacts', dbCount, count)
+        }
+    },
+    
     async removeArtifact(artifactId) {
         const tx = this.transaction(Tables.Artifact, 'readwrite')
         await tx.store.delete(artifactId)

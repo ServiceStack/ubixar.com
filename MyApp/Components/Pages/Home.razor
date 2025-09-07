@@ -144,9 +144,6 @@
 
 <script type="module">
 import { store, events } from "/mjs/app.mjs"
-const artifacts = @BlazorHtml.Raw(FeaturedArtifacts.ToJson());
-await store.openAppDb()
-await store.saveArtifacts(artifacts)
 
 document.querySelectorAll('img.artifact').forEach(img => {
     img.onerror = function (e) { this.src=store.getArtifactImageErrorUrl(Number(this.dataset.id), null, 300) }
@@ -155,6 +152,11 @@ document.querySelectorAll('img.artifact').forEach(img => {
         events.publish('showArtifactMenu', { artifactId:Number(this.dataset.id), event:e })
     }
 })
+
+const artifacts = @BlazorHtml.Raw(FeaturedArtifacts.ToJson());
+await store.openAppDb()
+await store.saveArtifacts(artifacts)
+store.loadBestArtifacts(artifacts, 1000)
 </script>
 
 @code {
