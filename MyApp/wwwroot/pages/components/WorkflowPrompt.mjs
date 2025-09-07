@@ -17,7 +17,7 @@ export default {
                 {{group.name}}
             </h4>
             <div v-for="category of group.categories">
-                <RouterLink :to="{ query: { category } }" 
+                <RouterLink :to="{ query: { category, change:$route.query.change } }" 
                     :class="($route.query.category || 'Text to Image') == category ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200'"
                     class="pl-4 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-gray-50 dark:hover:bg-gray-900 group flex gap-x-3 rounded-md p-2 text-sm leading-6 justify-between font-semibold"
                     >
