@@ -4,10 +4,10 @@ service: ubixar
 # Name of the container image.
 image: servicestack/ubixar.com
 
-# Required for use of ASP.NET Core with Kamal-Proxy.
+# Environment variables to set in the container.
 env:
   clear:
-    ASPNETCORE_FORWARDEDHEADERS_ENABLED: true
+    ASPNETCORE_FORWARDEDHEADERS_ENABLED: true # Required for use of ASP.NET Core with Kamal-Proxy.
 
 # Deploy to these servers.
 servers:
@@ -60,3 +60,24 @@ accessories:
     directories:
       - /opt/docker/ubixar.com/postgres:/var/lib/postgresql/data
       - /opt/docker/ubixar.com/initdb.d:/docker-entrypoint-initdb.d
+  backup:
+    image: ghcr.io/servicestack/backup-postgres:latest
+    host: 5.78.128.205
+    env:
+      clear:
+        POSTGRES_HOST: postgres
+        POSTGRES_USER: postgres
+        POSTGRES_DB: ubixar
+        BACKUP_INTERVAL: 86400  # 24 hours
+        RETENTION_DAYS: 7       # Keep local backups for 7 days
+        S3_RETENTION_DAYS: 30   # Keep S3 backups for 30 days
+        S3_BUCKET: backups
+        S3_PREFIX: ubixar
+        AWS_DEFAULT_REGION: auto
+      secret:
+        - POSTGRES_PASSWORD
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - AWS_ENDPOINT_URL
+    directories:
+      - /opt/docker/ubixar.com/backups:/backups
