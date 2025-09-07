@@ -64,6 +64,15 @@ public class GetUserAvatar : IGet, IReturn<byte[]>
 }
 
 [Tag(Tags.Artifacts)]
+[Route("/avatars/{**Path}")]
+public class GetAvatarFile : IGet, IReturn<byte[]>
+{
+    [ValidateNotEmpty]
+    public string Path { get; set; } = null!;
+    public bool? Download { get; set; }
+}
+
+[Tag(Tags.Artifacts)]
 [Route("/artifacts/{**Path}")]
 public class GetArtifact : IGet, IReturn<byte[]>
 {

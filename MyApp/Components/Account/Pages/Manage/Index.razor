@@ -12,6 +12,7 @@
 @inject IdentityRedirectManager RedirectManager
 @inject IWebHostEnvironment WebHostEnvironment
 @inject ServiceStack.Data.IDbConnectionFactory DbFactory
+@inject AppConfig AppConfig
 
 <PageTitle>Profile</PageTitle>
 
@@ -175,7 +176,7 @@
     private async Task<string> SaveAvatarAsync(IBrowserFile file, string currentUsername)
     {
         var relativePath = $"/avatars/{currentUsername[..2]}/{currentUsername}.webp";
-        var avatarPath = WebHostEnvironment.WebRootPath.CombineWith(relativePath);
+        var avatarPath = AppConfig.AppDataPath.CombineWith(relativePath);
 
         avatarPath.LastLeftPart('/').AssertDir();
 

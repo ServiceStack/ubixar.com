@@ -43,7 +43,7 @@ public partial class AppHost() : AppHostBase("ubixar.com"), IHostingStartup
             services.AddSingleton<AgentEventsManager>();
             
             // Optional: Enable Managed File Uploads: https://docs.servicestack.net/locode/files-overview
-            var fileFs = new FileSystemVirtualFiles(context.HostingEnvironment.ContentRootPath);
+            var fileFs = new FileSystemVirtualFiles(appConfig.AppDataPath);
             services.AddPlugin(new FilesUploadFeature(
                 // User writable, public readable
                 new UploadLocation("avatars", 

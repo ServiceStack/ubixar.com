@@ -62,11 +62,6 @@
         <Content Include="_videos\**" CopyToPublishDirectory="PreserveNewest"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="App_Data\artifacts\" />
-      <Folder Include="App_Data\files\" />
-    </ItemGroup>
-
     <Target Name="tailwind" BeforeTargets="Publish">
         <Exec Command="bun run ui:build" WorkingDirectory="./" />
     </Target>

@@ -54,6 +54,16 @@ public class FileServices(
         return new HttpResult(Svg.GetImage(Svg.Icons.Users), MimeTypes.ImageSvg);
     }
 
+    public object Any(GetAvatarFile request)
+    {
+        var filePath = appData.Config.AppDataPath.CombineWith("avatars", request.Path);
+        if (!File.Exists(filePath))
+            throw HttpError.NotFound($"Avatar not found: {filePath}");
+
+        return new HttpResult(new FileInfo(filePath),
+            asAttachment:request.Download == true);
+    }
+
     public object Any(GetArtifact request)
     {
         var filePath = appData.Config.ArtifactsPath.CombineWith(request.Path[..2], request.Path);
