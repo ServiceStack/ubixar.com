@@ -45,7 +45,7 @@ public class FileServices(
     
     public async Task<HttpResult> GetProfileImageResultAsync(string profilePath)
     {
-        var localProfilePath = appData.WebRootPath.CombineWith(profilePath);
+        var localProfilePath = appData.Config.AppDataPath.CombineWith(profilePath);
         var file = new FileInfo(localProfilePath);
         if (file.Exists)
         {
