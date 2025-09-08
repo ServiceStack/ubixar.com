@@ -211,7 +211,7 @@ export default {
                             <div v-for="input in advancedInputs" class="flex flex-col space-y-1" :class="input.type === 'String' && input.multiline ? 'col-span-2 row-span-2' : ''">
                                 <label :for="input.name" class="text-sm font-medium text-gray-700 dark:text-gray-300" :class="input.tooltip ? 'cursor-help' : ''" :title="input.tooltip">{{input.label}}</label>
                                 <textarea v-if="input.type === 'String' && input.multiline" spellcheck="false"
-                                    :id="input.name" :name="input.name" rows="5"
+                                    :id="input.name" :name="input.name" rows="5" :placeholder="input.placeholder || ''"
                                     v-model="workflowArgs[input.name]"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     @keydown.ctrl.enter.prevent="runWorkflow"></textarea>
@@ -219,6 +219,7 @@ export default {
                                     v-model="workflowArgs[input.name]"
                                     :id="input.name"
                                     type="text"
+                                    :placeholder="input.placeholder || ''"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                 <input v-else-if="input.type === 'Int' || input.type === 'Float'"
                                     v-model="workflowArgs[input.name]"
@@ -227,6 +228,7 @@ export default {
                                     :step="input.step ?? 1"
                                     :min="input.min ?? 0"
                                     :max="input.name === 'batch_size' ? 8 : input.max ?? Number.MAX_SAFE_INTEGER"
+                                    :placeholder="input.placeholder || ''"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     @keydown.enter.prevent="runWorkflow">
                                 <select v-else-if="input.type === 'Enum'"
