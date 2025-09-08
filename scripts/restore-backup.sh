@@ -158,21 +158,26 @@ restore_from_local() {
             return 1
         fi
 
-        if kamal server exec "docker exec $postgres_id psql -U postgres -c \"CREATE DATABASE ubixar;\""; then
-            log "Database recreated successfully"
+        # Create ubixar user if it doesn't exist
+        log "Ensuring ubixar user exists..."
+        kamal server exec "docker exec $postgres_id psql -U postgres -c \"CREATE USER ubixar WITH PASSWORD '\$POSTGRES_PASSWORD';\"" 2>/dev/null || log "ubixar user already exists or creation failed (continuing...)"
+
+        # Create database with ubixar as owner
+        if kamal server exec "docker exec $postgres_id psql -U postgres -c \"CREATE DATABASE ubixar OWNER ubixar;\""; then
+            log "Database recreated successfully with ubixar as owner"
         else
             log "ERROR: Failed to create database"
             return 1
         fi
 
         log "Restoring database from $sql_file..."
-        if kamal server exec "docker exec $postgres_id psql -U postgres -d ubixar -f /tmp/$sql_file"; then
+        if kamal server exec "docker exec $postgres_id bash -c 'PGPASSWORD=\$POSTGRES_PASSWORD psql -U ubixar -d ubixar -f /tmp/$sql_file'"; then
             log "Database restore successful"
 
             # Verify the restore by checking table count
             log "Verifying restore..."
             local table_count
-            table_count=$(kamal server exec "docker exec $postgres_id psql -U postgres -d ubixar -t -c \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';\"" 2>/dev/null | tr -d ' \n' || echo "0")
+            table_count=$(kamal server exec "docker exec $postgres_id bash -c 'PGPASSWORD=\$POSTGRES_PASSWORD psql -U ubixar -d ubixar -t -c \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = \\\"public\\\";\"'" 2>/dev/null | tr -d ' \n' || echo "0")
             log "Restored database contains $table_count tables"
 
             # Clean up
