@@ -308,7 +308,7 @@ public class ComfyWorkflowParser
                 Step = 0.01m,
             });
         });
-        
+
         var loadCheckpointNode = nodes.FirstOrDefault(n => n["type"]?.ToString() is
             "CheckpointLoaderSimple" or "unCLIPCheckpointLoader" or "CheckpointLoader" or "ImageOnlyCheckpointLoader" or
             "CreateHookModelAsLora" or "CreateHookModelAsLoraModelOnly" or "CheckpointLoader|pysssss");
@@ -538,11 +538,102 @@ public class ComfyWorkflowParser
                 Upload = true,
             });
         });
+        
+        IfNodeType("VibeVoiceSingleSpeakerNode", 10, (node, widgetValues) =>
+        {
+            var nodeType = "VibeVoiceSingleSpeakerNode";
+            var nodeId = Convert.ToInt32(node["id"]);
+            inputs.Add(new ComfyInputDefinition
+            {
+                ClassType = nodeType,
+                NodeId = nodeId,
+                ValueIndex = 0,
+                Name = "text",
+                Label = "Text",
+                Type = ComfyInputType.String,
+                Tooltip = "Text to convert to speech. Gets disabled when connected to another node.",
+                Placeholder = "Text to convert to speech",
+                Multiline = true,
+                Default = widgetValues[0]
+            });
+            inputs.Add(new ComfyInputDefinition
+            {
+                ClassType = nodeType,
+                NodeId = nodeId,
+                ValueIndex = 4,
+                Name = "diffusion_steps",
+                Label = "Diffusion Steps",
+                Type = ComfyInputType.Int,
+                Default = Convert.ToInt32(widgetValues[4]),
+                Min = 5,
+                Max = 100,
+                Tooltip = "The number of steps used in the denoising process.",
+            });
+            inputs.Add(new ComfyInputDefinition
+            {
+                ClassType = nodeType,
+                NodeId = nodeId,
+                ValueIndex = 5,
+                Name = "seed",
+                Label = "Seed",
+                Type = ComfyInputType.Int,
+                Default = widgetValues[5],
+                Min = 0,
+                Max = 4294967295,
+                ControlAfterGenerate = true,
+                Tooltip = "Random seed for generation. Default 42 is used in official examples.",
+            });
+            inputs.Add(new ComfyInputDefinition
+            {
+                ClassType = nodeType,
+                NodeId = nodeId,
+                ValueIndex = 7,
+                Name = "cfg_scale",
+                Label = "CFG Scale",
+                Type = ComfyInputType.Float,
+                Default = Convert.ToDecimal(widgetValues[7]),
+                Min = 1,
+                Max = 2,
+                Step = 0.05m,
+                Round = 0.01m,
+                Tooltip = "Classifier-free guidance scale (official default: 1.3)",
+            });
+            inputs.Add(new ComfyInputDefinition
+            {
+                ClassType = nodeType,
+                NodeId = nodeId,
+                ValueIndex = 9,
+                Name = "temperature",
+                Label = "Temperature",
+                Type = ComfyInputType.Float,
+                Default = Convert.ToDecimal(widgetValues[9]),
+                Min = 1,
+                Max = 2,
+                Step = 0.05m,
+                Round = 0.01m,
+                Tooltip = "Only used when sampling is enabled",
+            });
+            inputs.Add(new ComfyInputDefinition
+            {
+                ClassType = nodeType,
+                NodeId = nodeId,
+                ValueIndex = 10,
+                Name = "top_p",
+                Label = "Top P",
+                Type = ComfyInputType.Float,
+                Default = Convert.ToDecimal(widgetValues[10]),
+                Min = 1,
+                Max = 2,
+                Step = 0.05m,
+                Round = 0.01m,
+                Tooltip = "Only used when sampling is enabled",
+            });
+        });
 
         foreach (var node in nodes)
         {
-            var nodeType = node.GetValueOrDefault("type") as string;
-            if (nodeType == null) continue;
+            if (node.GetValueOrDefault("type") is not string nodeType) 
+                continue;
 
             var nodeId = Convert.ToInt32(node["id"]);
             nodeDefs.TryGetValue(nodeType, out var nodeDef);
@@ -856,7 +947,7 @@ public class ComfyWorkflowParser
     public static List<(string[], ComfyPrimarySource)> OutputSourceMappings { get; set; } =
     [
         (["PreviewImage", "SaveImage"], ComfyPrimarySource.Image),
-        (["SaveAudio", "SaveAudioMP3", "SaveAudioOpus"], ComfyPrimarySource.Audio),
+        (["SaveAudio", "SaveAudioMP3", "SaveAudioOpus", "PreviewAudio"], ComfyPrimarySource.Audio),
         (["SaveVideo", "SaveWEBM","SaveAnimatedWEBP"], ComfyPrimarySource.Video),
         (["SaveText|pysssss","TT-WhisperTranscription"], ComfyPrimarySource.Text),
         (["VAEDecode"], ComfyPrimarySource.Image),

@@ -90,10 +90,19 @@ public class NodeComfyWorkflowConverter(ILogger<NodeComfyWorkflowConverter> log,
             ? appData.GetDeviceObjectInfoPath(agent.DeviceId)
             : appData.DefaultObjectInfoPath;
         var workflowPath = appData.WorkflowsPath.CombineWith(workflowVersion.Path);
-        var promptJson = await CreateApiPromptJsonAsync(appData.ContentRootPath!, appData.Config.BunExePath!, 
-            nodeDefinitionPath, workflowPath);
-        var apiPrompt = ConvertToApiPrompt(promptJson, clientId, workflow);
-        return new ApiPromptResult(apiPrompt, workflow, promptJson);
+        try
+        {
+            var promptJson = await CreateApiPromptJsonAsync(appData.ContentRootPath!, appData.Config.BunExePath!, 
+                nodeDefinitionPath, workflowPath);
+            var apiPrompt = ConvertToApiPrompt(promptJson, clientId, workflow);
+            return new ApiPromptResult(apiPrompt, workflow, promptJson);
+        }
+        catch (Exception e)
+        {
+            log.LogError(e, "{BunExePath} ./to-api-prompt.ts {DefinitionPath} {WorkflowPath}", 
+                appData.Config.BunExePath, nodeDefinitionPath.Quoted(), workflowPath.Quoted());
+            throw;
+        }
     }
 
     public static ApiPrompt ConvertToApiPrompt(string promptJson, string? clientId = null, Dictionary<string,object?>? workflow = null)

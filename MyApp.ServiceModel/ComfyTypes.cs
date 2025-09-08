@@ -160,6 +160,7 @@ public class ComfyInputDefinition
     public bool? Upload { get; set; }
     public string[]? EnumValues { get; set; }
     public Dictionary<string, object>? ComboValues { get; set; }
+    public string? Placeholder { get; set; }
 }
 
 public class Workflow : AuditBase

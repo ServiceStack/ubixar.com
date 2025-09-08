@@ -173,6 +173,20 @@ public class ComfyWorkflowParseTests : TestBase
     }
 
     [Test]
+    public void Can_parse_VibeVoice_SingleSpeaker_Workflow()
+    {
+        var workflowPath = "./workflows/audio-to-audio/VibeVoice1.5B-Single-Speaker.json";
+        var workflowJson = File.ReadAllText(workflowPath);
+        var workflow = ComfyWorkflowParser.Parse(workflowJson.ParseAsObjectDictionary(), workflowPath.LastRightPart('/'), NodeDefs) ?? throw new Exception($"Could not parse {workflowPath}");
+        var inputNames = workflow.Inputs.Map(x => x.Name);
+        workflow.PrintDump();
+        inputNames.PrintDump();
+        Assert.That(workflow.Type, Is.EqualTo(ComfyWorkflowType.AudioToAudio));
+        Assert.That(workflow.CustomNodes[0], Is.EqualTo("Enemyx-net/VibeVoice-ComfyUI"));
+        Assert.That(inputNames,Is.EquivalentTo("audio,text,diffusion_steps,seed,cfg_scale,temperature,top_p".Split(',')));
+    }
+
+    [Test]
     public void Can_parse_florence2_Workflow()
     {
         var workflowPath = "./workflows/image-to-text/florence2.json";

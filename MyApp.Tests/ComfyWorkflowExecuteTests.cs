@@ -387,6 +387,16 @@ public class ComfyWorkflowExecuteTests : TestBase
         Console.WriteLine(responseJson);
     }
 
+    [Test]
+    public async Task Can_execute_VibeVoice_AudioToAudio_Workflow()
+    {
+        var promptJson = await CreateApiPromptJson("audio-to-audio/VibeVoice1.5B-Single-Speaker.json");
+        Console.WriteLine(promptJson);
+
+        var responseJson = await ExecutePrompt(promptJson);
+        Console.WriteLine(responseJson);
+    }
+
     [Ignore("Requires TT-LoadAudio")]
     [Test]
     public async Task Can_execute_SD15_pruned_emaonly_AudioToText_Workflow()

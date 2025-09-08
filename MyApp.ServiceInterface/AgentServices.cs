@@ -274,16 +274,16 @@ public class AgentServices(ILogger<AgentServices> log,
                 if (nextGenerations.Length > 0)
                 {
                     ret.Results.AddRange(nextGenerations.Map(x => x.ToExecWorkflow()));
-                    log.LogInformation("⏱️👉️️ GetComfyAgentEvents⏱: {DeviceId} - assigned {Count} new Generation Requests ({GenerationsCount} Generations, {AiTasksCount} AI Tasks):\n{GenerationIds}", 
+                    log.LogInformation("⏱ ️👉️️ GetComfyAgentEvents⏱: {DeviceId} - assigned {Count} new Generation Requests ({GenerationsCount} Generations, {AiTasksCount} AI Tasks):\n{GenerationIds}", 
                         agent.DeviceId, ret.Results.Count, agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count, nextGenerations.Map(x => x.Id).Join(", "));
                     return ret;
                 }
 
-                log.LogInformation("⏱️👉 GetComfyAgentEvents: {DeviceId} 📬 {QueueCount} - timed out ({GenerationsCount} Generations, {AiTasksCount} AI Tasks)", 
+                log.LogInformation("⏱ ️👉 GetComfyAgentEvents: {DeviceId} 📬 {QueueCount} - timed out ({GenerationsCount} Generations, {AiTasksCount} AI Tasks)", 
                     agent.DeviceId, agent.QueueCount, agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count);
                 
                 var results = agentManager.RequeueCaptionTasks(db, userId, take:100);
-                log.LogInformation("⏱️Requeued {Count} caption tasks{Details}", results.Count,
+                log.LogInformation("⏱️ Requeued {Count} caption tasks{Details}", results.Count,
                     results.Count > 0 ? ":\n" + string.Join("\n", results) : "");
                 
                 return ret;

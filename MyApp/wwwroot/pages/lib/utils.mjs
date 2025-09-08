@@ -149,7 +149,7 @@ export const WorkflowGroups = [
     },
     {
         name: 'Audio',
-        categories: ['Audio to Text', 'Text to Audio']
+        categories: ['Audio to Text', 'Text to Audio', 'Audio to Audio']
     },
     {
         name: 'Video',

@@ -33,7 +33,8 @@ export default {
                 type="text" spellcheck="false"
                 v-model="workflowArgs.positivePrompt"
                 :placeholder="hasInput('positivePrompt') ? 'Enter your prompt...' : 'Description for this generation...'"
-                class="w-full h-[12rem] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :class="hasInput('positivePrompt') ? 'h-48' : 'h-24'"
                 :disabled="!selectedWorkflow"
                 @keydown.ctrl.enter.prevent="runWorkflow"
             />
@@ -195,7 +196,7 @@ export default {
 
                 <!-- Advanced Controls Toggle -->
                 <div v-if="advancedInputs.length" class="mt-4">
-                    <button @click="setPrefs({ showAdvanced: !prefs.showAdvanced })" type="button"
+                    <button v-if="hasInput('positivePrompt')"  @click="setPrefs({ showAdvanced: !prefs.showAdvanced })" type="button"
                         class="flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path v-if="prefs.showAdvanced" fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
@@ -205,7 +206,7 @@ export default {
                     </button>
 
                     <!-- Advanced Inputs -->
-                    <div v-show="prefs.showAdvanced" class="mt-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+                    <div v-show="prefs.showAdvanced || !hasInput('positivePrompt')" class="mt-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div v-for="input in advancedInputs" class="flex flex-col space-y-1" :class="input.type === 'String' && input.multiline ? 'col-span-2 row-span-2' : ''">
                                 <label :for="input.name" class="text-sm font-medium text-gray-700 dark:text-gray-300" :class="input.tooltip ? 'cursor-help' : ''" :title="input.tooltip">{{input.label}}</label>
