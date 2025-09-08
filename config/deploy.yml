@@ -30,7 +30,7 @@ proxy:
   forward_headers: true
   buffering:
     requests: false
-    responses: true
+    responses: false
     
 # Credentials for your image host.
 registry:
