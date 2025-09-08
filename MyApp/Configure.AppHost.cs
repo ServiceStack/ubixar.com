@@ -76,7 +76,10 @@ public partial class AppHost() : AppHostBase("ubixar.com"), IHostingStartup
         .ConfigureAppHost(afterConfigure: appHost =>
         {
             appHost.SetConfig(new() {
-                AdminAuthSecret = Environment.GetEnvironmentVariable("AI_SERVER_API_KEY")
+                AdminAuthSecret = Environment.GetEnvironmentVariable("AI_SERVER_API_KEY"),
+                GlobalResponseHeaders = {
+                    ["X-Accel-Buffering"] = "no"
+                }
             });
             
             var services = appHost.GetApplicationServices();
