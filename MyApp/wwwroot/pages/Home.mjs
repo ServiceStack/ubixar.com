@@ -112,6 +112,10 @@ export default {
             </div>
         </div>
     </div>
+    <footer class="mt-12 mb-2 text-sm text-center text-gray-400 dark:text-gray-600">
+      site design © {{new Date().getFullYear()}} <a class="underline hover:text-sky-500" href="https://servicestack.net">ServiceStack Inc</a>; user contributions licensed under
+      <a class="underline hover:text-sky-500" href="/licensing">CC BY-SA</a>
+    </footer>
     `,
     setup() {
         const store = inject('store')
