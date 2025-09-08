@@ -135,7 +135,7 @@ public class NodeComfyWorkflowConverter(ILogger<NodeComfyWorkflowConverter> log,
         {
             WorkingDirectory = contentRootPath,
             FileName = exePath,
-            Arguments = $"./to-api-prompt.ts {nodeDefinitionPath.Quoted()} {workflowPath.Quoted()}",
+            Arguments = $"./src/to-api-prompt.ts {nodeDefinitionPath.Quoted()} {workflowPath.Quoted()}",
         };
         var sb = StringBuilderCache.Allocate();
         var sbError = StringBuilderCacheAlt.Allocate();

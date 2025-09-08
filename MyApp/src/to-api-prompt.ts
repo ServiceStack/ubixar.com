@@ -5,9 +5,9 @@ import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import {
     ComfyWorkflowJSON,
     validateComfyWorkflow
-} from './src/schemas/comfyWorkflowSchema'
+} from './schemas/comfyWorkflowSchema'
 
-import { graphToPrompt } from "./src/utils/executionUtil"
+import { graphToPrompt } from "./utils/executionUtil"
 
 // Mock node classes based on the object info
 function createMockNodeClass(nodeType: string, nodeInfo: any) {

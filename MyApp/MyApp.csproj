@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Watch Include="**\*.js;**\*.mjs;**\*.css;**\*.razor;**\*.html" Exclude="App_Data\**" />
+        <Watch Include="**\*.js;**\*.mjs;**\*.ts;**\*.css;**\*.razor;**\*.html" Exclude="App_Data\**" />
     </ItemGroup>
     
     <ItemGroup>
@@ -60,6 +60,7 @@
         <Content Include="_pages\**" CopyToPublishDirectory="PreserveNewest"/>
         <Content Include="_posts\*.md" CopyToPublishDirectory="PreserveNewest"/>
         <Content Include="_videos\**" CopyToPublishDirectory="PreserveNewest"/>
+        <Content Include="src\**" CopyToPublishDirectory="PreserveNewest"/>
     </ItemGroup>
 
     <Target Name="tailwind" BeforeTargets="Publish">
