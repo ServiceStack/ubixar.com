@@ -5,13 +5,13 @@ This directory contains deployment and maintenance scripts for the ubixar.com ap
 ## Backup & Restore Scripts
 
 ### `restore-backup.sh` ⭐ **Main Restore Script**
-PostgreSQL backup restoration script that runs locally and orchestrates restore operations using the running PostgreSQL container.
+PostgreSQL backup restoration script that runs locally and orchestrates restore operations using the running PostgreSQL container. **Simplified to only restore from local backups.**
 
 **Features:**
-- Interactive mode with backup listing from both local and S3/R2 sources
+- Interactive mode with local backup listing
 - Command-line mode for automation and scripting
 - Automatic pre-restore backup creation (safety backup before restore)
-- Support for both local backups and S3/Cloudflare R2 backups
+- Local backup restoration only (simplified workflow)
 - Database connection validation before proceeding
 - Comprehensive logging with timestamps for troubleshooting
 - Direct container execution (avoids `kamal accessory exec` limitations)
@@ -19,26 +19,105 @@ PostgreSQL backup restoration script that runs locally and orchestrates restore 
 
 **Usage:**
 ```bash
-# Interactive mode (recommended - shows available backups and prompts for confirmation)
+# Interactive mode (recommended - shows available local backups and prompts for confirmation)
 ./scripts/restore-backup.sh
 
 # Command line mode - restore from local backup
-./scripts/restore-backup.sh backup_20250907_144608.sql.gz local
-
-# Command line mode - restore from S3/R2 backup
-./scripts/restore-backup.sh backup_20250907_144608.sql.gz s3
+./scripts/restore-backup.sh backup_20250907_144608.sql.gz
 
 # Show help and usage information
 ./scripts/restore-backup.sh --help
 ```
 
-### `setup-restore.sh` 📄 **Legacy Script (Not Used)**
+### `download-backup.sh` 📥 **Backup Download Script**
+Downloads backups from S3/Cloudflare R2 to local storage, making them available for restoration.
+
+**Features:**
+- Interactive mode with S3 backup listing
+- Command-line mode for automation
+- Checks for existing local backups before overwriting
+- Downloads directly to local backup directory
+- Comprehensive logging and error handling
+
+**Usage:**
+```bash
+# Interactive mode (shows available S3 backups)
+./scripts/download-backup.sh
+
+# Command line mode - download specific backup
+./scripts/download-backup.sh backup_20250907_144608.sql.gz
+
+# Show help and usage information
+./scripts/download-backup.sh --help
+```
+
+### `delete-backup.sh` 🗑️ **Backup Delete Script**
+Safely removes local backup files with confirmation prompts and batch deletion support.
+
+**Features:**
+- Interactive mode with local backup listing
+- Command-line mode for single file deletion
+- Batch mode for deleting multiple files
+- Safety confirmations before deletion
+- Filename validation and error handling
+- Shows remaining backups after deletion
+
+**Usage:**
+```bash
+# Interactive mode (shows available local backups)
+./scripts/delete-backup.sh
+
+# Command line mode - delete specific backup
+./scripts/delete-backup.sh backup_20250907_144608.sql.gz
+
+# Batch mode - delete multiple backups interactively
+./scripts/delete-backup.sh --batch
+
+# Show help and usage information
+./scripts/delete-backup.sh --help
+```
+
+### Other Scripts
+
+#### `setup-restore.sh` 📄 **Legacy Script (Not Used)**
 This script was part of the original approach that tried to install restore scripts into containers. It's kept for reference but is not needed with the current working solution.
 
-### `restore-script.sh` 📄 **Template Script (Not Used)**
+#### `restore-script.sh` 📄 **Template Script (Not Used)**
 Original restore script template that was designed to run inside containers. The current `restore-backup.sh` incorporates this functionality but runs locally instead.
 
 ## Quick Start
+
+### **Complete Backup Management Workflow**
+
+#### **Step 1: Download Remote Backup (if needed)**
+```bash
+# Interactive download (shows available S3 backups)
+./scripts/download-backup.sh
+
+# Command-line download
+./scripts/download-backup.sh backup_20250907_144608.sql.gz
+```
+
+#### **Step 2: Restore from Local Backup**
+```bash
+# Interactive restore (safest - shows local backups, creates pre-restore backup, asks for confirmation)
+./scripts/restore-backup.sh
+
+# Command-line restore from local backup
+./scripts/restore-backup.sh backup_20250907_144608.sql.gz
+```
+
+#### **Step 3: Clean Up Old Backups (optional)**
+```bash
+# Interactive delete (shows available local backups)
+./scripts/delete-backup.sh
+
+# Command-line delete
+./scripts/delete-backup.sh backup_20250907_144608.sql.gz
+
+# Batch delete multiple backups
+./scripts/delete-backup.sh --batch
+```
 
 ### **List Available Backups**
 ```bash
@@ -49,26 +128,17 @@ kamal server exec "ls -la /opt/docker/ubixar.com/backups/"
 kamal server exec "docker exec \$(docker ps --filter 'name=backup' --format '{{.ID}}' | head -1) aws s3 ls s3://backups/ubixar/ --endpoint-url \$AWS_ENDPOINT_URL"
 ```
 
-### **Restore Database (Recommended Method)**
-```bash
-# Interactive restore (safest - shows backups, creates pre-restore backup, asks for confirmation)
-./scripts/restore-backup.sh
-
-# Command-line restore from local backup
-./scripts/restore-backup.sh backup_20250907_144608.sql.gz local
-
-# Command-line restore from S3/R2 backup
-./scripts/restore-backup.sh backup_20250907_144608.sql.gz s3
-```
-
 ### **Direct Commands (Advanced Users)**
-If you prefer to run restore commands directly without the script:
+If you prefer to run commands directly without the scripts:
 
 ```bash
-# Get PostgreSQL container ID
-POSTGRES_ID=$(kamal server exec "docker ps --filter 'name=postgres' --format '{{.ID}}' | head -1" | grep -E '^[a-f0-9]{12}$')
+# Download from S3 (if needed)
+BACKUP_ID=$(kamal server exec "docker ps --filter 'name=backup' --format '{{.ID}}' | head -1")
+kamal server exec "docker exec $BACKUP_ID aws s3 cp s3://backups/ubixar/backup_20250907_144608.sql.gz /tmp/ --endpoint-url \$AWS_ENDPOINT_URL"
+kamal server exec "docker cp $BACKUP_ID:/tmp/backup_20250907_144608.sql.gz /opt/docker/ubixar.com/backups/"
 
-# Local restore
+# Restore from local backup
+POSTGRES_ID=$(kamal server exec "docker ps --filter 'name=postgres' --format '{{.ID}}' | head -1" | grep -E '^[a-f0-9]{12}$')
 kamal server exec "docker cp /opt/docker/ubixar.com/backups/backup_20250907_144608.sql.gz $POSTGRES_ID:/tmp/"
 kamal server exec "docker exec $POSTGRES_ID gunzip /tmp/backup_20250907_144608.sql.gz"
 kamal server exec "docker exec $POSTGRES_ID psql -U postgres -d ubixar -f /tmp/backup_20250907_144608.sql"

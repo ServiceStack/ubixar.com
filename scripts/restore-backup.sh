@@ -12,33 +12,33 @@ log() {
 
 # Function to show usage
 show_usage() {
-    echo "PostgreSQL Backup Restore Tool for Kamal"
+    echo "PostgreSQL Backup Restore Tool for Kamal (Local Backups Only)"
     echo ""
-    echo "Usage: $0 [backup_file] [source]"
+    echo "Usage: $0 [backup_file]"
     echo ""
     echo "Parameters:"
-    echo "  backup_file  - Name of the backup file (e.g., backup_20250907_144608.sql.gz)"
-    echo "  source       - 'local' or 's3' (default: local)"
+    echo "  backup_file  - Name of the local backup file (e.g., backup_20250907_144608.sql.gz)"
     echo ""
     echo "Examples:"
-    echo "  $0 backup_20250907_144608.sql.gz local"
-    echo "  $0 backup_20250907_144608.sql.gz s3"
+    echo "  $0 backup_20250907_144608.sql.gz"
     echo ""
     echo "Interactive mode (no parameters):"
     echo "  $0"
+    echo ""
+    echo "Note: This script only restores from local backups."
+    echo "To download a remote backup from S3, use: ./download-backup.sh [backup_file]"
 }
 
-# Function to list available backups
+# Function to list available local backups
 list_backups() {
-    echo "=== Available Backups ==="
+    echo "=== Available Local Backups ==="
     echo ""
 
     echo "Local backups:"
     kamal server exec "ls -la /opt/docker/ubixar.com/backups/*.sql.gz 2>/dev/null || echo '  No local backups found'"
 
     echo ""
-    echo "S3 backups (last 10):"
-    kamal server exec "docker exec \$(docker ps --filter 'name=backup' --format '{{.ID}}' | head -1) bash -c 'aws s3 ls s3://backups/ubixar/ --endpoint-url \$AWS_ENDPOINT_URL 2>/dev/null | tail -10 || echo \"  Could not list S3 backups\"'"
+    echo "To download a backup from S3, use: ./download-backup.sh [backup_file]"
     echo ""
 }
 
@@ -108,6 +108,7 @@ restore_from_local() {
     log "Checking if local backup exists..."
     if ! kamal server exec "test -f /opt/docker/ubixar.com/backups/$backup_file"; then
         log "ERROR: Local backup file not found: $backup_file"
+        log "To download this backup from S3, run: ./download-backup.sh $backup_file"
         return 1
     fi
 
@@ -137,11 +138,43 @@ restore_from_local() {
 
     # Use direct commands approach
     log "Decompressing backup file..."
+
+    # Clean up any existing decompressed files first
+    local sql_file="${backup_file%.gz}"
+    kamal server exec "docker exec $postgres_id rm -f /tmp/$sql_file" 2>/dev/null || true
+
     if kamal server exec "docker exec $postgres_id gunzip /tmp/$backup_file"; then
-        local sql_file="${backup_file%.gz}"
+        log "Dropping and recreating database to ensure clean restore..."
+
+        # Terminate any active connections to the database
+        log "Terminating active connections to ubixar database..."
+        kamal server exec "docker exec $postgres_id psql -U postgres -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'ubixar' AND pid <> pg_backend_pid();\"" 2>/dev/null || true
+
+        # Drop and recreate the database to ensure clean restore
+        if kamal server exec "docker exec $postgres_id psql -U postgres -c \"DROP DATABASE IF EXISTS ubixar;\""; then
+            log "Database dropped successfully"
+        else
+            log "ERROR: Failed to drop database"
+            return 1
+        fi
+
+        if kamal server exec "docker exec $postgres_id psql -U postgres -c \"CREATE DATABASE ubixar;\""; then
+            log "Database recreated successfully"
+        else
+            log "ERROR: Failed to create database"
+            return 1
+        fi
+
         log "Restoring database from $sql_file..."
         if kamal server exec "docker exec $postgres_id psql -U postgres -d ubixar -f /tmp/$sql_file"; then
             log "Database restore successful"
+
+            # Verify the restore by checking table count
+            log "Verifying restore..."
+            local table_count
+            table_count=$(kamal server exec "docker exec $postgres_id psql -U postgres -d ubixar -t -c \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';\"" 2>/dev/null | tr -d ' \n' || echo "0")
+            log "Restored database contains $table_count tables"
+
             # Clean up
             kamal server exec "docker exec $postgres_id rm -f /tmp/$sql_file" 2>/dev/null || true
         else
@@ -162,73 +195,48 @@ rm -f /tmp/$backup_file /tmp/\${backup_file%.gz}"
     return 0
 }
 
-# Function to restore from S3
-restore_from_s3() {
-    local backup_file="$1"
-    local s3_path="s3://backups/ubixar/$backup_file"
 
-    log "Checking if S3 backup exists..."
-    if ! kamal server exec "docker exec \$(docker ps --filter 'name=backup' --format '{{.ID}}' | head -1) bash -c 'aws s3 ls $s3_path --endpoint-url \$AWS_ENDPOINT_URL > /dev/null 2>&1'"; then
-        log "ERROR: S3 backup file not found: $s3_path"
-        return 1
-    fi
-
-    log "Restoring from S3: $s3_path"
-    log "Method: Download to postgres container and restore directly"
-
-    # Download to postgres container and restore there (avoids network issues)
-    if kamal server exec "POSTGRES_ID=\$(docker ps --filter 'name=postgres' --format '{{.ID}}' | head -1) && BACKUP_ID=\$(docker ps --filter 'name=backup' --format '{{.ID}}' | head -1) && docker exec \$BACKUP_ID bash -c 'aws s3 cp $s3_path /tmp/$backup_file --endpoint-url \$AWS_ENDPOINT_URL' && docker cp \$BACKUP_ID:/tmp/$backup_file \$POSTGRES_ID:/tmp/ && docker exec \$POSTGRES_ID bash -c 'gunzip -c /tmp/$backup_file | PGPASSWORD=\$POSTGRES_PASSWORD psql -U postgres -d ubixar -q && rm /tmp/$backup_file' && docker exec \$BACKUP_ID rm /tmp/$backup_file"; then
-        log "S3 restore completed successfully"
-        return 0
-    else
-        log "ERROR: S3 restore failed"
-        return 1
-    fi
-}
 
 # Function for interactive mode
 interactive_mode() {
-    echo "=== Interactive Restore Mode ==="
+    echo "=== Interactive Restore Mode (Local Backups Only) ==="
     echo ""
-    
+
     list_backups
-    
+
     echo "Enter backup details:"
     read -p "Backup filename: " backup_file
-    read -p "Source [local/s3]: " source
-    
+
     if [ -z "$backup_file" ]; then
         log "ERROR: Backup filename is required"
         exit 1
     fi
-    
-    source=${source:-local}
-    
+
     echo ""
     echo "Restore Summary:"
     echo "  File: $backup_file"
-    echo "  Source: $source"
+    echo "  Source: local"
     echo "  Target: ubixar-postgres/ubixar"
     echo ""
-    
+
     read -p "This will OVERWRITE the current database. Continue? [yes/no]: " confirm
-    
+
     if [ "$confirm" != "yes" ]; then
         log "Restore cancelled by user"
         exit 0
     fi
-    
-    perform_restore "$backup_file" "$source"
+
+    perform_restore "$backup_file"
 }
 
 # Function to perform the actual restore
 perform_restore() {
     local backup_file="$1"
-    local source="$2"
-    
+
     log "Starting restore process..."
     log "Target: ubixar-postgres/ubixar"
-    
+    log "Source: local backup"
+
     # Test database connection
     log "Testing database connection..."
     local test_postgres_id
@@ -243,7 +251,7 @@ perform_restore() {
         log "ERROR: Cannot connect to PostgreSQL database"
         exit 1
     fi
-    
+
     # Create pre-restore backup
     if ! create_pre_restore_backup; then
         read -p "Could not create pre-restore backup. Continue anyway? [yes/no]: " continue_anyway
@@ -252,22 +260,9 @@ perform_restore() {
             exit 1
         fi
     fi
-    
-    # Perform restore based on source
-    case "$source" in
-        "local")
-            restore_from_local "$backup_file"
-            ;;
-        "s3")
-            restore_from_s3 "$backup_file"
-            ;;
-        *)
-            log "ERROR: Invalid source '$source'. Use 'local' or 's3'"
-            exit 1
-            ;;
-    esac
-    
-    if [ $? -eq 0 ]; then
+
+    # Perform restore from local backup
+    if restore_from_local "$backup_file"; then
         log "Restore completed successfully!"
     else
         log "Restore failed!"
@@ -284,11 +279,10 @@ main() {
     elif [ $# -eq 1 ] && [ "$1" = "--help" ]; then
         show_usage
         exit 0
-    elif [ $# -ge 1 ] && [ $# -le 2 ]; then
-        # Command line mode
+    elif [ $# -eq 1 ]; then
+        # Command line mode - single backup file argument
         backup_file="$1"
-        source="${2:-local}"
-        perform_restore "$backup_file" "$source"
+        perform_restore "$backup_file"
     else
         show_usage
         exit 1
