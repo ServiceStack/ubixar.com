@@ -132,6 +132,20 @@ public class ComfyWorkflowParseTests : TestBase
     }
 
     [Test]
+    public void Can_parse_JibMixRealistic_v18_Workflow()
+    {
+        var workflowPath = "./workflows/text-to-image/JibMixRealistic_v18.json";
+        var workflowJson = File.ReadAllText(workflowPath);
+        var workflow = ComfyWorkflowParser.Parse(workflowJson.ParseAsObjectDictionary(), workflowPath.LastRightPart('/'), NodeDefs) ?? throw new Exception($"Could not parse {workflowPath}");
+        var inputNames = workflow.Inputs.Map(x => x.Name);
+        workflow.Inputs.PrintDump();
+        var negativeInput = workflow.Inputs.First(x => x.Name == "negativePrompt");
+        Assert.That(negativeInput.Default, Does.StartWith("noisy, blurry, soft, deformed, ugly, drawing, painting, crayon"));
+        Assert.That(workflow.Type, Is.EqualTo(ComfyWorkflowType.TextToImage));
+        Assert.That(inputNames,Is.EquivalentTo("positivePrompt,negativePrompt,width,height,batch_size,seed,cfg,sampler_name,scheduler,steps,denoise".Split(',')));
+    }
+
+    [Test]
     public void Can_parse_all_SDXL_Workflows()
     {
         string[] workflows = [

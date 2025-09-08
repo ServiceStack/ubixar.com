@@ -1043,6 +1043,36 @@ public class ComfyWorkflowParser
         int negativeNodeId = -1;
         string? positiveNodeType = null;
         string? negativeNodeType = null;
+        
+        (int nodeId, string nodeType) ResolveConditioningNode(int linkId)
+        {
+            var sourceNodeId = GetSourceNodeFromLink(linkId, links);
+            var sourceNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+            
+            // If conditioning node is ConditioningSetAreaStrength, use its source text input node instead
+            if (sourceNodeType == "ConditioningSetAreaStrength")
+            {
+                var sourceNode = nodes.FirstOrDefault(n => n["id"] as int? == sourceNodeId);
+                if (sourceNode != null)
+                {
+                    if (sourceNode.GetValueOrDefault("inputs") is List<object> nodeInputs)
+                    {
+                        foreach (var nodeInput in nodeInputs.Select(i => (Dictionary<string, object?>)i))
+                        {
+                            if (nodeInput["name"]?.ToString() == "conditioning" && nodeInput["link"] != null)
+                            {
+                                linkId = Convert.ToInt32(nodeInput["link"]);
+                                var useNodeId = GetSourceNodeFromLink(linkId, links);
+                                var useNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                                return (useNodeId, useNodeType);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return (sourceNodeId, sourceNodeType);
+        }
 
         var kSamplerNode = nodes.FirstOrDefault(n => n["type"] is "KSampler");
         if (kSamplerNode != null)
@@ -1053,15 +1083,15 @@ public class ComfyWorkflowParser
                 {
                     if (input["name"]?.ToString() == "positive" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        positiveNodeId = GetSourceNodeFromLink(linkId, links);
-                        positiveNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        positiveNodeId = nodeId;
+                        positiveNodeType = nodeType;
                     }
                     else if (input["name"]?.ToString() == "negative" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        negativeNodeId = GetSourceNodeFromLink(linkId, links);
-                        negativeNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        negativeNodeId = nodeId;
+                        negativeNodeType = nodeType;
                     }
                 }
             }
@@ -1076,15 +1106,15 @@ public class ComfyWorkflowParser
                 {
                     if (input["name"]?.ToString() == "positive" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        positiveNodeId = GetSourceNodeFromLink(linkId, links);
-                        positiveNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        positiveNodeId = nodeId;
+                        positiveNodeType = nodeType;
                     }
                     else if (input["name"]?.ToString() == "negative" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        negativeNodeId = GetSourceNodeFromLink(linkId, links);
-                        negativeNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        negativeNodeId = nodeId;
+                        negativeNodeType = nodeType;
                     }
                 }
             }
@@ -1100,15 +1130,15 @@ public class ComfyWorkflowParser
                 {
                     if (input["name"]?.ToString() == "positive" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        positiveNodeId = GetSourceNodeFromLink(linkId, links);
-                        positiveNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        positiveNodeId = nodeId;
+                        positiveNodeType = nodeType;
                     }
                     else if (input["name"]?.ToString() == "negative" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        negativeNodeId = GetSourceNodeFromLink(linkId, links);
-                        negativeNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        negativeNodeId = nodeId;
+                        negativeNodeType = nodeType;
                     }
                 }
             }
@@ -1123,9 +1153,9 @@ public class ComfyWorkflowParser
                 {
                     if (input["name"]?.ToString() == "conditioning" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        positiveNodeId = GetSourceNodeFromLink(linkId, links);
-                        positiveNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        positiveNodeId = nodeId;
+                        positiveNodeType = nodeType;
                     }
                 }
             }
@@ -1140,15 +1170,15 @@ public class ComfyWorkflowParser
                 {
                     if (input["name"]?.ToString() == "text_l" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        positiveNodeId = GetSourceNodeFromLink(linkId, links);
-                        positiveNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        positiveNodeId = nodeId;
+                        positiveNodeType = nodeType;
                     }
                     else if (input["name"]?.ToString() == "text_g" && input["link"] != null)
                     {
-                        int linkId = Convert.ToInt32(input["link"]);
-                        negativeNodeId = GetSourceNodeFromLink(linkId, links);
-                        negativeNodeType = GetSourceNodeTypeFromLink(nodes, linkId, links);
+                        var (nodeId, nodeType) = ResolveConditioningNode(Convert.ToInt32(input["link"]));
+                        negativeNodeId = nodeId;
+                        negativeNodeType = nodeType;
                     }
                 }
             }
