@@ -804,7 +804,10 @@ public class AgentServices(ILogger<AgentServices> log,
                 var image = ollama.Images[i];
                 if (image.StartsWith('/') || image.StartsWith("../"))
                 {
-                    var imageBytes = File.ReadAllBytes(appData.ContentRootPath.CombineWith(image));
+                    var usePath = image.StartsWith('/')
+                        ? image
+                        : appData.ContentRootPath.CombineWith(image);
+                    var imageBytes = File.ReadAllBytes(usePath);
                     var base64 = Convert.ToBase64String(imageBytes);
                     ollama.Images[i] = base64;
                 }
