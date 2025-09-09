@@ -1362,7 +1362,9 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
         if (!OrmLiteConnectionFactory.NamedConnections.ContainsKey(monthDb))
         {
             var path = Config.TaskConnection.RightPart('=').LastLeftPart(';');
-            var dir = ContentRootPath.CombineWith(path.LastLeftPart('/'));
+            var dir = (path.StartsWith('/')
+                ? path
+                : ContentRootPath.CombineWith(path)).LastLeftPart('/');
             dir.AssertDir();
             var connString = Config.TaskConnection.Replace("{db}", monthDb);
             dbFactory.RegisterConnection(monthDb, connString, SqliteConfiguration.Configure(SqliteDialect.Create()));
