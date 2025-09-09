@@ -57,6 +57,7 @@ accessories:
   postgres:
     image: postgres
     host: 5.78.128.205
+    port: "5432:5432"
     env:
       clear:
         POSTGRES_USER: postgres
