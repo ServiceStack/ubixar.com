@@ -30,6 +30,8 @@ RUN dotnet build "MyApp.csproj" -c Release -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "MyApp.csproj" -c Release -o /app/publish /p:UseAppHost=false /p:PublishProfile=""
+# Install npm packages
+RUN cd /app/publish && bun install
 
 FROM base AS final
 WORKDIR /app
