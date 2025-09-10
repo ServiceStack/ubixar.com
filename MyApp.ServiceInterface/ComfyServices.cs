@@ -109,7 +109,7 @@ public class ComfyServices(ILogger<ComfyServices> log,
         if (request.AfterModifiedDate != null)
         {
             var startedAt = DateTime.UtcNow;
-            var waitFor = TimeSpan.FromSeconds(60);
+            var waitFor = TimeSpan.FromSeconds(30);
             List<ComfyAgent> userAgents;
             do
             {
@@ -136,7 +136,7 @@ public class ComfyServices(ILogger<ComfyServices> log,
         if (request.AfterModifiedDate != null)
         {
             var startedAt = DateTime.UtcNow;
-            var waitFor = TimeSpan.FromSeconds(60);
+            var waitFor = TimeSpan.FromSeconds(30);
             List<ComfyAgent> userAgents;
             do
             {

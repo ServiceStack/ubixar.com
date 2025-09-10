@@ -338,7 +338,7 @@ public class DeviceServices(ILogger<DeviceServices> log, AppData appData, AgentE
         
         if (request.Poll == true)
         {
-            var waitFor = TimeSpan.FromSeconds(60);
+            var waitFor = TimeSpan.FromSeconds(30);
             do
             {
                 await Task.Delay(200);

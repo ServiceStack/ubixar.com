@@ -180,7 +180,7 @@ public class AgentServices(ILogger<AgentServices> log,
     public async Task<object> Get(GetComfyAgentEvents request)
     {
         var startedAt = DateTime.UtcNow;
-        var waitFor = TimeSpan.FromSeconds(60);
+        var waitFor = TimeSpan.FromSeconds(30);
 
         var ret = new GetComfyAgentEventsResponse();
         
