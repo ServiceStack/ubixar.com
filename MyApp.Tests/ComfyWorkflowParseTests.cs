@@ -189,7 +189,7 @@ public class ComfyWorkflowParseTests : TestBase
     [Test]
     public void Can_parse_VibeVoice_SingleSpeaker_Workflow()
     {
-        var workflowPath = "./workflows/audio-to-audio/VibeVoice1.5B-Single-Speaker.json";
+        var workflowPath = "./workflows/audio-to-audio/VibeVoice-SingleSpeaker.json";
         var workflowJson = File.ReadAllText(workflowPath);
         var workflow = ComfyWorkflowParser.Parse(workflowJson.ParseAsObjectDictionary(), workflowPath.LastRightPart('/'), NodeDefs) ?? throw new Exception($"Could not parse {workflowPath}");
         var inputNames = workflow.Inputs.Map(x => x.Name);

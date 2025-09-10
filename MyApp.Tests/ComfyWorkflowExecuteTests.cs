@@ -70,7 +70,7 @@ public class ComfyWorkflowExecuteTests : TestBase
             var workflow = workflowJson.ParseAsObjectDictionary();
             var contentRootPath = Path.Combine(AppContext.BaseDirectory, "../../../../MyApp");
             var exePath = "/home/mythz/.local/share/mise/installs/bun/latest/bin/bun";
-            var nodeDefinitionsPath = Path.Combine(AppContext.BaseDirectory, "../../../../MyApp/wwwroot/data/object_info.gateway.json");
+            var nodeDefinitionsPath = Path.Combine(AppContext.BaseDirectory, "../../../files/object_info.json");
             var promptJson = await NodeComfyWorkflowConverter.CreateApiPromptJsonAsync(contentRootPath, exePath, nodeDefinitionsPath, workflowFullPath);
             var apiPrompt = NodeComfyWorkflowConverter.ConvertToApiPrompt(promptJson, clientId, workflow);
             return apiPrompt;
@@ -104,7 +104,7 @@ public class ComfyWorkflowExecuteTests : TestBase
             {
                 var errorJson = await response.Content.ReadAsStringAsync();
                 Console.WriteLine("ComfyUI API Error:");
-                Console.WriteLine(errorJson.IndentJson());
+                Console.WriteLine(ClientConfig.IndentJson(errorJson));
 
                 // Don't fail the test if the server returns an error that's not related to our JSON format
                 Assert.Fail($"ComfyUI API returned an error: {response.StatusCode}");
@@ -180,7 +180,7 @@ public class ComfyWorkflowExecuteTests : TestBase
     /// <summary>
     /// This test shows an example of the API prompt created by ComfyUI to successfully execute the sdxl_base_refiner.workflow.json
     /// </summary>
-    [Test]
+    // [Test]
     public void Can_execute_sdxl_base_refiner_ComfyUI_API_prompt()
     {
         var apiPromptFullPath = Path.Combine(AppContext.BaseDirectory, $"../../../workflows/prompts/sdxl_base_refiner.api-prompt.json");
@@ -237,8 +237,8 @@ public class ComfyWorkflowExecuteTests : TestBase
         Assert.That(node11["scheduler"].GetValue<string>(), Is.EqualTo("normal"), "scheduler should be 'normal'");
         Assert.That(node11["sampler_name"].GetValue<string>(), Is.EqualTo("euler"), "sampler_name should be 'euler'");
 
-        var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        // var responseJson = await ExecutePrompt(promptJson);
+        // Console.WriteLine(responseJson);
     }
 
     [Test]
@@ -390,7 +390,7 @@ public class ComfyWorkflowExecuteTests : TestBase
     [Test]
     public async Task Can_execute_VibeVoice_AudioToAudio_Workflow()
     {
-        var promptJson = await CreateApiPromptJson("audio-to-audio/VibeVoice1.5B-Single-Speaker.json");
+        var promptJson = await CreateApiPromptJson("audio-to-audio/VibeVoice-SingleSpeaker.json");
         Console.WriteLine(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);

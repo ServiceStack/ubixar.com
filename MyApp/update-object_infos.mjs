@@ -8,7 +8,7 @@ const replaceTokensStartingWith = [
     "ak-b",
 ]
 const saveTo = [
-    './wwwroot/data/object_info.gateway.json',
+    // './wwwroot/data/object_info.gateway.json', // should
     '../MyApp.Tests/files/object_info.json',
 ]
 
