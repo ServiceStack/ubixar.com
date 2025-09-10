@@ -2,6 +2,11 @@
 
 import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 
+// Ensure proper initialization
+if (typeof globalThis !== 'undefined') {
+    ;(globalThis as any).__COMFYUI_FRONTEND_VERSION__ = '1.0.0-test'
+}
+
 import {
     ComfyWorkflowJSON,
     validateComfyWorkflow
