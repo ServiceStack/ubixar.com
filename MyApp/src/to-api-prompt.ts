@@ -13,6 +13,17 @@ import {
 } from './schemas/comfyWorkflowSchema'
 
 import { graphToPrompt } from "./utils/executionUtil"
+import type { NodeId } from '@comfyorg/litegraph'
+import {
+  ExecutableNodeDTO,
+  LGraphEventMode,
+  SubgraphNode
+} from '@comfyorg/litegraph'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from './schemas/comfyWorkflowSchema'
+import { compressWidgetInputSlots } from './utils/litegraphUtil'
 
 // Mock node classes based on the object info
 function createMockNodeClass(nodeType: string, nodeInfo: any) {
@@ -97,6 +108,182 @@ function createMockNodeClass(nodeType: string, nodeInfo: any) {
 }
 
 const COMFY_BASE_URL = `http://localhost:8188`
+const __COMFYUI_FRONTEND_VERSION__ = '1.0.0-test'
+
+/**
+ * Custom input resolution that doesn't rely on nodesByExecutionId
+ */
+function resolveNodeInput(node: any, inputIndex: number, graph: LGraph) {
+  const input = node.inputs[inputIndex]
+  if (!input || !input.link) {
+    return null
+  }
+
+  // Find the link in the graph
+  const link = graph.links?.get ? graph.links.get(input.link) : null
+  if (!link) {
+    return null
+  }
+
+  // Get the source node
+  const sourceNode = graph._nodes_by_id[link.origin_id]
+  if (!sourceNode) {
+    return null
+  }
+
+  return {
+    origin_id: link.origin_id,
+    origin_slot: link.origin_slot
+  }
+}
+
+/**
+ * Recursively target node's parent nodes to the new output.
+ */
+function recursiveAddNodesFixed(
+  nodeId: NodeId,
+  oldOutput: ComfyApiWorkflow,
+  newOutput: ComfyApiWorkflow
+) {
+  const currentId = String(nodeId)
+  const currentNode = oldOutput[currentId]!
+  if (newOutput[currentId] == null) {
+    newOutput[currentId] = currentNode
+    for (const inputValue of Object.values(currentNode.inputs || [])) {
+      if (Array.isArray(inputValue)) {
+        recursiveAddNodesFixed(inputValue[0], oldOutput, newOutput)
+      }
+    }
+  }
+  return newOutput
+}
+
+/**
+ * Fixed version of graphToPrompt that doesn't use problematic resolveInput
+ */
+const graphToPromptFixed = async (
+  graph: LGraph,
+  options: { sortNodes?: boolean; queueNodeIds?: NodeId[] } = {}
+): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
+  const { sortNodes = false, queueNodeIds } = options
+
+  for (const node of graph.computeExecutionOrder(false)) {
+    const innerNodes = (node as any).getInnerNodes ? (node as any).getInnerNodes() : [node]
+    for (const innerNode of innerNodes) {
+      if (innerNode.isVirtualNode) {
+        innerNode.applyToGraph?.()
+      }
+    }
+  }
+
+  const workflow = graph.serialize({ sortNodes })
+
+  // Remove localized_name from the workflow
+  for (const node of workflow.nodes) {
+    for (const slot of node.inputs ?? []) {
+      delete slot.localized_name
+    }
+    for (const slot of node.outputs ?? []) {
+      delete slot.localized_name
+    }
+  }
+
+  compressWidgetInputSlots(workflow)
+  workflow.extra ??= {}
+  workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
+
+  const computedNodeDtos = graph
+    .computeExecutionOrder(false)
+    .map(
+      (node) =>
+        new ExecutableNodeDTO(
+          node,
+          [],
+          node instanceof SubgraphNode ? node : undefined
+        )
+    )
+
+  let output: ComfyApiWorkflow = {}
+  // Process nodes in order of execution
+  for (const outerNode of computedNodeDtos) {
+    // Don't serialize muted nodes
+    if (
+      outerNode.mode === LGraphEventMode.NEVER ||
+      outerNode.mode === LGraphEventMode.BYPASS
+    ) {
+      continue
+    }
+
+    for (const node of outerNode.getInnerNodes()) {
+      if (
+        node.isVirtualNode ||
+        node.mode === LGraphEventMode.NEVER ||
+        node.mode === LGraphEventMode.BYPASS
+      ) {
+        continue
+      }
+
+      const inputs: ComfyApiWorkflow[string]['inputs'] = {}
+      const { widgets } = node
+
+      // Store all widget values
+      if (widgets) {
+        for (const [i, widget] of widgets.entries()) {
+          if (!widget.name || (widget.options as any)?.serialize === false) continue
+
+          const widgetValue = (widget as any).serializeValue
+            ? await (widget as any).serializeValue(node, i)
+            : widget.value
+
+          inputs[widget.name] = Array.isArray(widgetValue)
+            ? {
+                __value__: widgetValue
+              }
+            : widgetValue
+        }
+      }
+
+      // Store all node links using our custom resolution
+      for (const [i, input] of node.inputs.entries()) {
+        const resolvedInput = resolveNodeInput(node, i, graph)
+        if (!resolvedInput) continue
+
+        inputs[input.name] = [
+          String(resolvedInput.origin_id),
+          parseInt(resolvedInput.origin_slot)
+        ]
+      }
+
+      output[String(node.id)] = {
+        inputs,
+        class_type: node.comfyClass!,
+        _meta: {
+          title: node.title
+        }
+      }
+    }
+  }
+
+  // Remove inputs connected to removed nodes
+  for (const { inputs } of Object.values(output)) {
+    for (const [i, input] of Object.entries(inputs)) {
+      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
+        delete inputs[i]
+      }
+    }
+  }
+
+  // Partial execution
+  if (queueNodeIds?.length) {
+    const newOutput = {}
+    for (const queueNodeId of queueNodeIds) {
+      recursiveAddNodesFixed(queueNodeId, output, newOutput)
+    }
+    output = newOutput
+  }
+
+  return { workflow: workflow as unknown as ComfyWorkflowJSON, output }
+}
 
 async function getComfyObjectInfo() {
     // Mock the global frontend version variable
@@ -329,8 +516,14 @@ function createWorkflowGraph(
 }
 
 async function generateWorkflowApiPrompt(graph: LGraph) {
-    const apiPrompt = await graphToPrompt(graph)
-    return apiPrompt
+    try {
+        const apiPrompt = await graphToPrompt(graph)
+        return apiPrompt
+    } catch (error) {
+        // Fall back to fixed version if original fails
+        const apiPrompt = await graphToPromptFixed(graph)
+        return apiPrompt
+    }
 }
 
 async function test() {
