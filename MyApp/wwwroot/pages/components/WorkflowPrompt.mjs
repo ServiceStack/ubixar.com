@@ -214,11 +214,11 @@ export default {
                             <div v-for="input in advancedInputs" class="flex flex-col space-y-1" :class="input.type === 'String' && input.multiline ? 'col-span-2 row-span-2' : ''">
                                 <label :for="input.name" class="text-sm font-medium text-gray-700 dark:text-gray-300" :class="input.tooltip ? 'cursor-help' : ''" :title="input.tooltip">{{input.label}}</label>
                                 <div v-if="input.name.endsWith('seed')" class="flex items-center gap-1">
-                                  <input v-else-if="input.type === 'String'" spellcheck="false"
-                                         v-model="workflowArgs[input.name]"
+                                  <input v-model="workflowArgs[input.name]"
                                          :id="input.name"
-                                         type="text"
                                          :placeholder="input.placeholder || ''"
+                                         spellcheck="false"
+                                         type="text"
                                          class="w-32 px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                   <button type="button" @click="workflowArgs[input.name] = getNextSeedValue(selectedWorkflow)"
                                     title="Generate new Random Seed">
