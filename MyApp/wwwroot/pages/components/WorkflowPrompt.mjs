@@ -1,6 +1,9 @@
 import { ref, computed } from "vue"
-import { WorkflowGroups, toJsonObject, toJsonArray, acceptedImages, acceptedVideos, acceptedAudios } from "../lib/utils.mjs"
 import FileUpload from "./FileUpload.mjs"
+import { 
+    WorkflowGroups, toJsonObject, toJsonArray, acceptedImages, acceptedVideos, acceptedAudios, 
+    getNextSeedValue, 
+} from "../lib/utils.mjs"
 
 export default {
     components: {
@@ -148,7 +151,7 @@ export default {
                          class="flex justify-center border-gray-300 dark:border-gray-600 border-dashed relative flex flex-col items-center justify-center w-full h-64 border-2 rounded-lg bg-gray-50 dark:bg-gray-700">
                       <CloseButton @click="$router.push({ query: {} }); delete workflowArgs.image" />
                       <img :src="'/artifacts/' + (workflowArgs.image || $route.query.image)" alt=""
-                           class="size-48 aspect-square object-cover rounded-lg">
+                           class="size-28 aspect-square object-cover rounded-lg">
                       <input type="hidden" :value="workflowArgs.image || $route.query.image">
                     </div>
                     <FileUpload v-else ref="refImage" id="image" required
@@ -210,7 +213,19 @@ export default {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div v-for="input in advancedInputs" class="flex flex-col space-y-1" :class="input.type === 'String' && input.multiline ? 'col-span-2 row-span-2' : ''">
                                 <label :for="input.name" class="text-sm font-medium text-gray-700 dark:text-gray-300" :class="input.tooltip ? 'cursor-help' : ''" :title="input.tooltip">{{input.label}}</label>
-                                <textarea v-if="input.type === 'String' && input.multiline" spellcheck="false"
+                                <div v-if="input.name.endsWith('seed')" class="flex items-center gap-1">
+                                  <input v-else-if="input.type === 'String'" spellcheck="false"
+                                         v-model="workflowArgs[input.name]"
+                                         :id="input.name"
+                                         type="text"
+                                         :placeholder="input.placeholder || ''"
+                                         class="w-32 px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                  <button type="button" @click="workflowArgs[input.name] = getNextSeedValue(selectedWorkflow)"
+                                    title="Generate new Random Seed">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-6 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" viewBox="0 0 24 24"><path fill="currentColor" d="m13.146 11.05l-.174-1.992l2.374-.208a5 5 0 1 0 .82 6.173l2.002.5a7 7 0 1 1-1.315-7.996l-.245-2.803L18.6 4.55l.523 5.977z"/></svg>
+                                  </button>
+                                </div>
+                                <textarea v-else-if="input.type === 'String' && input.multiline" spellcheck="false"
                                     :id="input.name" :name="input.name" rows="5" :placeholder="input.placeholder || ''"
                                     v-model="workflowArgs[input.name]"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -349,6 +364,7 @@ export default {
             setArgs,
             setPrefs,
             resetPositivePrompt,
+            getNextSeedValue,
             WorkflowGroups,
         }
     }

@@ -222,6 +222,24 @@ export function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+export function getMaxSeedValue(workflow) {
+    const maxSizes = [Number.MAX_SAFE_INTEGER]
+    if (workflow?.info.inputs) {
+        for (const input of workflow.info.inputs) {
+            if (input.name === 'seed' || input.name === 'noise_seed') {
+                if (input.max) {
+                    maxSizes.push(input.max)
+                }
+            }
+        }
+    }
+    return Math.min(...maxSizes)
+}
+
+export function getNextSeedValue(workflow) {
+    return getRandomInt(0, getMaxSeedValue(workflow))
+}
+
 export function getRatingDisplay(artifact) {
     // Check for direct rating first, then predicted rating
     if (artifact.rating) {

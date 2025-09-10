@@ -12,8 +12,9 @@ import {
     getRandomInt,
     humanifyNumber,
     getPriorityLevel,
-    formatDuration, 
-    formatDate,
+    formatDuration,
+    formatDate, 
+    getNextSeedValue,
 } from "./lib/utils.mjs"
 import WorkflowSelector from "./components/WorkflowSelector.mjs"
 import WorkflowPrompt from "./components/WorkflowPrompt.mjs"
@@ -309,12 +310,12 @@ export default {
         function regenSeedsIfNeeded(force) {
             if ('seed' in workflowArgs.value && (force || store.usedSeeds.includes(`${workflowArgs.value.seed}`))) {
                 const old = workflowArgs.value.seed
-                workflowArgs.value.seed = getRandomInt(0, Number.MAX_SAFE_INTEGER)
+                workflowArgs.value.seed = getNextSeedValue(selectedWorkflow.value)
                 console.log(`seed ${old} already used, replaced with ${workflowArgs.value.seed}`)
             }
             if ('noise_seed' in workflowArgs.value && (force || store.usedSeeds.includes(`${workflowArgs.value.noise_seed}`))) {
                 const old = workflowArgs.value.noise_seed
-                workflowArgs.value.noise_seed = getRandomInt(0, Number.MAX_SAFE_INTEGER)
+                workflowArgs.value.noise_seed = getNextSeedValue(selectedWorkflow.value)
                 console.log(`noise_seed ${old} already used, replaced with ${workflowArgs.value.noise_seed}`)
             }
         }

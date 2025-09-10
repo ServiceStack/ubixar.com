@@ -24,7 +24,7 @@ export default {
       @drop.prevent="handleDrop"
     >
       <slot v-if="$slots.default"></slot>
-      <div v-else class="flex flex-col items-center justify-center">
+      <div v-else-if="multiple || !src" class="flex flex-col items-center justify-center">
         <slot v-if="$slots.icon" name="icon"></slot>
         <svg v-else class="size-12 mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -52,9 +52,12 @@ export default {
 
         <div v-if="!multiple">
             <div v-if="src" class="absolute top-8 left-8 shrink-0 cursor-pointer" :title="!isDataUri(src) ? src : ''">
-                <img @click="openFile" :class="['size-48', imgCls(src)]" :alt="'Current ' + (useLabel??'')"
+                <img @click="openFile" :class="['size-40', imgCls(src)]" :alt="'Current ' + (useLabel??'')"
                     :src="fallbackSrc || assetsPathResolver(src)"
                     @error="onError">
+                <div v-if="fileList[0]?.fileName" class="text-center text-xl text-black font-bold overflow-hidden overflow-ellipsis whitespace-nowrap" :title="fileList[0]?.fileName">
+                  {{fileList[0]?.fileName}}
+                </div>
             </div>
         </div>
             
