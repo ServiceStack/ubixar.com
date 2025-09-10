@@ -22,9 +22,9 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
     public AppConfig Config { get; } = appConfig;
     public string ContentRootPath => env.ContentRootPath;
     public string WebRootPath => env.ContentRootPath.CombineWith("wwwroot");
-    public string WorkflowsPath => WebRootPath.CombineWith("data", "workflows");
-    public string WorkflowApiPromptsPath => WebRootPath.CombineWith("data", "api-prompts");
-    public string WorkflowInfosPath => WebRootPath.CombineWith("data", "infos");
+    public string WorkflowsPath => Config.AppDataPath.CombineWith("workflows");
+    public string WorkflowApiPromptsPath => Config.AppDataPath.CombineWith("api-prompts");
+    public string WorkflowInfosPath => Config.AppDataPath.CombineWith("infos");
     public ComfyMetadata Metadata { get; } = metadata;
     public HashSet<string> DefaultGatewayNodes { get; set; } = new();
 
@@ -456,6 +456,10 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
     
     public void LoadWorkflows(IDbConnection db)
     {
+        WorkflowsPath.AssertDir();
+        WorkflowApiPromptsPath.AssertDir();
+        WorkflowInfosPath.AssertDir();
+        
         var workflows = db.Select<Workflow>();
         var workflowVersions = db.Select<WorkflowVersion>();
         var workflowPaths = workflowVersions.ToDictionary(x => x.Path);
