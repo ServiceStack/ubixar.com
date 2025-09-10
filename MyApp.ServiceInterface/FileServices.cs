@@ -1,3 +1,4 @@
+using System.Net;
 using ServiceStack;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
@@ -157,32 +158,33 @@ public class FileServices(
     public async Task<object> Any(GetVariant request)
     {
         // Missing ComfyUI Image, e.g: view?filename=ComfyUI_00001_.png&type=output&subfolder=
-        if (request.Path == "view")
+        if (request.Path != "view")
         {
-            // Return SVG of Unknown Image with given dimensions (for darkmode)
-            var (width, height) = GetVariantDimensions(request.Variant);
-            if (height == null)
-                height = (int)(width.GetValueOrDefault() * 1344/768m);
-            if (width == null)
-                width = (int)(height.GetValueOrDefault() * 768/1344m);
-            var svg =
-                $"""
-                <svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
-                    <rect width="100%" height="100%" fill="#364050" />
-                    <text x="50%" y="50%" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="14">Image not available</text>
-                </svg>
-                """;
-            return new HttpResult(svg, MimeTypes.ImageSvg);
+            var filePath = request.Path.StartsWith("pub")
+                ? appData.Config.FilesPath.CombineWith(request.Path)
+                : appData.Config.ArtifactsPath.CombineWith(request.Path[..2], request.Path);
+            var file = new FileInfo(filePath);
+            if (file.Exists)
+                return await GetImageVariant(request, filePath, file);
         }
-        
-        var filePath = request.Path.StartsWith("pub")
-            ? appData.Config.FilesPath.CombineWith(request.Path)
-            : appData.Config.ArtifactsPath.CombineWith(request.Path[..2], request.Path);
-        var file = new FileInfo(filePath);
-        if (!file.Exists)
-            throw HttpError.NotFound("Artifact not found: " + request.Path);
 
-        return await GetImageVariant(request, filePath, file);
+        // Return SVG of Unknown Image with given dimensions
+        var (width, height) = GetVariantDimensions(request.Variant);
+        if (height == null)
+            height = (int)(width.GetValueOrDefault() * 1344/768m);
+        if (width == null)
+            width = (int)(height.GetValueOrDefault() * 768/1344m);
+        var svg =
+            $"""
+             <svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+                 <rect width="100%" height="100%" fill="#364050" />
+                 <text x="50%" y="50%" text-anchor="middle" fill="#9ca3af" font-family="Arial, sans-serif" font-size="14">Image not available</text>
+             </svg>
+             """;
+        return new HttpResult(svg, MimeTypes.ImageSvg)
+        {
+            StatusCode = HttpStatusCode.NotFound
+        };
     }
     
     public static (int? width, int? height) GetVariantDimensions(string variant)
