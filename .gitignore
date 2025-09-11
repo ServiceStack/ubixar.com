@@ -20,6 +20,8 @@ to-api-prompt
 infos/
 api-prompts/
 .DS_Store
+appsettings.Production.json
+appsettings.Production.json.patch
 
 # User-specific files
 *.suo
