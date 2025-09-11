@@ -15,12 +15,12 @@ public class ComfyAgentTests : TestBase
 
     public ComfyAgentTests()
     {
-        Console.WriteLine("UBIXAR_DB_CONNECTION");
-        Console.WriteLine(Environment.GetEnvironmentVariable("UBIXAR_DB_CONNECTION"));
+        Console.WriteLine("COMFY_DB_CONNECTION");
+        Console.WriteLine(Environment.GetEnvironmentVariable("COMFY_DB_CONNECTION"));
         
         var services = new ServiceCollection();
         services.AddOrmLite(options => 
-            options.UsePostgres(Environment.GetEnvironmentVariable("UBIXAR_DB_CONNECTION"), 
+            options.UsePostgres(Environment.GetEnvironmentVariable("COMFY_DB_CONNECTION"), 
             dialect => {
             }));
 
