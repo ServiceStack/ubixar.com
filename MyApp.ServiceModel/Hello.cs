@@ -2,6 +2,7 @@ using ServiceStack;
 
 namespace MyApp.ServiceModel;
 
+[Tag(Tags.Agent)]
 [Route("/hello/{Name}")]
 public class Hello : IGet, IReturn<HelloResponse>
 {

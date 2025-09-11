@@ -21,6 +21,7 @@ public class ConfigureDb : IHostingStartup
         .ConfigureServices((context, services) => {
             
             var connectionString = AppConfig.Instance.DefaultConnection
+                ?? Environment.GetEnvironmentVariable("COMFY_DB_CONNECTION")
                 ?? context.Configuration.GetConnectionString("DefaultConnection")
                 ?? throw new Exception("DefaultConnection does not exist");
 
