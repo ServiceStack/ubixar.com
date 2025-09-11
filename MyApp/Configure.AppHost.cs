@@ -24,7 +24,6 @@ public partial class AppHost() : AppHostBase("ubixar.com"), IHostingStartup
 
             appConfig.DefaultConnection = Environment.GetEnvironmentVariable("COMFY_DB_CONNECTION") 
                 ?? context.Configuration.GetConnectionString("DefaultConnection");
-            appConfig.TaskConnection = context.Configuration.GetConnectionString("TaskConnection");
 
             var artifactsPath = Environment.GetEnvironmentVariable("COMFY_GATEWAY_ARTIFACTS");
             appConfig.ArtifactsPath = artifactsPath ?? appConfig.ArtifactsPath;

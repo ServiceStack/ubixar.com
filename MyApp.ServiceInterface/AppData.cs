@@ -1357,6 +1357,9 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
 
     public IDbConnection OpenAiTaskDb(DateTime? createdDate=null)
     {
+        if (Config.TaskConnection == null)
+            throw new Exception("TaskConnection not configured");
+
         var date = createdDate ?? DateTime.UtcNow;
         
         if (date.Year is < 2025 or > 2026)

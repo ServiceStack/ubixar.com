@@ -22,7 +22,7 @@ public class AppConfig
     public string DeletedUserId { get; set; } = "1c6598f5-4f3e-4197-b525-3dc868b64f3e";
     public string[] FeaturedUserIds { get; set; } = [];
     public string DefaultConnection { get; set; }
-    public string TaskConnection { get; set; }
+    public string TaskConnection { get; set; } = "DataSource=App_Data/tasks/{db};Cache=Shared";
 
     public string? GoogleClientId { get; set; }
     public string? GoogleClientSecret { get; set; }
