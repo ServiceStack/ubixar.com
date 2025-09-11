@@ -41,10 +41,15 @@ proxy:
       - Upgrade
       - Accept
       - Accept-Encoding
+      - Content-Length
+      - Host
     response_headers:
       - Content-Type
       - Connection
       - Upgrade
+      - Content-Length
+      - Server
+
     
 # Credentials for your image host.
 registry:
