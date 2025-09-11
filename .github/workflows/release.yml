@@ -18,6 +18,7 @@ env:
   KAMAL_REGISTRY_USERNAME: ${{ github.actor }}
   INIT_DB_SQL: ${{ secrets.INIT_DB_SQL }}
   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+  COMFY_DB_CONNECTION: ${{ secrets.COMFY_DB_CONNECTION }}
 
 jobs:
   release:
