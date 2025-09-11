@@ -29,10 +29,13 @@ proxy:
   # kamal-proxy connects to your container over port 80, use `app_port` to specify a different port.
   app_port: 8080
   forward_headers: true
+  # Disable buffering to support streaming responses.
   buffering:
     requests: false
     responses: false
-    
+  # Response timeout in seconds.
+  response_timeout: 600
+
 # Credentials for your image host.
 registry:
   # Specify the registry server, if you're not using Docker Hub
