@@ -9,6 +9,8 @@ image: servicestack/ubixar.com
 env:
   clear:
     ASPNETCORE_FORWARDEDHEADERS_ENABLED: true # Required for use of ASP.NET Core with Kamal-Proxy.
+  secret:
+    - COMFY_DB_CONNECTION
 
 # Deploy to these servers.
 servers:
