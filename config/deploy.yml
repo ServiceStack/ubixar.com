@@ -62,7 +62,7 @@ registry:
   password:
     - KAMAL_REGISTRY_PASSWORD
 
-# Configure builder setup.
+# Configure builder setup
 builder:
   arch: amd64
 
