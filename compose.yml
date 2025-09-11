@@ -9,10 +9,6 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      # Override the AppDataPath to point to the mounted directory
-      - AppConfig__AppDataPath=/app/App_Data
-      - AppConfig__ArtifactsPath=/app/App_Data/artifacts
-      - AppConfig__FilesPath=/app/App_Data/files
     volumes:
       # Mount App_Data directory for persistent data
       - ./App_Data:/app/App_Data
