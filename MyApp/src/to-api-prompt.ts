@@ -110,6 +110,11 @@ function createMockNodeClass(nodeType: string, nodeInfo: any) {
 const COMFY_BASE_URL = `http://localhost:8188`
 const __COMFYUI_FRONTEND_VERSION__ = '1.0.0-test'
 
+// Check for verbose flag
+const isVerbose = Bun.argv.includes('--verbose')
+const log = (...args: any[]) => isVerbose && console.error(...args)
+const error = (...args: any[]) => console.error(...args)
+
 /**
  * Custom input resolution that doesn't rely on nodesByExecutionId
  */
@@ -192,36 +197,17 @@ const graphToPromptFixed = async (
   workflow.extra ??= {}
   workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
-  const computedNodeDtos = graph
-    .computeExecutionOrder(false)
-    .map(
-      (node) =>
-        new ExecutableNodeDTO(
-          node,
-          [],
-          node instanceof SubgraphNode ? node : undefined
-        )
-    )
-
   let output: ComfyApiWorkflow = {}
-  // Process nodes in order of execution
-  for (const outerNode of computedNodeDtos) {
+  // Process nodes directly from the graph to preserve link information
+  for (const node of graph._nodes) {
     // Don't serialize muted nodes
     if (
-      outerNode.mode === LGraphEventMode.NEVER ||
-      outerNode.mode === LGraphEventMode.BYPASS
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS ||
+      node.isVirtualNode
     ) {
       continue
     }
-
-    for (const node of outerNode.getInnerNodes()) {
-      if (
-        node.isVirtualNode ||
-        node.mode === LGraphEventMode.NEVER ||
-        node.mode === LGraphEventMode.BYPASS
-      ) {
-        continue
-      }
 
       const inputs: ComfyApiWorkflow[string]['inputs'] = {}
       const { widgets } = node
@@ -244,9 +230,26 @@ const graphToPromptFixed = async (
       }
 
       // Store all node links using our custom resolution
+      log(`DEBUG: Processing node ${node.id} (${node.comfyClass}) with ${node.inputs.length} inputs`)
+      if (node.comfyClass === 'KSampler') {
+        log(`DEBUG: Found KSampler node ${node.id}`)
+        node.inputs.forEach((input: any, i: number) => {
+          log(`DEBUG: KSampler input ${i}: name=${input.name}, link=${input.link}`)
+        })
+      }
+
       for (const [i, input] of node.inputs.entries()) {
         const resolvedInput = resolveNodeInput(node, i, graph)
-        if (!resolvedInput) continue
+        if (!resolvedInput) {
+          if (node.comfyClass === 'KSampler') {
+            log(`DEBUG: KSampler input ${i} (${input.name}) failed to resolve`)
+          }
+          continue
+        }
+
+        if (node.comfyClass === 'KSampler') {
+          log(`DEBUG: KSampler input ${i} (${input.name}) resolved to ${resolvedInput.origin_id}:${resolvedInput.origin_slot}`)
+        }
 
         inputs[input.name] = [
           String(resolvedInput.origin_id),
@@ -261,17 +264,22 @@ const graphToPromptFixed = async (
           title: node.title
         }
       }
-    }
   }
 
   // Remove inputs connected to removed nodes
+  log(`DEBUG: Before cleanup - output keys: [${Object.keys(output).join(', ')}]`)
+  log(`DEBUG: KSampler inputs before cleanup:`, JSON.stringify(output['3']?.inputs, null, 2))
+
   for (const { inputs } of Object.values(output)) {
     for (const [i, input] of Object.entries(inputs)) {
       if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
+        log(`DEBUG: Removing input ${i} -> [${input[0]}, ${input[1]}] because node ${input[0]} not found`)
         delete inputs[i]
       }
     }
   }
+
+  log(`DEBUG: KSampler inputs after cleanup:`, JSON.stringify(output['3']?.inputs, null, 2))
 
   // Partial execution
   if (queueNodeIds?.length) {
@@ -475,6 +483,7 @@ function createWorkflowGraph(
 
     // Second pass: Create connections based on links
     if (workflow.links && Array.isArray(workflow.links)) {
+        log(`DEBUG: Processing ${workflow.links.length} workflow links`)
         // Create a map of link IDs to link data for quick lookup
         const linkMap = new Map()
         for (const link of workflow.links) {
@@ -483,6 +492,7 @@ function createWorkflowGraph(
                 linkMap.set(link[0], link)
             }
         }
+        log(`DEBUG: Created linkMap with ${linkMap.size} entries`)
 
         // Connect nodes based on the node inputs that reference links
         for (const nodeData of workflow.nodes) {
@@ -502,14 +512,33 @@ function createWorkflowGraph(
 
                     if (sourceNode && targetInputIndex !== -1) {
                         try {
+                            log(`DEBUG: Connecting ${sourceNodeId}:${sourceSlot} -> ${nodeData.id}:${targetInputIndex} (${input.name})`)
                             sourceNode.connect(sourceSlot, targetNode, targetInputIndex)
                         } catch (error) {
+                            log(`DEBUG: Connection failed: ${error.message ?? error}`)
                             errors.push(`Failed to connect nodes ${sourceNodeId}:${sourceSlot} -> ${nodeData.id}:${targetInputIndex} (${input.name}): ${error.message ?? error}`)
                         }
+                    } else {
+                        log(`DEBUG: Cannot connect - missing source node or target input:`, {
+                            sourceNodeExists: !!sourceNode,
+                            targetInputIndex,
+                            inputName: input.name
+                        })
                     }
+                } else {
+                    log(`DEBUG: Skipping input ${input.name} - no link or link not in map:`, {
+                        hasLink: !!input.link,
+                        linkInMap: input.link ? linkMap.has(input.link) : false
+                    })
                 }
             }
         }
+    } else {
+        log(`DEBUG: No workflow links found or not an array:`, {
+            hasLinks: !!workflow.links,
+            isArray: Array.isArray(workflow.links),
+            linksLength: workflow.links?.length
+        })
     }
 
     return graph
@@ -517,11 +546,16 @@ function createWorkflowGraph(
 
 async function generateWorkflowApiPrompt(graph: LGraph) {
     try {
+        log(`DEBUG: Trying original graphToPrompt function`)
         const apiPrompt = await graphToPrompt(graph)
+        log(`DEBUG: Original graphToPrompt succeeded`)
         return apiPrompt
     } catch (error) {
+        log(`DEBUG: Original graphToPrompt failed: ${error.message ?? error}`)
+        log(`DEBUG: Falling back to graphToPromptFixed`)
         // Fall back to fixed version if original fails
         const apiPrompt = await graphToPromptFixed(graph)
+        log(`DEBUG: graphToPromptFixed completed`)
         return apiPrompt
     }
 }
@@ -596,34 +630,41 @@ async function createApiPrompt(objectInfo:any, workflow:ComfyWorkflowJSON, error
 
 ;(async () => {
     const cliArgs = Bun.argv.slice(2)
-    // console.log(cliArgs)
-    
-    if (cliArgs.length != 2) {
-        console.log(`USAGE ${import.meta.file} <path-to-object_info.json> <path-to-workflow.json>`)
+
+    // Filter out --verbose flag from args
+    const filteredArgs = cliArgs.filter(arg => arg !== '--verbose')
+
+    if (filteredArgs.length != 2) {
+        console.log(`USAGE ${import.meta.file} [--verbose] <path-to-object_info.json> <path-to-workflow.json>`)
         process.exit(1);
     }
+    // Use filtered args for file paths
+    const [objectInfoPath, workflowPath] = filteredArgs
+
     try {
-        const objectInfoFile = Bun.file(cliArgs[0])
+        const objectInfoFile = Bun.file(objectInfoPath)
         if (!objectInfoFile.exists()) {
-            throw new Error(`${cliArgs[0]} does not exist`)
+            throw new Error(`${objectInfoPath} does not exist`)
         }
         const objectInfoJson = await objectInfoFile.text()
         const objectInfo = JSON.parse(objectInfoJson)
-        
-        const workflowFile = Bun.file(cliArgs[1])
-        if (!objectInfoFile.exists()) {
-            throw new Error(`${cliArgs[1]} does not exist`)
+
+        const workflowFile = Bun.file(workflowPath)
+        if (!workflowFile.exists()) {
+            throw new Error(`${workflowPath} does not exist`)
         }
         const workflowJson = await workflowFile.text()
         const workflowData = JSON.parse(workflowJson)
 
         const workflow = await validateComfyWorkflow(workflowData)
         if (!workflow) {
-            throw new Error(`${cliArgs[1]} is not a valid workflow`)
+            throw new Error(`${workflowPath} is not a valid workflow`)
         }
 
         const errors = []
+        log(`DEBUG: Starting API prompt creation`)
         const apiPrompt = await createApiPrompt(objectInfo, workflow, errors)
+        log(`DEBUG: API prompt creation completed. Errors:`, errors)
         console.log(JSON.stringify(apiPrompt, null, 2))
     } catch (e) {
         console.error(`${e.message ?? e}`)
