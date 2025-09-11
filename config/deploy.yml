@@ -28,28 +28,10 @@ proxy:
   host: ubixar.com
   # kamal-proxy connects to your container over port 80, use `app_port` to specify a different port.
   app_port: 8080
-  response_timeout: 30  # Reduce timeout to fail faster and help diagnose
   forward_headers: true
   buffering:
     requests: false
     responses: false
-  # Add detailed logging to help diagnose the issue
-  logging:
-    request_headers:
-      - User-Agent
-      - Connection
-      - Upgrade
-      - Accept
-      - Accept-Encoding
-      - Content-Length
-      - Host
-    response_headers:
-      - Content-Type
-      - Connection
-      - Upgrade
-      - Content-Length
-      - Server
-
     
 # Credentials for your image host.
 registry:
