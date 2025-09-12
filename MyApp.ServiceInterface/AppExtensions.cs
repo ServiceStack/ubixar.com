@@ -355,10 +355,10 @@ public static partial class AppExtensions
 
     public static long GetMaxSeedValue(this WorkflowInfo? info)
     {
-        return info?.Inputs?.Where(x => x.Name?.EndsWith("seed") == true)
-            .Select(x => (long)(x.Max ?? MAX_SAFE_INTEGER))
-            .DefaultIfEmpty(MAX_SAFE_INTEGER)
+        var maxSeeds = info?.Inputs?.Where(x => x.Name?.EndsWith("seed") == true)
+            .Select(x => x.Max)
             .Min() ?? MAX_SAFE_INTEGER;
+        return (long)Math.Min(maxSeeds, MAX_SAFE_INTEGER);
     }
 
     public static long GetNextSeedValue(this WorkflowInfo? info)
