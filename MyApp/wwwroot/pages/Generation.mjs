@@ -46,7 +46,7 @@ export default {
                         <div v-if="isType('Audio')" class="w-full h-full cursor-pointer flex flex-col justify-between"
                              @click.stop="refAudio?.player?.toggle()"
                           >
-                          <img src="/img/bg-audio.svg" class="absolute top-0 left-0 h-20 w-full">
+                          <img :src="store.assetUrl('/img/bg-audio.svg')" class="absolute top-0 left-0 h-20 w-full">
 
                           <div class="mt-20 mb-12 flex-grow flex items-center">
                             <svg class="mx-auto size-64 text-purple-600 dark:text-purple-400 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,7 +59,8 @@ export default {
                         <template v-else>
                           <!-- Main Image - only show if rating is viewable -->
                           <img v-if="selectedUrl && store.isRatingViewable(selectedArtifact)"
-                               :src="selectedUrl"
+                               :src="store.assetUrl(selectedUrl)"
+                               :onerror="store.imgOnError(selectedUrl)"
                                :alt="selectedArtifact.caption || generation.description || 'Generated image'"
                                class="max-w-full max-h-full object-contain"
                                :class="{ 'cursor-zoom-in': !store.prefs.zoomIn, 'cursor-zoom-out':store.prefs.zoomIn }"
@@ -100,7 +101,8 @@ export default {
                            :class="{ 'ring-2 ring-blue-500': artifact.url === selectedUrl }"
                            @click="selectedUrl = artifact.url">
                       <img v-if="store.isRatingViewable(artifact)"
-                             :src="artifact.url"
+                             :src="store.assetUrl(artifact.url)"
+                             :onerror="store.imgOnError(artifact.url)"
                              :alt="'Artifact ' + artifact.id"
                              class="w-full object-cover">
     

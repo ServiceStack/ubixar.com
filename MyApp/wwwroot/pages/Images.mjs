@@ -12,7 +12,7 @@ import RatingsBadge from "./components/RatingsBadge.mjs"
 export const ArtifactImage = {
     template:`<div v-if="artifact" class="overflow-hidden" :style="store.getBackgroundStyle(artifact) + ';' + imageStyle">
       <img :alt="artifact.prompt" :width="width" :height="height" :class="imageClass"
-           :src="imageSrc" :loading="loading || 'lazy'" @error="imageSrc=store.fallbackAssetUrl(artifact.url)">
+           :src="store.assetUrl(imageSrc)" :loading="loading || 'lazy'" :onerror="store.imgOnError(artifact.url)">
   </div>`,
     props: {
         /** @type {import('vue').PropType<Artifact>} */
@@ -328,7 +328,8 @@ export default {
 
                     <!-- Image -->
                     <img
-                        :src="selectedImage.url"
+                        :src="store.assetUrl(selectedImage.url)"
+                        :onerror="store.imgOnError(selectedImage.url)"
                         :alt="selectedImage.prompt || 'Generated image'"
                         class="max-w-full max-h-full object-contain rounded-lg"
                         :width="selectedImage.width"

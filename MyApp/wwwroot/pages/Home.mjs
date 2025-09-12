@@ -43,8 +43,8 @@ export default {
                     <!-- Image Container with dynamic aspect ratio -->
                     <RouterLink :to="{ path:'/generations/' + artifact.generationId }">
                         <div class="overflow-hidden bg-gray-100 dark:bg-gray-700" :style="'aspect-ratio: ' + getAspectRatio(artifact)">
-                            <img :src="store.assetUrl(artifact.url)" 
-                                 onerror="this.src=store.fallbackAssetUrl(artifact.url)"
+                            <img :src="store.assetUrl(artifact.url)"
+                                 :onerror="store.imgOnError(artifact.url)"
                                  alt="Generated artifact"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
                                  loading="lazy"
