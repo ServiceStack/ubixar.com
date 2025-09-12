@@ -350,4 +350,17 @@ public static partial class AppExtensions
         }
         return to;
     }
+
+    public static long GetMaxSeedValue(this WorkflowInfo info)
+    {
+        return info.Inputs?.Where(x => x.Name is "seed" or "noise_seed")
+            .Select(x => (long)(x.Max ?? long.MaxValue))
+            .DefaultIfEmpty(long.MaxValue)
+            .Min() ?? long.MaxValue;
+    }
+
+    public static long GetNextSeedValue(this WorkflowInfo info)
+    {
+        return Random.Shared.NextInt64(0, GetMaxSeedValue(info));
+    }
 }

@@ -399,16 +399,17 @@ public class ComfyServices(ILogger<ComfyServices> log,
         // If we're retrying an existing generation we need to regenerate the seeds
         if (gen.Args?.Count > 0 && (gen.Args.ContainsKey("seed") || gen.Args.ContainsKey("noise_seed")))
         {
+            var workflowVersion = GetWorkflowVersion(Db, gen.WorkflowId, gen.VersionId);
+
             if (gen.Args.TryGetValue("seed", out var seed))
             {
-                gen.Args["seed"] = Random.Shared.NextInt64(0, long.MaxValue);
+                gen.Args["seed"] = workflowVersion.Info.GetNextSeedValue();
             }
             if (gen.Args.TryGetValue("noise_seed", out var noiseSeed))
             {
-                gen.Args["noise_seed"] = Random.Shared.NextInt64(0, long.MaxValue);
+                gen.Args["noise_seed"] = workflowVersion.Info.GetNextSeedValue();
             }
             
-            var workflowVersion = GetWorkflowVersion(Db, gen.WorkflowId, gen.VersionId);
             var (apiPrompt, newWorkflow, _) = await comfyConverter.CreateApiPromptAsync(workflowVersion, gen.Args, agent:null, gen.Id);
 
             gen.Workflow = newWorkflow;
