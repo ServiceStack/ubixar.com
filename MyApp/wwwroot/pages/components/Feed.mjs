@@ -245,7 +245,7 @@ export default {
             </div>
         </div>
         <div class="fixed bottom-0 max-w-3xl rounded-tl-lg rounded-tr-lg overflow-hidden" style="min-width:600px;">
-            <AudioPlayer ref="refAudio" :bus="events" :src="playAudio?.src" :title="playAudio?.title" :autoPlay="true" :showClose="true"
+            <AudioPlayer ref="refAudio" :bus="events" :src="store.assetUrl(playAudio?.src)" :title="playAudio?.title" :autoPlay="true" :showClose="true"
                          @playing="playingAudio=$event" @paused="playingAudio=null" @close="playAudio=null" />
         </div>
         <div ref="refBottom"></div>

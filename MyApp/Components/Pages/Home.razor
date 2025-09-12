@@ -55,8 +55,9 @@
                     <!-- Image Container with dynamic aspect ratio -->
                     <a href="/generations/@artifact.GenerationId">
                         <div class="overflow-hidden bg-gray-100 dark:bg-gray-700" style="aspect-ratio: @GetAspectRatio(artifact)">
-                            <img src="@artifact.Url" data-id="@artifact.Id"
-                                 alt="Generated artifact"
+                            <img src="@AppData.AssetUrl(artifact.Url)"
+                                 data-id="@artifact.Id" data-src="@artifact.Url" 
+                                 alt="Generated artifact" 
                                  class="artifact w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
                                  loading="lazy" />
                         </div>
@@ -148,7 +149,7 @@
 import { store, events } from "/mjs/app.mjs"
 
 document.querySelectorAll('img.artifact').forEach(img => {
-    img.onerror = function (e) { this.src=store.getArtifactImageErrorUrl(Number(this.dataset.id), null, 300) }
+    img.onerror = function (e) { this.src=store.fallbackAssetUrl(this.dataset.src) }
     img.oncontextmenu = function (e) {
         e.preventDefault()
         events.publish('showArtifactMenu', { artifactId:Number(this.dataset.id), event:e })

@@ -54,7 +54,7 @@ export default {
                             </svg>
                           </div>
                           
-                          <AudioPlayer ref="refAudio" :src="selectedUrl" :clsFilter="cls => cls.replace('dark:bg-black/70', 'dark:bg-black/20')"/>
+                          <AudioPlayer ref="refAudio" :src="store.assetUrl(selectedUrl)" :clsFilter="cls => cls.replace('dark:bg-black/70', 'dark:bg-black/20')"/>
                         </div>
                         <template v-else>
                           <!-- Main Image - only show if rating is viewable -->

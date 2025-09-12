@@ -9,6 +9,8 @@ public class AppConfig
     public string FeaturedSubTitle { get; set; } = "Explore AI generated creations";
     public string LocalBaseUrl { get; set; } = "https://localhost:5001";
     public string PublicBaseUrl { get; set; } = "https://my-app.org";
+    public string? AssetsBaseUrl { get; set; }
+    public string? FallbackAssetsBaseUrl { get; set; }
     public string AppDataPath { get; set; } = "App_Data";
     public string ArtifactsPath { get; set; } = "App_Data/artifacts";
     public string FilesPath { get; set; } = "App_Data/files";
@@ -43,6 +45,8 @@ public class AppConfig
         FeaturedTitle = FeaturedTitle,
         FeaturedSubTitle = FeaturedSubTitle,
         PublicBaseUrl = PublicBaseUrl,
+        AssetsBaseUrl = AssetsBaseUrl ?? PublicBaseUrl,
+        FallbackAssetsBaseUrl = FallbackAssetsBaseUrl,
         SystemUserId = SystemUserId,
         FeaturedUserIds = FeaturedUserIds,
     };
@@ -55,6 +59,8 @@ public class VueAppConfig
     public string FeaturedTitle { get; set; }
     public string FeaturedSubTitle { get; set; }
     public string PublicBaseUrl { get; set; }
+    public string AssetsBaseUrl { get; set; }
+    public string? FallbackAssetsBaseUrl { get; set; }
     public string SystemUserId { get; set; }
     public string[] FeaturedUserIds { get; set; } = [];
 }

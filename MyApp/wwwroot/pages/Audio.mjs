@@ -149,7 +149,7 @@ export default {
 
               <div class="z-10 flex items-center">
                 <div class="flex-grow my-2 border-2 border-gray-700 max-w-3xl mx-auto rounded-lg overflow-hidden">
-                  <AudioPlayer ref="refAudio" :src="playAudio?.url" :clsFilter="cls => cls.replace('dark:bg-black/70', 'dark:bg-black/20')"/>
+                  <AudioPlayer ref="refAudio" :src="store.assetUrl(playAudio?.url)" :clsFilter="cls => cls.replace('dark:bg-black/70', 'dark:bg-black/20')"/>
                 </div>
                 <div class="space-y-2">
                   <RouterLink :to="{ path:'/generate/feed', query: { 'new':'', remix: playAudio.generationId } }"
