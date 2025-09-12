@@ -350,16 +350,18 @@ public static partial class AppExtensions
         }
         return to;
     }
+    
+    public const long MAX_SAFE_INTEGER = 9007199254740991; // Number.MAX_SAFE_INTEGER = 2^53 - 1 
 
-    public static long GetMaxSeedValue(this WorkflowInfo info)
+    public static long GetMaxSeedValue(this WorkflowInfo? info)
     {
-        return info.Inputs?.Where(x => x.Name is "seed" or "noise_seed")
-            .Select(x => (long)(x.Max ?? long.MaxValue))
-            .DefaultIfEmpty(long.MaxValue)
-            .Min() ?? long.MaxValue;
+        return info?.Inputs?.Where(x => x.Name?.EndsWith("seed") == true)
+            .Select(x => (long)(x.Max ?? MAX_SAFE_INTEGER))
+            .DefaultIfEmpty(MAX_SAFE_INTEGER)
+            .Min() ?? MAX_SAFE_INTEGER;
     }
 
-    public static long GetNextSeedValue(this WorkflowInfo info)
+    public static long GetNextSeedValue(this WorkflowInfo? info)
     {
         return Random.Shared.NextInt64(0, GetMaxSeedValue(info));
     }
