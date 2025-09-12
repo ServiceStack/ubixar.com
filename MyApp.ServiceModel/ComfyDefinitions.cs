@@ -158,6 +158,15 @@ public class ComfyAgent
         }
         return false;
     }
+    
+    public static bool ContainsFile(Dictionary<string, List<string>> models, string folder, string fileName)
+    {
+        if (models.TryGetValue(folder, out var files))
+        {
+            return files.Contains(fileName);
+        }
+        return false;
+    }
 
     public Dictionary<string, List<string>> GetVisibleModels()
     {

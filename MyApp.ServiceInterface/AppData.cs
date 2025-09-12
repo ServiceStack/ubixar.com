@@ -1006,6 +1006,7 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
                 missingNodes.Add(node);
         }
 
+        var visibleModels = agent.GetVisibleModels();
         foreach (var asset in RequiredAssets)
         {
             var type = asset.LeftPart('/');
@@ -1015,79 +1016,79 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
                 //https://github.com/comfyanonymous/ComfyUI/blob/master/folder_paths.py
                 case "checkpoints":
                 case "Stable-diffusion":
-                    if (!agent.ContainsFile(FolderNames.Checkpoints, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Checkpoints, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "clip":
                 case "text_encoders":
-                    if (!agent.ContainsFile(FolderNames.Clip, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Clip, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "clip_vision":
-                    if (!agent.ContainsFile(FolderNames.ClipVision, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.ClipVision, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "configs":
-                    if (!agent.ContainsFile(FolderNames.Configs, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Configs, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "controlnet":
                 case "t2i_adapter":
-                    if (!agent.ContainsFile(FolderNames.Controlnet, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Controlnet, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "diffusers":
-                    if (!agent.ContainsFile(FolderNames.Diffusers, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Diffusers, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "diffusion_models":
                 case "unet":
-                    if (!agent.ContainsFile(FolderNames.DiffusionModels, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.DiffusionModels, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "embeddings":
-                    if (!agent.ContainsFile(FolderNames.Embeddings, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Embeddings, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "gligen":
-                    if (!agent.ContainsFile(FolderNames.Gligen, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Gligen, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "hypernetworks":
-                    if (!agent.ContainsFile(FolderNames.Hypernetworks, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Hypernetworks, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "loras":
-                    if (!agent.ContainsFile(FolderNames.Loras, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Loras, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "photomaker":
-                    if (!agent.ContainsFile(FolderNames.Photomaker, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Photomaker, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "style_models":
-                    if (!agent.ContainsFile(FolderNames.StyleModels, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.StyleModels, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "upscale_models":
-                    if (!agent.ContainsFile(FolderNames.UpscaleModels, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.UpscaleModels, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "vae":
                 case "VAE":
-                    if (!agent.ContainsFile(FolderNames.Vae, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Vae, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "vae_approx":
-                    if (!agent.ContainsFile(FolderNames.VaeApprox, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.VaeApprox, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "ultralytics":
-                    if (!agent.ContainsFile(FolderNames.Ultralytics, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Ultralytics, fileName))
                         missingAssets.Add(asset);
                     break;
                 case "sams":
-                    if (!agent.ContainsFile(FolderNames.Sams, fileName))
+                    if (!ComfyAgent.ContainsFile(visibleModels, FolderNames.Sams, fileName))
                         missingAssets.Add(asset);
                     break;
             }
