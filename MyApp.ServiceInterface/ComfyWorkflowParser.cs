@@ -20,15 +20,19 @@ public class ComfyWorkflowParser
         return nodesObj.Map(x => (Dictionary<string, object?>)x);
     }
 
-    public static List<string> IgnoreClientNodes { get; } =
+    public static HashSet<string> IgnoreClientNodes { get; } =
     [
         "Note",
         "MarkdownNote",
         "Reroute",
         "PrimitiveNode",
-        "PrimitiveNode",
     ];
 
+    public static HashSet<string> ExtractRequiredNodeTypes(Dictionary<string, object?> workflow, ILogger? log = null)
+    {
+        return ExtractRequiredNodeTypes(workflow, IgnoreClientNodes, log);
+    }
+    
     public static HashSet<string> ExtractRequiredNodeTypes(Dictionary<string, object?> workflow, HashSet<string> ignoreNodes, ILogger? log = null)
     {
         var workflowNodes = ExtractNodeTypes(workflow, log);
@@ -40,7 +44,7 @@ public class ComfyWorkflowParser
         return workflowNodes;
     }
     
-    public static HashSet<string> ExtractNodeTypes(Dictionary<string, object?> workflow, ILogger? log = null)
+    static HashSet<string> ExtractNodeTypes(Dictionary<string, object?> workflow, ILogger? log = null)
     {
         log ??= NullLogger.Instance;
         var ret = new HashSet<string>();

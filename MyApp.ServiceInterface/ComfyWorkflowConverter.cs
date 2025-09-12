@@ -30,7 +30,7 @@ public class CSharpComfyWorkflowConverter(ILogger<CSharpComfyWorkflowConverter> 
 
     public ApiPrompt CreateApiPrompt(Dictionary<string, object?> workflow, Dictionary<string,object?> args, ComfyAgent? agent=null, string? clientId=null) 
     {
-        var requiredNodes = ComfyWorkflowParser.ExtractNodeTypes(workflow, log);
+        var requiredNodes = ComfyWorkflowParser.ExtractRequiredNodeTypes(workflow, log);
         var requiredAssets = ComfyWorkflowParser.ExtractAssetPaths(workflow, log);
         var nodeDefs = appData.GetSupportedNodeDefinitions(requiredNodes, requiredAssets, agent);
         var apiPrompt = ComfyConverters.ConvertWorkflowToApiPrompt(workflow, nodeDefs, clientId, log:log);
@@ -83,7 +83,7 @@ public class NodeComfyWorkflowConverter(ILogger<NodeComfyWorkflowConverter> log,
     public async Task<ApiPromptResult> CreateApiPromptAsync(WorkflowVersion workflowVersion, Dictionary<string, object?> args, ComfyAgent? agent=null, string? clientId = null)
     {
         var workflow = workflowVersion.Workflow;
-        var requiredNodes = ComfyWorkflowParser.ExtractNodeTypes(workflow, log);
+        var requiredNodes = ComfyWorkflowParser.ExtractRequiredNodeTypes(workflow, log);
         var requiredAssets = ComfyWorkflowParser.ExtractAssetPaths(workflow, log);
         agent ??= appData.GetSupportedAgent(requiredNodes, requiredAssets);
         var nodeDefinitionPath = agent != null
