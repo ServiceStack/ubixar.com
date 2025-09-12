@@ -48,15 +48,7 @@ public class ComfyWorkflowExecuteTests : TestBase
 
     ComfyGateway CreateGateway() => new(NullLogger<ComfyGateway>.Instance, serviceProvider.GetRequiredService<IHttpClientFactory>(), ComfyMetadata.Instance);
 
-    public static string FormatJson(string json)
-    {
-        using JsonDocument document = JsonDocument.Parse(json);
-        string formattedJson = System.Text.Json.JsonSerializer.Serialize(document, new JsonSerializerOptions { 
-            WriteIndented = true 
-        });
-        return formattedJson;
-    }
-    public static void DumpJson(string json) => Console.WriteLine(FormatJson(json));
+    public static void DumpJson(string json) => Console.WriteLine(ClientConfig.IndentJson(json));
     
     private static bool UseNode = true;
     
@@ -185,10 +177,10 @@ public class ComfyWorkflowExecuteTests : TestBase
     {
         var apiPromptFullPath = Path.Combine(AppContext.BaseDirectory, $"../../../workflows/prompts/sdxl_base_refiner.api-prompt.json");
         var promptJson = File.ReadAllText(apiPromptFullPath);
-        // Console.WriteLine(promptJson);
+        // DumpJson(promptJson);
 
         var responseJson = ExecutePrompt(promptJson).Result;
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     /// <summary>
@@ -201,7 +193,7 @@ public class ComfyWorkflowExecuteTests : TestBase
         // Use the API prompt directly from the file instead of converting the workflow
         var apiPromptFullPath = Path.Combine(AppContext.BaseDirectory, $"../../../workflows/prompts/sdxl_base_refiner.api-prompt.json");
         var promptJson = File.ReadAllText(apiPromptFullPath);
-        // Console.WriteLine(promptJson);
+        // DumpJson(promptJson);
 
         // Verify the JSON is valid and contains expected elements
         var jsonNode = JsonNode.Parse(promptJson);
@@ -238,7 +230,7 @@ public class ComfyWorkflowExecuteTests : TestBase
         Assert.That(node11["sampler_name"].GetValue<string>(), Is.EqualTo("euler"), "sampler_name should be 'euler'");
 
         // var responseJson = await ExecutePrompt(promptJson);
-        // Console.WriteLine(responseJson);
+        // DumpJson(responseJson);
     }
 
     [Test]
@@ -261,37 +253,37 @@ public class ComfyWorkflowExecuteTests : TestBase
         var promptJson = await CreateApiPromptJson("text-to-image/dreamshaperXL.json");
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_FluxSchnell_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/flux1-schnell.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_Hidream_Dev_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/hidream_i1_dev_fp8.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_JibMixRealisticXL_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/jibMixRealisticXL.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
@@ -308,50 +300,50 @@ public class ComfyWorkflowExecuteTests : TestBase
     public async Task Can_execute_JuggernautXL_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/juggernautXL.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_RealvisXL_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/realvisxl.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_SD35_Large_FP8_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/sd3.5_large_fp8_scaled.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_SD35_Large_Turbo_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/sd3.5_large_turbo.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_SDXL_lightning_Workflow()
     {
         var promptJson = await CreateApiPromptJson("text-to-image/sdxl_lightning_4step.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
@@ -359,10 +351,10 @@ public class ComfyWorkflowExecuteTests : TestBase
     {
         var apiPrompt = await CreateApiPrompt("text-to-image/smooth_workflow_v3.json");
         var promptJson = ClientConfig.ToSystemJson(apiPrompt);
-        // Console.WriteLine(promptJson);
+        // DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Ignore("Requires Florence2")]
@@ -370,10 +362,10 @@ public class ComfyWorkflowExecuteTests : TestBase
     public async Task Can_execute_Florence2_ImageToText_Workflow()
     {
         var promptJson = await CreateApiPromptJson("image-to-text/florence2.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Ignore("Requires image file: 00134-2415444908.png")]
@@ -381,20 +373,20 @@ public class ComfyWorkflowExecuteTests : TestBase
     public async Task Can_execute_SD15_pruned_emaonly_ImageToImage_Workflow()
     {
         var promptJson = await CreateApiPromptJson("image-to-image/sd1.5_pruned_emaonly.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
     public async Task Can_execute_VibeVoice_AudioToAudio_Workflow()
     {
         var promptJson = await CreateApiPromptJson("audio-to-audio/VibeVoice-SingleSpeaker.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Ignore("Requires TT-LoadAudio")]
@@ -402,10 +394,10 @@ public class ComfyWorkflowExecuteTests : TestBase
     public async Task Can_execute_SD15_pruned_emaonly_AudioToText_Workflow()
     {
         var promptJson = await CreateApiPromptJson("audio-to-text/transcribe-audio-whisper.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Ignore("Requires TT-LoadAudio")]
@@ -413,10 +405,10 @@ public class ComfyWorkflowExecuteTests : TestBase
     public async Task Can_execute_Transcribe_Whisper_VideoToText_Workflow()
     {
         var promptJson = await CreateApiPromptJson("video-to-text/transcribe-video-whisper.json");
-        Console.WriteLine(promptJson);
+        DumpJson(promptJson);
 
         var responseJson = await ExecutePrompt(promptJson);
-        Console.WriteLine(responseJson);
+        DumpJson(responseJson);
     }
 
     [Test]
