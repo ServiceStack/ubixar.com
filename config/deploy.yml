@@ -25,7 +25,7 @@ servers:
 # in Cloudflare's SSL/TLS setting to "Full" to enable end-to-end encryption.
 proxy:
   ssl: true
-  host: 
+  hosts:
     - ubixar.com
     - www.ubixar.com
     - cdn.ubixar.com
