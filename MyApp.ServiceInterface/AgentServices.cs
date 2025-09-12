@@ -1148,14 +1148,24 @@ public class AgentServices(ILogger<AgentServices> log,
         
         if (request is { Objects: not null, Tags: not null, Ratings: not null} && artifact.Type == AssetType.Image)
         {
-            var prompt = await db.SqlScalarAsync<string?>(
-                db.From<WorkflowGeneration>()
-                    .Where(x => x.Id == artifact.GenerationId)
-                    .Select(x => x.Description));
+            var gen = await db.AssertGenerationAsync(artifact.GenerationId);
+            var genResult = gen.Result?.Assets?.Find(x => x.Url == artifact.Url);
+            var prompt = gen.Args?.GetValueOrDefault("positivePrompt") as string ?? gen.Description;
 
             artifact.Ratings = request.Ratings;
             var minRating = appData.GetMinRatingForPrompt(prompt);
             artifact.Rating = artifact.ToAssetRating(minRating);
+
+            if (genResult != null)
+            {
+                genResult.Rating = artifact.Rating;
+                await db.UpdateOnlyAsync(() => new WorkflowGeneration
+                {
+                    Result = gen.Result,
+                    ModifiedBy = userId,
+                    ModifiedDate = DateTime.UtcNow,
+                }, where: x => x.Id == artifact.GenerationId);
+            }
         }
         if (artifact.Type == AssetType.Audio)
         {
