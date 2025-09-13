@@ -9,6 +9,7 @@ public static class Tags
     public const string Posts = nameof(Posts);
     public const string Files = nameof(Files);
     public const string Artifacts = nameof(Artifacts);
+    public const string AI = nameof(AI);
     public const string AiInfo = nameof(AiInfo);
     public const string Admin = nameof(Admin);
     public const string Devices = nameof(Devices);
