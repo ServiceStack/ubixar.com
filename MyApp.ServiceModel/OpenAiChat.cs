@@ -7,7 +7,7 @@ namespace MyApp.ServiceModel;
 
 [Tag(Tags.AiInfo)]
 [ValidateApiKey]
-public class GetOpenAiChat : IGet, IReturn<GetOpenAiChatResponse>
+public class GetOpenAiChatRequest : IGet, IReturn<GetOpenAiChatResponse>
 {
     public int? Id { get; set; }
     public string? RefId { get; set; }
@@ -21,7 +21,7 @@ public class GetOpenAiChatResponse
 [Tag(Tags.AiInfo)]
 public class GetOpenAiChatStatus : IGet, IReturn<GetOpenAiChatStatusResponse>
 {
-    public long JobId { get; set; }
+    public long? Id { get; set; }
     public string? RefId { get; set; }
 }
 
@@ -67,18 +67,16 @@ public class GetModelImage : IGet, IReturn<byte[]>
 public class QueueOpenAiChatCompletion : IReturn<QueueOpenAiChatResponse>
 {
     public string? RefId { get; set; }
-    public string? Provider { get; set; }
     public string? ReplyTo { get; set; }
     public string? Tag { get; set; }
-    public OpenAiChat Request { get; set; }
+    [ValidateNotEmpty]
+    public ChatCompletion Request { get; set; }
 }
 public class QueueOpenAiChatResponse
 {
     public long Id { get; set; }
     public string RefId { get; set; }
-    
     public string StatusUrl { get; set; }
-    
     public ResponseStatus? ResponseStatus { get; set; }
 }
 
@@ -86,13 +84,10 @@ public class QueueOpenAiChatResponse
 [ValidateApiKey]
 [Route("/v1/chat/completions", "POST")]
 [SystemJson(UseSystemJson.Response)]
-public class OpenAiChatCompletion : OpenAiChat, IPost, IReturn<OpenAiChatResponse>
+public class ChatCompletionCompletion : ChatCompletion, IPost, IReturn<OpenAiChatResponse>
 {
     [ApiMember(Description="Provide a unique identifier to track requests")]
     public string? RefId { get; set; }
-    
-    [ApiMember(Description="Specify which AI Provider to use")]
-    public string? Provider { get; set; }
     
     [ApiMember(Description="Categorize like requests under a common group")]
     public string? Tag { get; set; }
@@ -104,7 +99,7 @@ public class OpenAiChatCompletion : OpenAiChat, IPost, IReturn<OpenAiChatRespons
 [Tag(Tags.AiInfo)]
 [Api("Given a list of messages comprising a conversation, the model will return a response.")]
 [DataContract]
-public class OpenAiChat
+public class ChatCompletion
 {
     [ApiMember(Description="A list of messages comprising the conversation so far.")]
     [DataMember(Name = "messages")]
@@ -113,6 +108,10 @@ public class OpenAiChat
     [ApiMember(Description="ID of the model to use. See the model endpoint compatibility table for details on which models work with the Chat API")]
     [DataMember(Name = "model")]
     public string Model { get; set; }
+    
+    [ApiMember(Description="Parameters for audio output. Required when audio output is requested with modalities: [audio]")]
+    [DataMember(Name = "audio")]
+    public OpenAiChatAudio? Audio { get; set; }
     
     [ApiMember(Description="Number between `-2.0` and `2.0`. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.")]
     [DataMember(Name = "frequency_penalty")]
@@ -126,33 +125,61 @@ public class OpenAiChat
     [DataMember(Name = "logprobs")]
     public bool? LogProbs { get; set; }
 
-    [ApiMember(Description="An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used.")]
-    [DataMember(Name = "top_logprobs")]
-    public int? TopLogProbs { get; set; }
-
-    [ApiMember(Description="The maximum number of tokens that can be generated in the chat completion.")]
-    [DataMember(Name = "max_tokens")]
-    public int? MaxTokens { get; set; }
+    [ApiMember(Description="An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.")]
+    [DataMember(Name = "max_completion_tokens")]
+    public int? MaxCompletionTokens { get; set; }
+    
+    [ApiMember(Description = "Set of 16 key-value pairs that can be attached to an object. This can be useful for storing additional information about the object in a structured format.")]
+    [DataMember(Name = "metadata")]
+    public Dictionary<string,string>? Metadata { get; set; }
+    
+    [ApiMember(Description = "Output types that you would like the model to generate. Most models are capable of generating text, which is the default:")]
+    [DataMember(Name = "modalities")]
+    public List<string>? Modalities { get; set; }
     
     [ApiMember(Description="How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.")]
     [DataMember(Name = "n")]
     public int? N { get; set; }
     
+    [ApiMember(Description="Whether to enable parallel function calling during tool use.")]
+    [DataMember(Name = "parallel_tool_calls")]
+    public bool? ParallelToolCalls { get; set; }
+    
     [ApiMember(Description="Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.")]
     [DataMember(Name = "presence_penalty")]
     public double? PresencePenalty { get; set; }
+
+    [ApiMember(Description="Used by OpenAI to cache responses for similar requests to optimize your cache hit rates.")]
+    [DataMember(Name = "prompt_cache_key")]
+    public string? PromptCacheKey { get; set; }
+    
+    [ApiMember(Description="Constrains effort on reasoning for reasoning models. Currently supported values are minimal, low, medium, and high. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.")]
+    [DataMember(Name = "reasoning_effort")]
+    public string? ReasoningEffort { get; set; }
     
     [ApiMember(Description="An object specifying the format that the model must output. Compatible with GPT-4 Turbo and all GPT-3.5 Turbo models newer than `gpt-3.5-turbo-1106`. Setting Type to ResponseFormat.JsonObject enables JSON mode, which guarantees the message the model generates is valid JSON.")]
     [DataMember(Name = "response_format")]
     public OpenAiResponseFormat? ResponseFormat { get; set; }
+
+    [ApiMember(Description="A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a string that uniquely identifies each user.")]
+    [DataMember(Name = "safety_identifier")]
+    public string? SafetyIdentifier { get; set; }
     
     [ApiMember(Description="This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor changes in the backend.")]
     [DataMember(Name = "seed")]
     public int? Seed { get; set; }
     
+    [ApiMember(Description="Specifies the processing type used for serving the request.")]
+    [DataMember(Name = "service_tier")]
+    public string? ServiceTier { get; set; }
+    
     [ApiMember(Description="Up to 4 sequences where the API will stop generating further tokens.")]
     [DataMember(Name = "stop")]
     public List<string>? Stop { get; set; }
+    
+    [ApiMember(Description="Whether or not to store the output of this chat completion request for use in our model distillation or evals products.")]
+    [DataMember(Name = "store")]
+    public bool? Store { get; set; }
     
     [ApiMember(Description="If set, partial message deltas will be sent, like in ChatGPT. Tokens will be sent as data-only server-sent events as they become available, with the stream terminated by a `data: [DONE]` message.")]
     [DataMember(Name = "stream")]
@@ -162,24 +189,44 @@ public class OpenAiChat
     [DataMember(Name = "temperature")]
     public double? Temperature { get; set; }
     
-    [ApiMember(Description="An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.")]
-    [DataMember(Name = "top_p")]
-    public double? TopP { get; set; }
-    
     [ApiMember(Description="A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. A max of 128 functions are supported.")]
     [DataMember(Name = "tools")]
     public List<OpenAiTools>? Tools { get; set; }
 
-    [ApiMember(Description="A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.")]
-    [DataMember(Name = "user")]
-    public string? User { get; set; }
+    [ApiMember(Description="An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used.")]
+    [DataMember(Name = "top_logprobs")]
+    public int? TopLogprobs { get; set; }
+    
+    [ApiMember(Description="An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.")]
+    [DataMember(Name = "top_p")]
+    public double? TopP { get; set; }
+    
+    [ApiMember(Description="Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high.")]
+    [DataMember(Name = "verbosity")]
+    public string? verbosity { get; set; }
 }
 
+[Api("Parameters for audio output. Required when audio output is requested with modalities: [audio]")]
+[DataContract]
+public class OpenAiChatAudio
+{
+    [ApiMember(Description="Specifies the output audio format. Must be one of wav, mp3, flac, opus, or pcm16.")]
+    [DataMember(Name = "format")]
+    public string Format { get; set; }
+
+    [ApiMember(Description="The voice the model uses to respond. Supported voices are alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, and shimmer.")]
+    [DataMember(Name = "voice")]
+    public string Voice { get; set; }
+}
+
+[DataContract]
 public class OpenAiContent
 {
     [ApiMember(Description="The type of this content.")]
+    [DataMember(Name = "type")]
     public string Type { get; set; }
     [ApiMember(Description="The text of this content.")]
+    [DataMember(Name = "text")]
     public string Text { get; set; }
 }
 
@@ -189,7 +236,7 @@ public class OpenAiMessage
 {
     [ApiMember(Description="The contents of the message.")]
     [DataMember(Name = "content")]
-    public string Content { get; set; }
+    public object Content { get; set; }
     
     // [ApiMember(Description="The contents of the message.")]
     // [DataMember(Name = "content")]
@@ -302,18 +349,39 @@ public class OpenAiChatResponse
     
     [ApiMember(Description="This fingerprint represents the backend configuration that the model runs with.")]
     [DataMember(Name = "system_fingerprint")]
-    public string SystemFingerprint { get; set; }
+    public string? SystemFingerprint { get; set; }
     
     [ApiMember(Description="The object type, which is always chat.completion.")]
     [DataMember(Name = "object")]
     public string Object { get; set; }
     
+    [ApiMember(Description="Specifies the processing type used for serving the request.")]
+    [DataMember(Name = "service_tier")]
+    public string? ServiceTier { get; set; }
+    
     [ApiMember(Description="Usage statistics for the completion request.")]
     [DataMember(Name = "usage")]
     public OpenAiUsage Usage { get; set; }
     
+    [ApiMember(Description = "Set of 16 key-value pairs that can be attached to an object. This can be useful for storing additional information about the object in a structured format.")]
+    [DataMember(Name = "metadata")]
+    public Dictionary<string,string>? Metadata { get; set; }
+    
     [DataMember(Name = "responseStatus")]
     public ResponseStatus? ResponseStatus { get; set; }
+}
+
+[Api(Description="Configuration options for reasoning models.")]
+[DataContract]
+public class OpenAiReasoning
+{
+    [ApiMember(Description="Constrains effort on reasoning for reasoning models. Currently supported values are minimal, low, medium, and high.")]
+    [DataMember(Name = "effort")]
+    public string? Effort { get; set; }
+
+    [ApiMember(Description="A summary of the reasoning performed by the model. This can be useful for debugging and understanding the model's reasoning process. One of auto, concise, or detailed.")]
+    [DataMember(Name = "summary")]
+    public string? Summary { get; set; }
 }
 
 [Api(Description="Usage statistics for the completion request.")]
@@ -331,6 +399,52 @@ public class OpenAiUsage
     [ApiMember(Description="Total number of tokens used in the request (prompt + completion).")]
     [DataMember(Name = "total_tokens")]
     public int TotalTokens { get; set; }
+    
+    [ApiMember(Description="Breakdown of tokens used in a completion.")]
+    [DataMember(Name = "completion_tokens_details")]
+    public OpenAiCompletionUsage? CompletionTokensDetails { get; set; }
+    
+    [ApiMember(Description="Breakdown of tokens used in the prompt.")]
+    [DataMember(Name = "prompt_tokens_details")]
+    public OpenAiPromptUsage? PromptTokensDetails { get; set; }
+}
+
+[Api(Description="Usage statistics for the completion request.")]
+[DataContract]
+public class OpenAiCompletionUsage
+{
+    [ApiMember(Description="When using Predicted Outputs, the number of tokens in the prediction that appeared in the completion.\n\n")]
+    [DataMember(Name = "accepted_prediction_tokens")]
+    public int AcceptedPredictionTokens { get; set; }
+
+    [ApiMember(Description="Audio input tokens generated by the model.")]
+    [DataMember(Name = "audio_tokens")]
+    public int AudioTokens { get; set; }
+
+    [ApiMember(Description="Tokens generated by the model for reasoning.")]
+    [DataMember(Name = "reasoning_tokens")]
+    public int ReasoningTokens { get; set; }
+    
+    [ApiMember(Description="When using Predicted Outputs, the number of tokens in the prediction that did not appear in the completion.")]
+    [DataMember(Name = "rejected_prediction_tokens")]
+    public int RejectedPredictionTokens { get; set; }
+}
+
+[Api(Description="Breakdown of tokens used in the prompt.")]
+[DataContract]
+public class OpenAiPromptUsage
+{
+    [ApiMember(Description="When using Predicted Outputs, the number of tokens in the prediction that appeared in the completion.\n\n")]
+    [DataMember(Name = "accepted_prediction_tokens")]
+    public int AcceptedPredictionTokens { get; set; }
+
+    [ApiMember(Description="Audio input tokens present in the prompt.")]
+    [DataMember(Name = "audio_tokens")]
+    public int AudioTokens { get; set; }
+
+    [ApiMember(Description="Cached tokens present in the prompt.")]
+    [DataMember(Name = "cached_tokens")]
+    public int CachedTokens { get; set; }
 }
 
 public class Choice

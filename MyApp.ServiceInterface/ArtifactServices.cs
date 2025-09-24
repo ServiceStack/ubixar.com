@@ -238,7 +238,6 @@ public class ArtifactServices(
         });
 
         // Publish Tags and Categories for all Generation Artifacts
-        using var dbTasks = appData.OpenAiTaskDb();
         var genArtifacts = Db.Select<Artifact>(x => x.GenerationId == request.Id);
         foreach (var artifact in genArtifacts)
         {
@@ -256,8 +255,8 @@ public class ArtifactServices(
 
             if (artifact.Type == AssetType.Image)
             {
-                agentManager.AddCaptionArtifactTask(dbTasks, artifact, userId);
-                agentManager.AddDescribeArtifactTask(dbTasks, artifact, userId);
+                agentManager.EnqueueArtifactChat(artifact, CaptionArtifactCommand.Prompt,  callback:nameof(CaptionArtifactCommand),  userId:userId);
+                agentManager.EnqueueArtifactChat(artifact, DescribeArtifactCommand.Prompt, callback:nameof(DescribeArtifactCommand), userId:userId);
             }
 
             if (artifact.Type == AssetType.Audio)

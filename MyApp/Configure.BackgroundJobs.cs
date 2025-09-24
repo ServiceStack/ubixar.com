@@ -23,13 +23,15 @@ public class ConfigureBackgroundJobs : IHostingStartup
                 c.GetRequiredService<SmtpConfig>()));
             
             services.AddPlugin(new CommandsFeature());
-            services.AddPlugin(new BackgroundsJobFeature
-            {
-                DbDir = Path.Combine(context.Configuration.GetAppDataPath(), "jobs"),
-                ConfigureDialectProvider = dialect => {
-                    dialect.BusyTimeout = TimeSpan.FromSeconds(30);
-                    dialect.EnableWriterLock = false;
-                },
+            // services.AddPlugin(new BackgroundsJobFeature
+            // {
+            //     DbDir = Path.Combine(context.Configuration.GetAppDataPath(), "jobs"),
+            //     ConfigureDialectProvider = dialect => {
+            //         dialect.BusyTimeout = TimeSpan.FromSeconds(30);
+            //         dialect.EnableWriterLock = false;
+            //     },
+            // });
+            services.AddPlugin(new DatabaseJobFeature {
             });
             services.AddHostedService<JobsHostedService>();
         }).ConfigureAppHost(afterAppHostInit: appHost => {

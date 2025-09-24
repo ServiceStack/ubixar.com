@@ -37,7 +37,6 @@ public class ComfyServices(ILogger<ComfyServices> log,
             WorkflowCount = appData.Workflows.Count,
             AgentEventCounts = agentManager.GetAgentEventsCount(),
             Agents = visibleAgents.Map(x => x.ToAgentInfo()),
-            QueuedAiTasks = agentManager.AiTasks.Values.Map(x => x.ConvertTo<AiTaskInfo>()),
             DefaultGatewayNodes = appData.DefaultGatewayNodes,
         };
 

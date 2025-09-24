@@ -1,5 +1,5 @@
 /* Options:
-Date: 2025-09-03 17:52:16
+Date: 2025-09-17 13:28:34
 Version: 8.81
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: http://localhost:5000
@@ -681,6 +681,12 @@ export class CommentReaction {
     /** @type {string} */
     createdDate;
 }
+/** @typedef {'OpenAiChat'|'OllamaGenerate'} */
+export var AiTaskType;
+(function (AiTaskType) {
+    AiTaskType["OpenAiChat"] = "OpenAiChat"
+    AiTaskType["OllamaGenerate"] = "OllamaGenerate"
+})(AiTaskType || (AiTaskType = {}));
 export class UserPrefs {
     /** @param {{lastReadNotificationId?:number,lastReadAchievementId?:number}} [init] */
     constructor(init) { Object.assign(this, init) }
@@ -910,7 +916,7 @@ export var ComfyInputType;
     ComfyInputType["Video"] = "Video"
 })(ComfyInputType || (ComfyInputType = {}));
 export class ComfyInputDefinition {
-    /** @param {{classType?:string,nodeId?:number,valueIndex?:number,name?:string,label?:string,type?:ComfyInputType,tooltip?:string,default?:Object,min?:number,max?:number,step?:number,round?:number,multiline?:boolean,dynamicPrompts?:boolean,controlAfterGenerate?:boolean,upload?:boolean,enumValues?:string[],comboValues?:{ [index:string]: Object; }}} [init] */
+    /** @param {{classType?:string,nodeId?:number,valueIndex?:number,name?:string,label?:string,type?:ComfyInputType,tooltip?:string,default?:Object,min?:number,max?:number,step?:number,round?:number,multiline?:boolean,dynamicPrompts?:boolean,controlAfterGenerate?:boolean,upload?:boolean,enumValues?:string[],comboValues?:{ [index:string]: Object; },placeholder?:string}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {string} */
     classType;
@@ -948,6 +954,8 @@ export class ComfyInputDefinition {
     enumValues;
     /** @type {?{ [index:string]: Object; }} */
     comboValues;
+    /** @type {?string} */
+    placeholder;
 }
 export class AssetInfo {
     /** @param {{asset?:string,url?:string}} [init] */
@@ -1545,6 +1553,16 @@ export class MyCreditLog {
     /** @type {number} */
     created;
 }
+/** @typedef {'Queued'|'Started'|'Executed'|'Completed'|'Failed'|'Cancelled'} */
+export var BackgroundJobState;
+(function (BackgroundJobState) {
+    BackgroundJobState["Queued"] = "Queued"
+    BackgroundJobState["Started"] = "Started"
+    BackgroundJobState["Executed"] = "Executed"
+    BackgroundJobState["Completed"] = "Completed"
+    BackgroundJobState["Failed"] = "Failed"
+    BackgroundJobState["Cancelled"] = "Cancelled"
+})(BackgroundJobState || (BackgroundJobState = {}));
 export class StringsResponse {
     /** @param {{results?:string[],meta?:{ [index:string]: string; },responseStatus?:ResponseStatus}} [init] */
     constructor(init) { Object.assign(this, init) }
@@ -2268,6 +2286,54 @@ export class ClaimBonusCreditsResponse {
     /** @type {?ResponseStatus} */
     responseStatus;
 }
+export class QueueOpenAiChatResponse {
+    /** @param {{id?:number,refId?:string,statusUrl?:string,responseStatus?:ResponseStatus}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {number} */
+    id;
+    /** @type {string} */
+    refId;
+    /** @type {string} */
+    statusUrl;
+    /** @type {?ResponseStatus} */
+    responseStatus;
+}
+export class GetOpenAiChatStatusResponse {
+    /** @param {{jobId?:number,refId?:string,jobState?:BackgroundJobState,status?:string,responseStatus?:ResponseStatus,result?:OpenAiChatResponse}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /**
+     * @type {number}
+     * @description Unique identifier of the background job */
+    jobId;
+    /**
+     * @type {string}
+     * @description Client-provided identifier for the request */
+    refId;
+    /**
+     * @type {BackgroundJobState}
+     * @description Current state of the background job */
+    jobState;
+    /**
+     * @type {?string}
+     * @description Current status of the generation request */
+    status;
+    /**
+     * @type {?ResponseStatus}
+     * @description Detailed response status information */
+    responseStatus;
+    /**
+     * @type {?OpenAiChatResponse}
+     * @description Chat result */
+    result;
+}
+export class GetAiTasksResponse {
+    /** @param {{results?:AgentEvent[],responseStatus?:ResponseStatus}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {AgentEvent[]} */
+    results = [];
+    /** @type {?ResponseStatus} */
+    responseStatus;
+}
 export class AuthenticateResponse {
     /** @param {{userId?:string,sessionId?:string,userName?:string,displayName?:string,referrerUrl?:string,bearerToken?:string,refreshToken?:string,refreshTokenExpiry?:string,profileUrl?:string,roles?:string[],permissions?:string[],authProvider?:string,responseStatus?:ResponseStatus,meta?:{ [index:string]: string; }}} [init] */
     constructor(init) { Object.assign(this, init) }
@@ -2691,10 +2757,10 @@ export class GetOpenAiChatTask {
     createResponse() { return new OpenAiChat() }
 }
 export class CompleteOpenAiChatTask extends OpenAiChatResponse {
-    /** @param {{taskId?:number,id?:string,choices?:Choice[],created?:number,model?:string,system_fingerprint?:string,object?:string,usage?:OpenAiUsage,responseStatus?:ResponseStatus}} [init] */
+    /** @param {{refId?:string,id?:string,choices?:Choice[],created?:number,model?:string,system_fingerprint?:string,object?:string,usage?:OpenAiUsage,responseStatus?:ResponseStatus}} [init] */
     constructor(init) { super(init); Object.assign(this, init) }
-    /** @type {number} */
-    taskId;
+    /** @type {string} */
+    refId;
     getTypeName() { return 'CompleteOpenAiChatTask' }
     getMethod() { return 'POST' }
     createResponse() { return new EmptyResponse() }
@@ -3362,6 +3428,17 @@ export class GetUserAvatar {
     getMethod() { return 'GET' }
     createResponse() { return new Blob() }
 }
+export class GetAvatarFile {
+    /** @param {{path?:string,download?:boolean}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    path;
+    /** @type {?boolean} */
+    download;
+    getTypeName() { return 'GetAvatarFile' }
+    getMethod() { return 'GET' }
+    createResponse() { return new Blob() }
+}
 export class GetArtifact {
     /** @param {{path?:string,download?:boolean}} [init] */
     constructor(init) { Object.assign(this, init) }
@@ -3578,6 +3655,65 @@ export class ClaimBonusCredits {
     getTypeName() { return 'ClaimBonusCredits' }
     getMethod() { return 'POST' }
     createResponse() { return new ClaimBonusCreditsResponse() }
+}
+export class QueueOpenAiChatCompletion {
+    /** @param {{refId?:string,replyTo?:string,tag?:string,request?:OpenAiChat}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {?string} */
+    refId;
+    /** @type {?string} */
+    replyTo;
+    /** @type {?string} */
+    tag;
+    /** @type {OpenAiChat} */
+    request;
+    getTypeName() { return 'QueueOpenAiChatCompletion' }
+    getMethod() { return 'POST' }
+    createResponse() { return new QueueOpenAiChatResponse() }
+}
+export class GetOpenAiChatStatus {
+    /** @param {{id?:number,refId?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {?number} */
+    id;
+    /** @type {?string} */
+    refId;
+    getTypeName() { return 'GetOpenAiChatStatus' }
+    getMethod() { return 'GET' }
+    createResponse() { return new GetOpenAiChatStatusResponse() }
+}
+export class GetAiTaskRequest {
+    /** @param {{refId?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    refId;
+    getTypeName() { return 'GetAiTaskRequest' }
+    getMethod() { return 'GET' }
+    createResponse() { return '' }
+}
+export class CompleteOpenAiChat extends OpenAiChatResponse {
+    /** @param {{refId?:string,id?:string,choices?:Choice[],created?:number,model?:string,system_fingerprint?:string,object?:string,usage?:OpenAiUsage,responseStatus?:ResponseStatus}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
+    /** @type {string} */
+    refId;
+    getTypeName() { return 'CompleteOpenAiChat' }
+    getMethod() { return 'POST' }
+    createResponse() { return new EmptyResponse() }
+}
+export class GetAiTasks {
+    /** @param {{deviceId?:string,models?:string[],types?:AiTaskType[],take?:number}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    deviceId;
+    /** @type {string[]} */
+    models = [];
+    /** @type {AiTaskType[]} */
+    types = [];
+    /** @type {?number} */
+    take;
+    getTypeName() { return 'GetAiTasks' }
+    getMethod() { return 'GET' }
+    createResponse() { return new GetAiTasksResponse() }
 }
 export class Authenticate {
     /** @param {{provider?:string,userName?:string,password?:string,rememberMe?:boolean,accessToken?:string,accessTokenSecret?:string,returnUrl?:string,errorView?:string,meta?:{ [index:string]: string; }}} [init] */

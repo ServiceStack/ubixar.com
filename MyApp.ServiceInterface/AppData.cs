@@ -1355,36 +1355,6 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
         
         return db.Select(q);
     }
-
-    public IDbConnection OpenAiTaskDb(DateTime? createdDate=null)
-    {
-        if (Config.TaskConnection == null)
-            throw new Exception("TaskConnection not configured");
-
-        var date = createdDate ?? DateTime.UtcNow;
-        
-        if (date.Year is < 2025 or > 2026)
-            throw new ArgumentException($"Invalid {createdDate}", nameof(createdDate));
-        
-        var monthDb = $"ai_{date.Year}-{date.Month:00}.db";
-        if (!OrmLiteConnectionFactory.NamedConnections.ContainsKey(monthDb))
-        {
-            var path = Config.TaskConnection.RightPart('=').LastLeftPart(';');
-            var dir = (path.StartsWith('/')
-                ? path
-                : ContentRootPath.CombineWith(path)).LastLeftPart('/');
-            dir.AssertDir();
-            var connString = Config.TaskConnection.Replace("{db}", monthDb);
-            dbFactory.RegisterConnection(monthDb, connString, SqliteConfiguration.Configure(SqliteDialect.Create()));
-            var db = dbFactory.OpenDbConnection(monthDb);
-
-            db.CreateTableIfNotExists<OllamaGenerateTask>();
-            db.CreateTableIfNotExists<OpenAiChatTask>();
-            
-            return db;
-        }
-        return dbFactory.OpenDbConnection(monthDb);
-    }
     
     public string AssetUrl(string url) => !url.Contains("://")
         ? Config.AssetsBaseUrl.CombineWith(url)

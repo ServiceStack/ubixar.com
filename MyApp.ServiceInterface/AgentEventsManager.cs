@@ -5,11 +5,12 @@ using MyApp.ServiceInterface.Commands;
 using MyApp.ServiceModel;
 using ServiceStack;
 using ServiceStack.Data;
+using ServiceStack.Jobs;
 using ServiceStack.OrmLite;
 
 namespace MyApp.ServiceInterface;
 
-public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData)
+public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData, IBackgroundJobs jobs)
 {
     private readonly ConcurrentDictionary<string, BlockingCollection<AgentEvent>> agentTaskQueues = new();
     
@@ -70,12 +71,6 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
         {
             SignalGenerationRequest();
         }
-    }
-
-    public void QueueAiTask(IAiTask task)
-    {
-        AiTasks[task.Id] = task;
-        SignalAiTaskRequest();
     }
 
     public long GenerationRequest = 0;
@@ -197,181 +192,74 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
         return ret;
     }
     
-    public ConcurrentDictionary<long, IAiTask> AiTasks = new();
-
-    public OllamaGenerateTask AddCaptionArtifactTask(IDbConnection dbTasks, Artifact artifact, string userId, string? model=null)
-    {
-        model ??= appData.Config.VisualLanguageModel;
-        var artifactPath = appData.GetArtifactPath(artifact.Url.LastRightPart('/'));
-        var task = AddOllamaGenerateTask(dbTasks, new OllamaGenerateTask {
-            Model = model,
-            Task = ServiceModel.AiTasks.CaptionImage,
-            TaskId = $"{artifact.Id}",
-            Request = new() {
-                Model = model,
-                Prompt = "A caption of this image: ",
-                Images = [artifactPath], // Needs to be converted to base64 before execution
-                Stream = false,
-            },
-            Callback = nameof(CaptionImageCommand),
-        }.WithAudit(userId, DateTime.UtcNow));
-        return task;
-    }
-
-    public OllamaGenerateTask AddDescribeArtifactTask(IDbConnection dbTasks, Artifact artifact, string userId, string? model=null)
-    {
-        model ??= appData.Config.VisualLanguageModel;
-        var artifactPath = appData.GetArtifactPath(artifact.Url.LastRightPart('/'));
-        var task = AddOllamaGenerateTask(dbTasks, new OllamaGenerateTask {
-            Model = model,
-            Task = ServiceModel.AiTasks.DescribeImage,
-            TaskId = $"{artifact.Id}",
-            Request = new() {
-                Model = model,
-                Prompt = "A detailed description of this image: ",
-                Images = [artifactPath], // Needs to be converted to base64 before execution
-                Stream = false,
-            },
-            Callback = nameof(DescribeImageCommand),
-        }.WithAudit(userId, DateTime.UtcNow));
-        return task;
-    }
-
-    public OllamaGenerateTask AddOllamaGenerateTask(IDbConnection db, OllamaGenerateTask task)
-    {
-        task.Id = PreciseTimestamp.UniqueUtcNowTicks;
-        task.RefId ??= Guid.NewGuid().ToString("N");
-        task.ReplyTo = $"/api/{nameof(CompleteOllamaGenerateTask)}".AddQueryParam("taskId", task.Id);
-        db.Insert(task);
-        QueueAiTask(task);
-        return task;
-    }
-
-    public OpenAiChatTask AddOpenAiPromptTask(IDbConnection dbTasks, string userId, string prompt, string? systemPrompt=null, string? model=null)
+    public BackgroundJobRef EnqueueChatMessage(string prompt, string? systemPrompt=null,
+        string? model = null, string? userId = null, string? callback = null, Dictionary<string,string>? args = null)
     {
         model ??= appData.Config.ChatLanguageModel;
-        List<OpenAiMessage> messages = [];
-        if (!string.IsNullOrEmpty(systemPrompt))
-            messages.Add(new() { Role = "system", Content = systemPrompt });
-        messages.Add(new() { Role = "user", Content = prompt });
-        var task = AddOpenAiChatTask(dbTasks, new OpenAiChatTask {
+        var taskId = PreciseTimestamp.UniqueUtcNowTicks;
+        var refId = $"{taskId}";
+        var replyTo = $"/api/{nameof(CompleteChatCompletion)}".AddQueryParam(nameof(refId), refId);
+        var jobRef = jobs.EnqueueCommand<ChatCompletionCommand>(new ChatCompletion {
             Model = model,
-            Task = ServiceModel.AiTasks.OpenAiChat,
-            Request = new() {
-                Model = model,
-                Messages = messages,
-                Stream = false,
+            Messages = [
+                new()
+                {
+                    Role = "system", 
+                    Content = systemPrompt ?? "You are a helpful assistant.",
+                },
+                new()
+                {
+                    Role = "user", 
+                    Content = prompt
+                },
+            ]
+        }, new() {
+            RefId = refId,
+            ReplyTo = replyTo,
+            Args = args,
+            UserId = userId,
+            Callback = callback,
+        });
+        return jobRef;
+    }
+    
+    public BackgroundJobRef EnqueueArtifactChat(Artifact artifact, string prompt, string? callback = null, string? userId = null, string? model = null)
+    {
+        model ??= appData.Config.VisualLanguageModel;
+        var taskId = PreciseTimestamp.UniqueUtcNowTicks;
+        var refId = $"{taskId}";
+        var replyTo = $"/api/{nameof(CompleteChatCompletion)}".AddQueryParam(nameof(refId), refId);
+        var jobRef = jobs.EnqueueCommand<ChatCompletionCommand>(new ChatCompletion {
+            Model = model,
+            Messages = [
+                new()
+                {
+                    Role = "user", 
+                    Content = new List<Dictionary<string, object>>
+                    {
+                        new () {
+                            ["type"] = "image_url", 
+                            ["image_url"] = new Dictionary<string, object> {
+                                ["url"] = artifact.Url,
+                            },
+                        },
+                        new() {
+                            ["type"] = "text", 
+                            ["text"] = prompt,
+                        },
+                    }
+                },
+            ]
+        }, new() {
+            RefId = refId,
+            ReplyTo = replyTo,
+            Callback = callback,
+            UserId = userId,
+            Args = new() {
+                ["artifactId"] = $"{artifact.Id}",
             },
-        }.WithAudit(userId, DateTime.UtcNow));
-        return task;
-    }
-
-    public OpenAiChatTask AddOpenAiChatTask(IDbConnection db, OpenAiChatTask task)
-    {
-        task.Id = PreciseTimestamp.UniqueUtcNowTicks;
-        task.RefId ??= Guid.NewGuid().ToString("N");
-        task.ReplyTo = $"/api/{nameof(CompleteOpenAiChatTask)}".AddQueryParam("taskId", task.Id);
-        db.Insert(task);
-        QueueAiTask(task);
-        return task;
-    }
-
-    public AgentEvent[] GetNextAiTasks(ComfyAgent agent, string userId, int take)
-    {
-        var pendingTasks = AiTasks.ValuesWithoutLock()
-            .Where(x => (x.DeviceId == null || x.DeviceId == agent.DeviceId)
-                        && agent.LanguageModels?.Contains(x.Model) == true)
-            .OrderBy(x => x.Id)
-            .ToList();
-
-        var ret = new List<AgentEvent>();
-        if (agent.LanguageModels?.Count > 0 && !AiTasks.IsEmpty)
-        {
-            using var dbTasks = appData.OpenAiTaskDb();
-            
-            foreach (var task in pendingTasks)
-            {
-                if (task is OllamaGenerateTask)
-                {
-                    var assignTask = dbTasks.UpdateOnly(() => new OllamaGenerateTask
-                    {
-                        State = TaskState.Assigned,
-                        Status = GenerationStatus.AssignedToAgent,
-                        DeviceId = agent.DeviceId,
-                        UserId = userId,
-                    }, x => x.Id == task.Id && x.State == TaskState.Queued
-                        && (x.DeviceId == null || x.DeviceId == agent.DeviceId));
-
-                    if (assignTask == 0)
-                    {
-                        if (!dbTasks.Exists<OllamaGenerateTask>(x => x.Id == task.Id && x.State == TaskState.Queued))
-                        {
-                            log.LogWarning("Task {Id} was no longer queued, removing from queue", task.Id);
-                            AiTasks.TryRemove(task.Id, out _);
-                        }
-                        continue;
-                    }
-                    
-                    ret.Add(new AgentEvent
-                    {
-                        Name = EventMessages.ExecOllama,
-                        Args = new() {
-                            ["model"] = task.Model,
-                            ["endpoint"] = "/api/generate",
-                            ["request"] = $"/api/{nameof(GetOllamaGenerateTask)}".AddQueryParam("taskId", task.Id),
-                            ["replyTo"] = task.ReplyTo,
-                        }
-                    });
-                }
-                else if (task is OpenAiChatTask)
-                {
-                    var assignTask = dbTasks.UpdateOnly(() => new OpenAiChatTask
-                    {
-                        State = TaskState.Assigned,
-                        Status = GenerationStatus.AssignedToAgent,
-                        DeviceId = agent.DeviceId,
-                        UserId = userId,
-                    }, x => x.Id == task.Id && x.State == TaskState.Queued
-                        && (x.DeviceId == null || x.DeviceId == agent.DeviceId));
-
-                    if (assignTask == 0)
-                    {
-                        if (!dbTasks.Exists<OpenAiChatTask>(x => x.Id == task.Id && x.State == TaskState.Queued))
-                        {
-                            log.LogWarning("Task {Id} was no longer queued, removing from queue", task.Id);
-                            AiTasks.TryRemove(task.Id, out _);
-                        }
-                        continue;
-                    }
-                    
-                    ret.Add(new AgentEvent
-                    {
-                        Name = EventMessages.ExecOllama,
-                        Args = new() {
-                            ["model"] = task.Model,
-                            ["endpoint"] = "/v1/chat/completions",
-                            ["request"] = $"/api/{nameof(GetOpenAiChatTask)}".AddQueryParam("taskId", task.Id),
-                            ["replyTo"] = task.ReplyTo,
-                        }
-                    });
-                }
-                
-                if (ret.Count >= take)
-                    break;
-            }
-        }
-        
-        return ret.ToArray();
-    }
-
-    private static List<OllamaGenerateTask> GetPendingOllamaGenerateTasks(IDbConnection dbTasks, ComfyAgent agent)
-    {
-        var pendingTasks = dbTasks.Select(dbTasks.From<OllamaGenerateTask>()
-            .Where(x => x.State == TaskState.Queued
-                        && (x.DeviceId == null || x.DeviceId == agent.DeviceId)
-                        && agent.LanguageModels.Contains(x.Model))
-            .OrderBy(x => x.Id));
-        return pendingTasks;
+        });
+        return jobRef;
     }
 
     public void Reload(IDbConnection db)
@@ -384,27 +272,6 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
             QueuedGenerations[generation.Id] = generation;
         }
         log.LogInformation("Reloaded {Count} pending generations", QueuedGenerations.Count);
-        
-        AiTasks.Clear();
-        using var dbTasks = appData.OpenAiTaskDb();
-        var pendingOllamaGenerateTasks = dbTasks
-            .Select(dbTasks.From<OllamaGenerateTask>()
-            .Where(x => x.State == TaskState.Queued));
-        foreach (var task in pendingOllamaGenerateTasks)
-        {
-            AiTasks[task.Id] = task;
-        }
-        
-        var pendingOpenAiChatTasks = dbTasks
-            .Select(dbTasks.From<OpenAiChatTask>()
-                .Where(x => x.State == TaskState.Queued));
-        foreach (var task in pendingOpenAiChatTasks)
-        {
-            AiTasks[task.Id] = task;
-        }
-        
-        log.LogInformation("Reloaded {Count} pending tasks (generate {OllamaGenerateTasks}, chat {OpenAiChatTasks})", 
-            AiTasks.Count, pendingOllamaGenerateTasks.Count, pendingOpenAiChatTasks.Count);
     }
 
     public void RemoveAgent(string deviceId)
@@ -600,47 +467,49 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
         return ret.ToArray();
     }
 
-    public List<string> RequeueCaptionTasks(IDbConnection db,
-        string userId, List<int>? artifactIds=null, int? take=null, string? model=null)
+    public PendingArtifactResults GetPendingArtifactTasks(IDbConnection db, string userId, List<int>? artifactIds=null, int? take=null)
     {
-        take ??= 1;
-        model ??= appData.Config.VisualLanguageModel;
+        var toCaption = new List<Artifact>();
+        var toDescribe = new List<Artifact>();
         
-        using var dbTasks = appData.OpenAiTaskDb();
-
-        var results = new List<string>();
         var nextArtifacts = db.Select(db.From<Artifact>()
             .Where(x => x.Type == AssetType.Image 
-                && x.Caption == null || x.Description == null 
+                && (x.Caption == null || x.Description == null) 
                 && (artifactIds == null || artifactIds.Contains(x.Id))
+                && x.PublishedDate != null
                 && x.DeletedDate == null)
                 .OrderBy(x => x.Id)
                 .Take(take)
             );
 
         if (nextArtifacts.Count == 0) 
-            return results;
+            return new ([], [], [], [], []);
         
-        var existingCaptionArtifactIds = dbTasks.ColumnDistinct<long>(dbTasks.From<OllamaGenerateTask>()
-            .Where(x => x.Task == ServiceModel.AiTasks.CaptionImage)
-            .Select(x => x.TaskId));
-        var existingDescribeArtifactIds = dbTasks.ColumnDistinct<long>(dbTasks.From<OllamaGenerateTask>()
-            .Where(x => x.Task == ServiceModel.AiTasks.DescribeImage)
-            .Select(x => x.TaskId));
-        var resetTaskIds = new HashSet<string>();
-            
+        var backgroundJobs = db.Select(db.From<BackgroundJob>()
+            .Where(x => x.Callback == nameof(CaptionArtifactCommand) || x.Callback == nameof(DescribeArtifactCommand)));
+        
+        var existingCaptionArtifactIds = backgroundJobs.Where(x => x.Callback == nameof(CaptionArtifactCommand))
+            .Select(x => int.Parse(x.Args?.GetValueOrDefault("artifactId") ?? "-1"))
+            .ToList();
+        var existingDescribeArtifactIds = backgroundJobs.Where(x => x.Callback == nameof(DescribeArtifactCommand))
+            .Select(x => int.Parse(x.Args?.GetValueOrDefault("artifactId") ?? "-1"))
+            .ToList();
+
+        log.LogInformation("RequeueCaptionTasks: {ArtifactsCount} artifacts: {ArtifactIds}\n{CaptionsCount} captions: {ExistingCaptionArtifactIds}\n{DescriptionsCount} descriptions: {ExistingDescribeArtifactIds}", 
+            nextArtifacts.Count,
+            nextArtifacts.Select(x => x.Id).Join(", "), 
+            existingCaptionArtifactIds.Count,
+            existingCaptionArtifactIds.Join(", "),
+            existingDescribeArtifactIds.Count,
+            existingDescribeArtifactIds.Join(", "));
+        
         foreach (var artifact in nextArtifacts)
         {
             if (artifact.Caption == null)
             {
                 if (!existingCaptionArtifactIds.Contains(artifact.Id))
                 {
-                    var task = AddCaptionArtifactTask(dbTasks, artifact, userId, model);
-                    results.Add($"{task.Task} {task.TaskId}");
-                }
-                else
-                {
-                    resetTaskIds.Add($"{artifact.Id}");
+                    toCaption.Add(artifact);
                 }
             }
 
@@ -648,35 +517,30 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
             {
                 if (!existingDescribeArtifactIds.Contains(artifact.Id))
                 {
-                    var task = AddDescribeArtifactTask(dbTasks, artifact, userId, model);
-                    results.Add($"{task.Task} {task.TaskId}");
-                }
-                else
-                {
-                    resetTaskIds.Add($"{artifact.Id}");
+                    toDescribe.Add(artifact);
                 }
             }
         }
+        
+        return new(nextArtifacts, existingCaptionArtifactIds, existingDescribeArtifactIds, toCaption, toDescribe);
+    }
 
-        if (resetTaskIds.Count > 0)
+    public List<string> RequeueCaptionTasks(IDbConnection db, string userId, List<int>? artifactIds=null, int? take=null)
+    {
+        take ??= 1;
+        var results = new List<string>();
+        var pendingTasks = GetPendingArtifactTasks(db, userId, artifactIds, take);
+
+        foreach (var artifact in pendingTasks.CaptionArtifacts)
         {
-            var updated = dbTasks.UpdateOnly(() => new OllamaGenerateTask
-            {
-                State = TaskState.Queued,
-                DeviceId = null,
-                UserId = null,
-                Error = null,
-            }, where: x => resetTaskIds.Contains(x.TaskId!) && x.Result == null);
-            results.Add($"Reset {updated} tasks");
+            var jobRef = EnqueueArtifactChat(artifact, CaptionArtifactCommand.Prompt,  callback:nameof(CaptionArtifactCommand),  userId:userId);
+            results.Add($"Requeue Caption Artifact: {jobRef.Id}/{jobRef.RefId}");
         }
 
-        // Re-add any incomplete tasks to the queue
-        var incompleteTasks = dbTasks.Select(dbTasks.From<OllamaGenerateTask>()
-            .Where(x => x.Result == null && x.Error == null && x.DeletedDate == null));
-        foreach (var task in incompleteTasks)
+        foreach (var artifact in pendingTasks.DescribeArtifacts)
         {
-            QueueAiTask(task);
-            results.Add($"{task.Task} {task.TaskId}");
+            var jobRef = EnqueueArtifactChat(artifact, DescribeArtifactCommand.Prompt, callback:nameof(DescribeArtifactCommand), userId:userId);
+            results.Add($"Requeue Describe Artifact: {jobRef.Id}/{jobRef.RefId}");
         }
 
         return results;
@@ -687,6 +551,13 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
         QueuedGenerations.Remove(generationId, out _);
     }
 }
+
+public record PendingArtifactResults(
+    List<Artifact> PendingArtifacts, 
+    List<int> ExistingCaptionArtifactIds, 
+    List<int> ExistingDescribeArtifactIds, 
+    List<Artifact> CaptionArtifacts, 
+    List<Artifact> DescribeArtifacts);
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
 public class ServerEvent

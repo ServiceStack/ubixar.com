@@ -380,6 +380,7 @@ public static class GenerationStatus
     public const string GenerationFailed = "Generation failed";
     public const string ReAddedToAgentsPool = "Re-added to agents pool";
     public const string CallbackFailed = "Callback failed";
+    public const string NoResults = "No results";
 }
 
 public class Artifact : AuditBase, IAssetMetadata

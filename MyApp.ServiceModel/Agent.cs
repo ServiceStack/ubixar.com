@@ -179,46 +179,20 @@ public class UpdateWorkflowGeneration : IPost, IReturn<EmptyResponse>
 
 [ValidateApiKey]
 [Tag(Tags.Agent)]
-public class CaptionArtifact : IPost, IReturn<EmptyResponse>
+public class GetChatCompletion : IGet, IReturn<ChatCompletion>
 {
     [ValidateNotEmpty, ValidateExactLength(32)]
-    public string DeviceId { get; set; }
+    public string Device { get; set; }
     [ValidateNotEmpty]
-    public string ArtifactUrl { get; set; }
-    public string? Caption { get; set; }
-    public string? Description { get; set; }
+    public List<string> Models { get; set; }
 }
 
 [ValidateApiKey]
 [Tag(Tags.Agent)]
-public class CompleteOllamaGenerateTask : OllamaGenerateResponse, IPost, IReturn<EmptyResponse>
+public class CompleteChatCompletion : OpenAiChatResponse, IPost, IReturn<EmptyResponse>
 {
-    [ValidateGreaterThan(0)]
-    public long TaskId { get; set; }
-}
-
-[ValidateApiKey]
-[Tag(Tags.Agent)]
-public class GetOllamaGenerateTask : IGet, IReturn<OllamaGenerate>
-{
-    [ValidateGreaterThan(0)]
-    public long TaskId { get; set; }
-}
-
-[ValidateApiKey]
-[Tag(Tags.Agent)]
-public class GetOpenAiChatTask : IGet, IReturn<OpenAiChat>
-{
-    [ValidateGreaterThan(0)]
-    public long TaskId { get; set; }
-}
-
-[ValidateApiKey]
-[Tag(Tags.Agent)]
-public class CompleteOpenAiChatTask : OpenAiChatResponse, IPost, IReturn<EmptyResponse>
-{
-    [ValidateGreaterThan(0)]
-    public long TaskId { get; set; }
+    [ValidateNotEmpty]
+    public long RefId { get; set; }
 }
 
 [ValidateApiKey]

@@ -18,7 +18,6 @@ public class GetAppDataResponse
     public int WorkflowCount { get; set; }
     public Dictionary<string, int> AgentEventCounts { get; set; }
     public List<AgentInfo> Agents { get; set; }
-    public List<AiTaskInfo> QueuedAiTasks { get; set; }
     public HashSet<string> DefaultGatewayNodes { get; set; } 
     public ResponseStatus? ResponseStatus { get; set; }
 }
@@ -232,7 +231,7 @@ public class AiChat : IPost, IReturn<StringResponse>
 [ValidateIsAdmin]
 public class GetAiChat : IGet, IReturn<GetAiChatResponse>
 {
-    public long? TaskId { get; set; }
+    public long? Id { get; set; }
     public bool? IncludeDetails { get; set; }
 }
 public class GetAiChatResponse
@@ -321,4 +320,19 @@ public class UpdateAudioTags : IPost, IReturn<StringsResponse>
     [ValidateNotEmpty]
     public string ArtifactPath { get; set; }
     public Dictionary<string, double> ArtifactTags { get; set; }
+}
+
+[Tag(Tags.Admin)]
+[ValidateIsAdmin]
+public class GetPendingArtifactTasks : IGet, IReturn<GetPendingArtifactTasksResponse>
+{
+}
+public class GetPendingArtifactTasksResponse
+{
+    public List<int> MissingArtifacts { get; set; } = [];
+    public List<int> ExistingCaptionArtifacts { get; set; } = [];
+    public List<int> ExistingDescribeArtifacts { get; set; } = [];
+    public List<int> RequeueCaptionArtifacts { get; set; } = [];
+    public List<int> RequeueDescribeArtifacts { get; set; } = [];
+    public ResponseStatus? ResponseStatus { get; set; }
 }

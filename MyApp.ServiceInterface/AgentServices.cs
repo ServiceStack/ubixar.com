@@ -195,9 +195,9 @@ public class AgentServices(ILogger<AgentServices> log,
         agent.LastIp = Request!.RemoteIp ?? Request.UserHostAddress;
         agent.SetLastUpdate();
         
-        log.LogDebug("🖥 GetComfyAgentEvents from {DeviceId} {HostAddress} 📬 {QueueCount}\n    Language Models: {LanguageModels}\n    {GenerationsCount} Generations, {AiTasksCount} AI Tasks",
+        log.LogDebug("🖥 GetComfyAgentEvents from {DeviceId} {HostAddress} 📬 {QueueCount}\n    Language Models: {LanguageModels}\n    {GenerationsCount} Generations",
             agent.DeviceId, agent.LastIp, agent.QueueCount, agent.LanguageModels?.Join(", ") ?? "none", 
-            agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count);
+            agentManager.QueuedGenerations.Count);
 
         var spareCapacity = MaxAgentQueueCount - agent.QueueCount;
         long generationsCounter = -1;
@@ -225,26 +225,26 @@ public class AgentServices(ILogger<AgentServices> log,
                 if (nextGenerations.Length > 0)
                 {
                     ret.Results.AddRange(nextGenerations.Map(x => x.ToExecWorkflow()));
-                    log.LogInformation("👉 GetComfyAgentEvents: {DeviceId} - assigned {Count} new Generation Requests ({GenerationsCount} Generations, {AiTasksCount} AI Tasks):\n{GenerationIds}", 
-                        agent.DeviceId, ret.Results.Count, agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count, nextGenerations.Map(x => x.Id).Join(", "));
+                    log.LogInformation("👉 GetComfyAgentEvents: {DeviceId} - assigned {Count} new Generation Requests ({GenerationsCount} Generations):\n{GenerationIds}", 
+                        agent.DeviceId, ret.Results.Count, agentManager.QueuedGenerations.Count, nextGenerations.Map(x => x.Id).Join(", "));
                     return ret;
                 }
                 generationsCounter = AgentManager.GenerationRequest;
             }
 
             // Check for any0 pending AI Tasks for this device
-            if (aiTasksCounter != AgentManager.AiTaskRequest && spareCapacity > 0)
-            {
-                var nextAiTasks = AgentManager.GetNextAiTasks(agent, userId, take: spareCapacity);
-                if (nextAiTasks.Length > 0)
-                {
-                    ret.Results.AddRange(nextAiTasks);
-                    log.LogInformation("👉 GetComfyAgentEvents: {DeviceId} - assigned {Count} new AI Tasks ({GenerationsCount} Generations, {AiTasksCount} AI Tasks)", 
-                        agent.DeviceId, ret.Results.Count, agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count);
-                    return ret;
-                }
-                aiTasksCounter = AgentManager.AiTaskRequest;
-            }
+            // if (aiTasksCounter != AgentManager.AiTaskRequest && spareCapacity > 0)
+            // {
+            //     var nextAiTasks = AgentManager.GetNextAiTasks(agent, userId, take: spareCapacity);
+            //     if (nextAiTasks.Length > 0)
+            //     {
+            //         ret.Results.AddRange(nextAiTasks);
+            //         log.LogInformation("👉 GetComfyAgentEvents: {DeviceId} - assigned {Count} new AI Tasks ({GenerationsCount} Generations, {AiTasksCount} AI Tasks)", 
+            //             agent.DeviceId, ret.Results.Count, agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count);
+            //         return ret;
+            //     }
+            //     aiTasksCounter = AgentManager.AiTaskRequest;
+            // }
 
             // Check if they've reported a lower queue count
             spareCapacity = MaxAgentQueueCount - agent.QueueCount;
@@ -274,13 +274,13 @@ public class AgentServices(ILogger<AgentServices> log,
                 if (nextGenerations.Length > 0)
                 {
                     ret.Results.AddRange(nextGenerations.Map(x => x.ToExecWorkflow()));
-                    log.LogInformation("⏱ ️👉️️ GetComfyAgentEvents⏱: {DeviceId} - assigned {Count} new Generation Requests ({GenerationsCount} Generations, {AiTasksCount} AI Tasks):\n{GenerationIds}", 
-                        agent.DeviceId, ret.Results.Count, agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count, nextGenerations.Map(x => x.Id).Join(", "));
+                    log.LogInformation("⏱ ️👉️️ GetComfyAgentEvents⏱: {DeviceId} - assigned {Count} new Generation Requests ({GenerationsCount} Generations):\n{GenerationIds}", 
+                        agent.DeviceId, ret.Results.Count, agentManager.QueuedGenerations.Count, nextGenerations.Map(x => x.Id).Join(", "));
                     return ret;
                 }
 
-                log.LogInformation("⏱ ️👉 GetComfyAgentEvents: {DeviceId} 📬 {QueueCount} - timed out ({GenerationsCount} Generations, {AiTasksCount} AI Tasks)", 
-                    agent.DeviceId, agent.QueueCount, agentManager.QueuedGenerations.Count, AgentManager.AiTasks.Count);
+                log.LogInformation("⏱ ️👉 GetComfyAgentEvents: {DeviceId} 📬 {QueueCount} - timed out ({GenerationsCount} Generations)", 
+                    agent.DeviceId, agent.QueueCount, agentManager.QueuedGenerations.Count);
                 
                 var results = agentManager.RequeueCaptionTasks(db, userId, take:100);
                 log.LogInformation("⏱️ Requeued {Count} caption tasks{Details}", results.Count,
@@ -385,24 +385,8 @@ public class AgentServices(ILogger<AgentServices> log,
             // Only needs to be reset if it's been assigned to this agent
             && x.PromptId == null);
         
-        using var dbTasks = appData.OpenAiTaskDb();
-        var updatedTasks = dbTasks.UpdateOnly(() => new OllamaGenerateTask
-        {
-            State = TaskState.Queued,
-            DeviceId = null,
-            UserId = null,
-        }, where: x => x.DeviceId == request.DeviceId && 
-            (x.State == TaskState.Assigned || x.State == TaskState.Started));
-        updatedTasks += dbTasks.UpdateOnly(() => new OpenAiChatTask
-        {
-            State = TaskState.Queued,
-            DeviceId = null,
-            UserId = null,
-        }, where: x => x.DeviceId == request.DeviceId && 
-            (x.State == TaskState.Assigned || x.State == TaskState.Started));
-
         // If any tasks were updated, reload the agent events queue
-        if (updatedGenerations > 0 || updatedTasks > 0)
+        if (updatedGenerations > 0)
         {
             AgentManager.Reload(db);
         }
@@ -742,309 +726,6 @@ public class AgentServices(ILogger<AgentServices> log,
         return new EmptyResponse();
     }
 
-    public async Task<object> Any(CaptionArtifact request)
-    {
-        var userId = Request.AssertApiKeyUserId();
-        var now = DateTime.UtcNow;
-        var artifacts = Db.Select<Artifact>(x => x.Url == request.ArtifactUrl);
-        if (artifacts.Count == 0)
-            throw HttpError.NotFound($"Artifact not found: {request.ArtifactUrl.SafeInput()}");
-
-        var genCache = new Dictionary<string, string?>();
-        
-        foreach (var artifact in artifacts)
-        {
-            artifact.Caption = request.Caption?.StripQuotes().Trim();
-            artifact.Description = request.Description?.StripQuotes().Trim();
-            artifact.ModifiedBy = userId;
-            artifact.ModifiedDate = now;
-            
-            log.LogInformation("[{DeviceId}] Captioning Artifact {Id} {GenerationId} {Url} with '{Caption}':\n{Description}", 
-                request.DeviceId[..4], artifact.Id, artifact.GenerationId, artifact.Url, request.Caption, request.Description);
-            
-            Db.UpdateOnly(() => new Artifact {
-                Caption = artifact.Caption,
-                Description = artifact.Description,
-                ModifiedBy = artifact.ModifiedBy,
-                ModifiedDate = artifact.ModifiedDate,
-            }, where:x => x.Url == request.ArtifactUrl);
-            
-            if (artifact.PublishedDate != null)
-            {
-                var description = genCache.GetValueOrDefault(artifact.GenerationId)
-                    ?? (genCache[artifact.GenerationId] = Db.SqlScalar<string?>(
-                        Db.From<WorkflowGeneration>()
-                            .Where(x => x.Id == artifact.GenerationId)
-                            .Select(x => x.Description)));
-            }
-        }
-        
-        await appData.SaveArtifactsMetadataAsync(artifacts.Map(x => x.ToArtifactMetadata()));
-        return new EmptyResponse();
-    }
-    
-    public object Get(GetOllamaGenerateTask request)
-    {
-        var userId = Request.AssertApiKeyUserId();
-        var now = DateTime.UtcNow;
-
-        var taskId = request.TaskId;
-        var createdDate = new DateTime(taskId);
-        using var dbTasks = appData.OpenAiTaskDb(createdDate);
-        
-        var task = dbTasks.SingleById<OllamaGenerateTask>(taskId);
-        if (task == null)
-            throw HttpError.NotFound("Task not found");
-        
-        var ollama = task.Request;
-        if (ollama.Images?.Count > 0)
-        {
-            for (var i = 0; i < ollama.Images.Count; i++)
-            {
-                var image = ollama.Images[i];
-                if (image.StartsWith('/') || image.StartsWith("../"))
-                {
-                    var usePath = image.StartsWith('/')
-                        ? image
-                        : appData.ContentRootPath.CombineWith(image);
-                    var imageBytes = File.ReadAllBytes(usePath);
-                    var base64 = Convert.ToBase64String(imageBytes);
-                    ollama.Images[i] = base64;
-                }
-                else if (image.StartsWith("http://") || image.StartsWith("https://"))
-                {
-                    var imageBytes = image.GetBytesFromUrl();
-                    var base64 = Convert.ToBase64String(imageBytes);
-                    ollama.Images[i] = base64;
-                }
-            }
-        }
-        
-        dbTasks.UpdateOnly(() => new OllamaGenerateTask
-        {
-            State = TaskState.Started,
-            Status = GenerationStatus.GenerationStarted,
-            ModifiedBy = userId,
-            ModifiedDate = now,
-        }, x => x.Id == taskId);
-
-        return ollama;
-    }
-
-    public async Task<object> Post(CompleteOllamaGenerateTask request)
-    {
-        var userId = Request.AssertApiKeyUserId();
-        var now = DateTime.UtcNow;
-
-        var taskId = request.TaskId;
-        var createdDate = new DateTime(taskId);
-        using var dbTasks = appData.OpenAiTaskDb(createdDate);
-        
-        var task = dbTasks.SingleById<OllamaGenerateTask>(taskId);
-        if (task == null)
-            throw HttpError.NotFound("Task not found");
-        
-        task.ModifiedBy = userId;
-        task.ModifiedDate = now;
-
-        if (request.ResponseStatus != null)
-        {
-            dbTasks.UpdateOnly(() => new OllamaGenerateTask
-            {
-                State = TaskState.Failed,
-                Status = GenerationStatus.GenerationFailed,
-                ModifiedBy = task.ModifiedBy,
-                ModifiedDate = task.ModifiedDate,
-                ErrorCode = request.ResponseStatus.ErrorCode,
-                Error = request.ResponseStatus,
-            }, x => x.Id == taskId);
-        }
-        else
-        {
-            OllamaGenerateResponse response = request;
-            task.State = TaskState.Executed;
-            task.Status = task.Callback != null
-                ? GenerationStatus.GenerationExecuted
-                : GenerationStatus.GenerationCompleted;
-            task.Response = response;
-            task.Result = response.Response;
-            
-            dbTasks.UpdateOnly(() => new OllamaGenerateTask
-            {
-                State = task.State,
-                Status = task.Status,
-                ModifiedBy = task.ModifiedBy,
-                ModifiedDate = task.ModifiedDate,
-                Response = task.Response,
-                Result = task.Result,
-            }, x => x.Id == taskId);
-
-            if (task.Callback != null)
-            {
-                var feature = AssertPlugin<CommandsFeature>();
-                var commandInfo = feature.AssertCommandInfo(task.Callback);
-                var commandType = commandInfo.Type;
-                var services = Request.GetServiceProvider();
-                var command = services.GetRequiredService(commandType);
-        
-                var commandResult = await feature.ExecuteCommandAsync(command, task);
-
-                task.ModifiedDate = now;
-                if (commandResult.Error != null)
-                {
-                    task.ErrorCode = commandResult.Error.ErrorCode;
-                    task.Error = commandResult.Error;
-                    
-                    dbTasks.UpdateOnly(() => new OllamaGenerateTask
-                    {
-                        State = TaskState.Failed,
-                        Status = GenerationStatus.CallbackFailed,
-                        ModifiedBy = task.ModifiedBy,
-                        ModifiedDate = task.ModifiedDate,
-                        ErrorCode = task.ErrorCode,
-                        Error = task.Error,
-                    }, x => x.Id == taskId);
-                }
-                else
-                {
-                    task.State = TaskState.Completed;
-                    task.Status = GenerationStatus.GenerationCompleted;
-                    task.Result = feature.GetCommandResultAsString(command, commandResult) ?? task.Result;
-                    
-                    dbTasks.UpdateOnly(() => new OllamaGenerateTask
-                    {
-                        State = task.State,
-                        Status = task.Status,
-                        ModifiedBy = task.ModifiedBy,
-                        ModifiedDate = task.ModifiedDate,
-                        Result = task.Result,
-                    }, x => x.Id == taskId);
-                }
-            }
-        }
-        return new EmptyResponse();
-    }
-    
-    public object Get(GetOpenAiChatTask request)
-    {
-        var userId = Request.AssertApiKeyUserId();
-        var now = DateTime.UtcNow;
-
-        var taskId = request.TaskId;
-        var createdDate = new DateTime(taskId);
-        using var dbTasks = appData.OpenAiTaskDb(createdDate);
-        
-        var task = dbTasks.SingleById<OpenAiChatTask>(taskId);
-        if (task == null)
-            throw HttpError.NotFound("Task not found");
-        
-        var ollama = task.Request;
-        dbTasks.UpdateOnly(() => new OpenAiChatTask
-        {
-            State = TaskState.Started,
-            Status = GenerationStatus.GenerationStarted,
-            ModifiedBy = userId,
-            ModifiedDate = now,
-        }, x => x.Id == taskId);
-
-        return ollama;
-    }
-
-    public async Task<object> Post(CompleteOpenAiChatTask request)
-    {
-        var userId = Request.AssertApiKeyUserId();
-        var now = DateTime.UtcNow;
-
-        var taskId = request.TaskId;
-        var createdDate = new DateTime(taskId);
-        using var dbTasks = appData.OpenAiTaskDb(createdDate);
-        
-        var task = dbTasks.SingleById<OpenAiChatTask>(taskId);
-        if (task == null)
-            throw HttpError.NotFound("Task not found");
-        
-        task.ModifiedBy = userId;
-        task.ModifiedDate = now;
-
-        if (request.ResponseStatus != null)
-        {
-            dbTasks.UpdateOnly(() => new OpenAiChatTask
-            {
-                State = TaskState.Failed,
-                Status = GenerationStatus.GenerationFailed,
-                ModifiedBy = task.ModifiedBy,
-                ModifiedDate = task.ModifiedDate,
-                ErrorCode = request.ResponseStatus.ErrorCode,
-                Error = request.ResponseStatus,
-            }, x => x.Id == taskId);
-        }
-        else
-        {
-            OpenAiChatResponse response = request;
-            task.State = TaskState.Executed;
-            task.Status = task.Callback != null
-                ? GenerationStatus.GenerationExecuted
-                : GenerationStatus.GenerationCompleted;
-            task.Response = response;
-            var content = response.Choices.Map(x => x.Message.Content).Join("\n");
-            task.Result = content;
-            
-            dbTasks.UpdateOnly(() => new OpenAiChatTask
-            {
-                State = task.State,
-                Status = task.Status,
-                ModifiedBy = task.ModifiedBy,
-                ModifiedDate = task.ModifiedDate,
-                Response = task.Response,
-                Result = task.Result,
-            }, x => x.Id == taskId);
-
-            if (task.Callback != null)
-            {
-                var feature = AssertPlugin<CommandsFeature>();
-                var commandInfo = feature.AssertCommandInfo(task.Callback);
-                var commandType = commandInfo.Type;
-                var services = Request.GetServiceProvider();
-                var command = services.GetRequiredService(commandType);
-        
-                var commandResult = await feature.ExecuteCommandAsync(command, task);
-
-                task.ModifiedDate = now;
-                if (commandResult.Error != null)
-                {
-                    task.ErrorCode = commandResult.Error.ErrorCode;
-                    task.Error = commandResult.Error;
-                    
-                    dbTasks.UpdateOnly(() => new OpenAiChatTask
-                    {
-                        State = TaskState.Failed,
-                        Status = GenerationStatus.CallbackFailed,
-                        ModifiedBy = task.ModifiedBy,
-                        ModifiedDate = task.ModifiedDate,
-                        ErrorCode = task.ErrorCode,
-                        Error = task.Error,
-                    }, x => x.Id == taskId);
-                }
-                else
-                {
-                    task.State = TaskState.Completed;
-                    task.Status = GenerationStatus.GenerationCompleted;
-                    task.Result = feature.GetCommandResultAsString(command, commandResult) ?? task.Result;
-                    
-                    dbTasks.UpdateOnly(() => new OpenAiChatTask
-                    {
-                        State = task.State,
-                        Status = task.Status,
-                        ModifiedBy = task.ModifiedBy,
-                        ModifiedDate = task.ModifiedDate,
-                        Result = task.Result,
-                    }, x => x.Id == taskId);
-                }
-            }
-        }
-        return new EmptyResponse();
-    }
-
     public async Task<object> Get(AgentData request)
     {
         var userId = Request.AssertApiKeyUserId();
@@ -1146,7 +827,7 @@ public class AgentServices(ILogger<AgentServices> log,
         artifact.Color = request.Color ?? artifact.Color;
         artifact.Error = request.Error;
         
-        if (request is { Objects: not null, Tags: not null, Ratings: not null} && artifact.Type == AssetType.Image)
+        if (request is { Objects: not null, Tags: not null, Ratings: not null } && artifact.Type == AssetType.Image)
         {
             var gen = await db.AssertGenerationAsync(artifact.GenerationId);
             var genResult = gen.Result?.Assets?.Find(x => x.Url == artifact.Url);

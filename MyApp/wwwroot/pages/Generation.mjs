@@ -29,7 +29,7 @@ export default {
                   :class="('px-2 py-1 text-xs ') + getRatingColorClass('M')" :title="selectedArtifact.width + ' x ' + selectedArtifact.height">
               {{getHDClass(selectedArtifact.width, selectedArtifact.height)}}
             </span>
-            {{selectedArtifact.caption}}
+            {{captionFilter(selectedArtifact.caption)}}
         </div>
             
         <div v-if="generation" class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto p-4">
@@ -118,8 +118,8 @@ export default {
                   </div>
                 </div>
               
-                <div v-if="selectedArtifact?.description" class="p-4 text-sm text-gray-600 dark:text-gray-400">
-                    {{selectedArtifact.description}}
+                <div v-if="selectedArtifact?.description" class="p-4 text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                    {{descriptionFilter(selectedArtifact.description)}}
                 </div>
 
                 <!-- Discussion Section -->
@@ -656,6 +656,15 @@ export default {
             return refAudio.value?.player?.isPlaying && playAudio.value === audio
         }
         
+        function captionFilter(caption) {
+            caption = caption.trim()
+            return caption.startsWith('"') && caption.endsWith('"')
+                ? caption.slice(1, -1)
+                : caption
+        }
+        function descriptionFilter(description) {
+            return description
+        }
 
         return {
             Q:$1,
@@ -695,6 +704,8 @@ export default {
             getRatingColorClass,
             isType,
             isPlaying,
+            captionFilter,
+            descriptionFilter,
         }
     }
 }

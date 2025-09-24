@@ -3,6 +3,7 @@ using MyApp.Data;
 using MyApp.ServiceModel;
 using ServiceStack;
 using ServiceStack.Data;
+using ServiceStack.Jobs;
 using ServiceStack.OrmLite;
 using ServiceStack.Text;
 using SkiaSharp;
@@ -10,8 +11,22 @@ using SkiaSharp;
 namespace MyApp.ServiceInterface;
 
 public class AdminServices(ILogger<AdminServices> log, 
-    AppData appData, AppConfig appConfig, AgentEventsManager agentEvents, IDbConnectionFactory dbFactory) : Service
+    AppData appData, AppConfig appConfig, AgentEventsManager agentEvents, IDbConnectionFactory dbFactory,
+    IBackgroundJobs jobs) : Service
 {
+    public object Get(GetPendingArtifactTasks request)
+    {
+        var results = agentEvents.GetPendingArtifactTasks(Db, Request.GetRequiredUserId());
+        return new GetPendingArtifactTasksResponse
+        {
+            MissingArtifacts = results.PendingArtifacts.Map(x => x.Id),
+            ExistingCaptionArtifacts = results.ExistingCaptionArtifactIds,
+            ExistingDescribeArtifacts = results.ExistingDescribeArtifactIds,
+            RequeueCaptionArtifacts = results.CaptionArtifacts.Map(x => x.Id),
+            RequeueDescribeArtifacts = results.DescribeArtifacts.Map(x => x.Id),
+        };
+    }
+    
     public object Post(FixGenerations request)
     {
         var take = request.Take ?? 1;
@@ -720,7 +735,7 @@ public class AdminServices(ILogger<AdminServices> log,
         agentEvents.Reload(Db);
         return new StringResponse
         {
-            Result = $"Reloaded {agentEvents.QueuedGenerations.Count} pending generations, {agentEvents.AiTasks.Count} pending tasks"
+            Result = $"Reloaded {agentEvents.QueuedGenerations.Count} pending generations"
         };
     }
 
@@ -729,7 +744,7 @@ public class AdminServices(ILogger<AdminServices> log,
         var userId = Request.GetRequiredUserId();
         
         using var db = Db;
-        var results = agentEvents.RequeueCaptionTasks(db, userId, request.ArtifactIds, request.Take, request.Model);
+        var results = agentEvents.RequeueCaptionTasks(db, userId, request.ArtifactIds, request.Take);
 
         return new StringsResponse
         {
@@ -827,32 +842,34 @@ public class AdminServices(ILogger<AdminServices> log,
 
     public object Post(AiChat request)
     {
-        using var dbTasks = appData.OpenAiTaskDb();
         var userId = Request.GetRequiredUserId();
-        var model = request.Model ?? appData.Config.ChatLanguageModel;
-        var task = agentEvents.AddOpenAiPromptTask(dbTasks, userId, request.Prompt, request.SystemPrompt, model);
+        var jobRef = agentEvents.EnqueueChatMessage(
+            prompt:request.Prompt, systemPrompt:request.SystemPrompt, model:request.Model, userId:userId);
         return new StringResponse
         {
-            Result = $"Enqueued Open AI Chat to Task {task.Id} {task.RefId}"
+            Result = $"Enqueued Open AI Chat to Task {jobRef.Id}"
         };
     }
 
     public object Get(GetAiChat request)
     {
-        using var dbTasks = appData.OpenAiTaskDb();
-        var taskId = request.TaskId is null or 0 
-            ? dbTasks.Scalar<long>(dbTasks.From<OpenAiChatTask>()
+        using var dbMonthJobs = jobs.OpenMonthDb(DateTime.UtcNow);
+        var jobId = request.Id is null or 0 
+            ? dbMonthJobs.Scalar<long>(dbMonthJobs.From<CompletedJob>()
                 .Select(x => Sql.Max(x.Id)))
-            : request.TaskId;
+            : request.Id.Value;
         
-        var task = dbTasks.SingleById<OpenAiChatTask>(taskId);
-        if (task == null)
-            throw HttpError.NotFound("Task not found");
+        var job = jobs.GetJob(jobId);
+        if (job == null)
+            throw HttpError.NotFound("Job not found");
+        
+        var response = job.Job?.ResponseBody.FromJson<OpenAiChatResponse>();
+        var answer = response?.Choices?.FirstOrDefault()?.Message?.Content;
         
         return new GetAiChatResponse
         {
-            Result = task.Result ?? "",
-            Response = request.IncludeDetails == true ? task.Response : null,
+            Result = answer ?? "",
+            Response = request.IncludeDetails == true ? response : null,
         };
     }
 

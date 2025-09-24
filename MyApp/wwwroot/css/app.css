@@ -950,14 +950,6 @@
     width: calc(var(--spacing) * 40);
     height: calc(var(--spacing) * 40);
   }
-  .size-48 {
-    width: calc(var(--spacing) * 48);
-    height: calc(var(--spacing) * 48);
-  }
-  .size-56 {
-    width: calc(var(--spacing) * 56);
-    height: calc(var(--spacing) * 56);
-  }
   .size-64 {
     width: calc(var(--spacing) * 64);
     height: calc(var(--spacing) * 64);
@@ -2553,6 +2545,9 @@
   }
   .whitespace-pre {
     white-space: pre;
+  }
+  .whitespace-pre-wrap {
+    white-space: pre-wrap;
   }
   .text-amber-800 {
     color: var(--color-amber-800);
@@ -5804,11 +5799,6 @@
   .dark\:text-gray-600 {
     &:where(.dark, .dark *) {
       color: var(--color-gray-600);
-    }
-  }
-  .dark\:text-gray-700 {
-    &:where(.dark, .dark *) {
-      color: var(--color-gray-700);
     }
   }
   .dark\:text-green-100 {

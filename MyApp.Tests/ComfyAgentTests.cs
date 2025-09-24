@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.Extensions.DependencyInjection;
 using MyApp.ServiceModel;
 using NUnit.Framework;
@@ -9,40 +8,15 @@ using ServiceStack.OrmLite;
 namespace MyApp.Tests;
 
 [Explicit("IntegrationTest")]
-public class ComfyAgentTests : TestBase
+public class ComfyAgentTests : DatabaseTestsBase
 {
-    private IServiceProvider serviceProvider;
-
-    public ComfyAgentTests()
-    {
-        Console.WriteLine("COMFY_DB_CONNECTION");
-        Console.WriteLine(Environment.GetEnvironmentVariable("COMFY_DB_CONNECTION"));
-        
-        var services = new ServiceCollection();
-        services.AddOrmLite(options => 
-            options.UsePostgres(Environment.GetEnvironmentVariable("COMFY_DB_CONNECTION"), 
-            dialect => {
-            }));
-
-        serviceProvider = services.BuildServiceProvider();
-    }
-    
-    IDbConnection OpenDb() => serviceProvider.GetRequiredService<IDbConnectionFactory>().Open();
-
     [Test]
-    public void Can_Update_RequireNodes()
+    public void Can_get_agent()
     {
-        var deviceId = "254c87a97e92462ba1c8cd3e49b569c9";
+        var deviceId = "d09bee1cb0cc4df0984d35b052e8df18";
         
         using var db = OpenDb();
         var agent = db.Single<ComfyAgent>(x => x.DeviceId == deviceId);
-        agent.RequireNodes = [
-            "https://github.com/ltdrdata/ComfyUI-Manager", 
-            "https://github.com/pythongosssss/ComfyUI-Custom-Scripts",
-            "https://github.com/MoonHugo/ComfyUI-FFmpeg",
-        ];
-        db.UpdateOnly(() => new ComfyAgent {
-            RequireNodes = agent.RequireNodes,
-        }, x => x.DeviceId == agent.DeviceId);
+        Assert.That(agent, Is.Not.Null);
     }
 }
