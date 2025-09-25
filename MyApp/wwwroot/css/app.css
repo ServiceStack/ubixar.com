@@ -1038,6 +1038,12 @@
   .max-h-60 {
     max-height: calc(var(--spacing) * 60);
   }
+  .max-h-68 {
+    max-height: calc(var(--spacing) * 68);
+  }
+  .max-h-76 {
+    max-height: calc(var(--spacing) * 76);
+  }
   .max-h-92 {
     max-height: calc(var(--spacing) * 92);
   }
@@ -2545,9 +2551,6 @@
   }
   .whitespace-pre {
     white-space: pre;
-  }
-  .whitespace-pre-wrap {
-    white-space: pre-wrap;
   }
   .text-amber-800 {
     color: var(--color-amber-800);

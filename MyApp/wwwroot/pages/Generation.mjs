@@ -9,6 +9,7 @@ import ArtifactMenu from "./components/ArtifactMenu.mjs"
 import ArtifactReactions from "./components/ArtifactReactions.mjs"
 import RatingsBadge from "./components/RatingsBadge.mjs"
 import AudioPlayer from "./components/AudioPlayer.mjs"
+import { renderMarkdown } from "../lib/mjs/markdown.mjs" 
 
 export default {
     components: {
@@ -118,8 +119,14 @@ export default {
                   </div>
                 </div>
               
-                <div v-if="selectedArtifact?.description" class="p-4 text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                    {{descriptionFilter(selectedArtifact.description)}}
+                <div v-if="selectedArtifact?.description" id="description" class="max-h-76 overflow-hidden p-4 text-sm text-gray-600 dark:text-gray-400 prose">
+                    <div v-html="descriptionFilter(selectedArtifact?.description)"></div>
+                </div>
+                <div class="flex justify-center">
+                    <button type="button" data-more="#description" data-more-remove="max-h-76 overflow-hidden"
+                            class="hidden mt-2 mb-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                      show more
+                    </button>
                 </div>
 
                 <!-- Discussion Section -->
@@ -278,26 +285,41 @@ export default {
 
                 <!-- Prompt -->
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  
+                  <div id="positivePrompt" class="max-h-92 overflow-hidden">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Prompt</h3>
-                        <button @click="copyDescription" type="button"
-                                class="p-1 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors opacity-50 hover:opacity-100"
-                                :title="copiedDescription ? 'Copied!' : 'Copy description'">
-                            <svg v-if="copiedDescription" class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            <svg v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                            </svg>
-                        </button>
+                      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Prompt</h3>
+                      <button @click="copyDescription" type="button"
+                              class="p-1 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors opacity-50 hover:opacity-100"
+                              :title="copiedDescription ? 'Copied!' : 'Copy description'">
+                        <svg v-if="copiedDescription" class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <svg v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                      </button>
                     </div>
                     <p class="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
-                        {{ generation.args?.positivePrompt || generation.description || 'No description available' }}
+                      {{ generation.args?.positivePrompt || generation.description || 'No description available' }}
                     </p>
-                    <div v-if="generation.args?.negativePrompt" class="mt-4">
+                  </div>
+                  
+                    <button type="button" data-more="#positivePrompt" data-more-remove="max-h-92 overflow-hidden"
+                          class="hidden text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                        more
+                    </button>
+                  
+                    <div v-if="generation.args?.negativePrompt" id="negativePrompt" class="mt-4 max-h-68 overflow-hidden">
                         <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Negative Prompt</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ generation.args.negativePrompt }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400" :title="generation.args.negativePrompt">
+                          {{ generation.args.negativePrompt }}
+                        </p>
                     </div>
+                    <button type="button" data-more="#negativePrompt" data-more-remove="max-h-68 overflow-hidden"
+                              class="hidden text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                        more
+                    </button>
                 </div>
             
                 <!-- Technical Details -->
@@ -446,6 +468,7 @@ export default {
         const loadingComments = ref(false)
         const userVotes = ref({})
         const copiedDescription = ref(false)
+        const showFullDescription = ref(false)
         const workflow = computed(() => store.workflows.find(x => x.id === generation.value?.workflowId))
         const workflowVersion = computed(() => 
             store.workflowVersions.find(x => x.id === generation.value?.versionId)
@@ -606,6 +629,17 @@ export default {
         onMounted(async () => {
             document.addEventListener("keydown", handleKeydown)
             await onRouteChange()
+            
+            document.querySelectorAll('[data-more]').forEach(el => {
+                const target = document.querySelector(el.dataset.more)
+                if (target.scrollHeight > target.clientHeight) {
+                    el.classList.remove('hidden')
+                }
+                el.addEventListener('click', () => {
+                    el.dataset.moreRemove.split(' ').forEach(x => target.classList.remove(x))
+                    el.classList.add('hidden')
+                })
+            })
         })
 
         onUnmounted(() => {
@@ -663,8 +697,31 @@ export default {
                 : caption
         }
         function descriptionFilter(description) {
-            return description
+            return renderMarkdown(description)
         }
+
+        function toggleDescription() {
+            showFullDescription.value = !showFullDescription.value
+        }
+
+        const truncateAfter = 700
+        const shouldTruncateDescription = computed(() => {
+            if (!selectedArtifact.value?.description) return false
+            return selectedArtifact.value.description.length > truncateAfter // When to truncate
+        })
+
+        const displayedDescription = computed(() => {
+            if (!selectedArtifact.value?.description) return ''
+            if (!shouldTruncateDescription.value || showFullDescription.value) {
+                return selectedArtifact.value.description
+            }
+            return selectedArtifact.value.description.substring(0, truncateAfter) + '...'
+        })
+
+        // Reset show more state when artifact changes
+        watch(selectedArtifact, () => {
+            showFullDescription.value = false
+        })
 
         return {
             Q:$1,
@@ -706,6 +763,10 @@ export default {
             isPlaying,
             captionFilter,
             descriptionFilter,
+            toggleDescription,
+            showFullDescription,
+            shouldTruncateDescription,
+            displayedDescription,
         }
     }
 }
