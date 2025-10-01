@@ -9,7 +9,7 @@ import ArtifactMenu from "./components/ArtifactMenu.mjs"
 import ArtifactReactions from "./components/ArtifactReactions.mjs"
 import RatingsBadge from "./components/RatingsBadge.mjs"
 import AudioPlayer from "./components/AudioPlayer.mjs"
-import { renderMarkdown } from "../lib/mjs/markdown.mjs" 
+import { renderMarkdown } from "./lib/markdown.mjs" 
 
 export default {
     components: {
