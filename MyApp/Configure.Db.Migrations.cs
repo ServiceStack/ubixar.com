@@ -5,7 +5,6 @@ using MyApp.Data;
 using MyApp.Migrations;
 using MyApp.ServiceInterface;
 using MyApp.ServiceModel;
-using ServiceStack;
 using ServiceStack.Data;
 using ServiceStack.OrmLite;
 using ServiceStack.Text;
@@ -20,10 +19,7 @@ public class ConfigureDbMigrations : IHostingStartup
     public void Configure(IWebHostBuilder builder) => builder
         .ConfigureAppHost(appHost =>
         {
-            if (AppTasks.IsRunAsAppTask())
-            {
-                JS.Configure();
-            }
+            JS.Configure();
             
             var migrator = new Migrator(appHost.Resolve<IDbConnectionFactory>(), typeof(Migration1000).Assembly);
             AppTasks.Register("migrate", _ =>
@@ -52,10 +48,13 @@ public class ConfigureDbMigrations : IHostingStartup
             AppTasks.Register("migrate.revert", args => migrator.Revert(args[0]));
             AppTasks.Register("migrate.rerun", args => migrator.Rerun(args[0]));
             AppTasks.Register("adhoc", args => {
-                var Db = migrator.DbFactory.OpenDbConnection();
+                var jobs = appHost.Resolve<ServiceStack.Jobs.IBackgroundJobs>();
+                Console.WriteLine("Enqueueing job..." + (jobs != null));
+
+                // var Db = migrator.DbFactory.OpenDbConnection();
                 // var log = NullLogger.Instance;
-                Db.DropAndCreateTable<ComfyAgent>();
-                Db.DropAndCreateTable<DeletedRow>();
+                // Db.DropAndCreateTable<ComfyAgent>();
+                // Db.DropAndCreateTable<DeletedRow>();
                 // Db.DropAndCreateTable<CreditLog>();
             });
             AppTasks.Register("metadata", args =>

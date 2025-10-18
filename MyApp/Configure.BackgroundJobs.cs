@@ -32,6 +32,7 @@ public class ConfigureBackgroundJobs : IHostingStartup
             //     },
             // });
             services.AddPlugin(new DatabaseJobFeature {
+                NamedConnection = "jobs"
             });
             services.AddHostedService<JobsHostedService>();
         }).ConfigureAppHost(afterAppHostInit: appHost => {

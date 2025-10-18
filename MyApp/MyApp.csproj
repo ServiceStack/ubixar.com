@@ -63,6 +63,37 @@
         <Content Include="src\**" CopyToPublishDirectory="PreserveNewest"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\NuGet.config" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\benchmarks\Cronos.Benchmarks\bin\Debug\net8.0\Cronos.Benchmarks.deps.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\benchmarks\Cronos.Benchmarks\bin\Debug\net8.0\Cronos.Benchmarks.runtimeconfig.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\benchmarks\Cronos.Benchmarks\obj\Cronos.Benchmarks.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\benchmarks\Cronos.Benchmarks\obj\Debug\net8.0\Cronos.Benchmarks.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\benchmarks\Cronos.Benchmarks\obj\project.assets.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\benchmarks\Cronos.Benchmarks\packages.lock.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\bin\Debug\net6.0\Cronos.deps.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\bin\Debug\netstandard1.0\Cronos.deps.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\bin\Debug\netstandard2.0\Cronos.deps.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\obj\Cronos.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\obj\Debug\net40\Cronos.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\obj\Debug\net45\Cronos.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\obj\Debug\net6.0\Cronos.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\obj\Debug\netstandard1.0\Cronos.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\obj\Debug\netstandard2.0\Cronos.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\obj\project.assets.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\src\Cronos\packages.lock.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\bin\Debug\net6.0\Cronos.Tests.deps.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\bin\Debug\net6.0\Cronos.Tests.runtimeconfig.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\bin\Debug\net8.0\Cronos.Tests.deps.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\bin\Debug\net8.0\Cronos.Tests.runtimeconfig.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\obj\Cronos.Tests.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\obj\Debug\net462\Cronos.Tests.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\obj\Debug\net6.0\Cronos.Tests.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\obj\Debug\net8.0\Cronos.Tests.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\obj\project.assets.json" />
+      <_ContentIncludedByDefault Remove="src\HangfireIO\Cronos\tests\Cronos.Tests\packages.lock.json" />
+    </ItemGroup>
+
     <Target Name="tailwind" BeforeTargets="Publish">
         <Exec Command="bun run ui:build" WorkingDirectory="./" />
     </Target>

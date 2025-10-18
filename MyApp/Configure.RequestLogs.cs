@@ -1,7 +1,7 @@
 using ServiceStack.Jobs;
 using ServiceStack.Web;
 
-// [assembly: HostingStartup(typeof(MyApp.ConfigureRequestLogs))]
+[assembly: HostingStartup(typeof(MyApp.ConfigureRequestLogs))]
 
 namespace MyApp;
 
@@ -11,8 +11,11 @@ public class ConfigureRequestLogs : IHostingStartup
         .ConfigureServices((context, services) => {
             
             services.AddPlugin(new RequestLogsFeature {
-                RequestLogger = new SqliteRequestLogger {
-                    DbDir = Path.Combine(context.Configuration.GetAppDataPath(), "requests")
+                // RequestLogger = new SqliteRequestLogger {
+                //     DbDir = Path.Combine(context.Configuration.GetAppDataPath(), "requests")
+                // },
+                RequestLogger = new DbRequestLogger {
+                    NamedConnection = "jobs"
                 },
                 // EnableResponseTracking = true,
                 EnableRequestBodyTracking = true,
@@ -20,13 +23,13 @@ public class ConfigureRequestLogs : IHostingStartup
             });
             services.AddHostedService<RequestLogsHostedService>();
             
-            // if (context.HostingEnvironment.IsDevelopment())
-            // {
-            //     services.AddPlugin(new ProfilingFeature
-            //     {
-            //         IncludeStackTrace = true,
-            //     });
-            // }            
+            if (context.HostingEnvironment.IsDevelopment())
+            {
+                services.AddPlugin(new ProfilingFeature
+                {
+                    IncludeStackTrace = true,
+                });
+            }            
         });
 }
 
@@ -34,11 +37,20 @@ public class RequestLogsHostedService(ILogger<RequestLogsHostedService> log, IRe
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var dbRequestLogger = (SqliteRequestLogger)requestLogger;
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
-        while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
+        if (requestLogger is SqliteRequestLogger sqliteRequestLogger)
         {
-            dbRequestLogger.Tick(log);
+            while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                sqliteRequestLogger.Tick(log);
+            }
+        }
+        else if (requestLogger is DbRequestLogger dbRequestLogger)
+        {
+            while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                await dbRequestLogger.TickAsync(log, stoppingToken);
+            }
         }
     }
 }

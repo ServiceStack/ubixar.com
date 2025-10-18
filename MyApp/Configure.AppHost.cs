@@ -84,7 +84,7 @@ public partial class AppHost() : AppHostBase("ubixar.com"), IHostingStartup
             var services = appHost.GetApplicationServices();
             var appData = AppData.Instance = services.GetRequiredService<AppData>();
             appHost.ServiceName = appData.Config.AppName;
-            using var db = services.GetRequiredService<IDbConnectionFactory>().Open(x => x.WithName("AppHost"));
+            using var db = services.GetRequiredService<IDbConnectionFactory>().Open(configure:x => x.WithTag("AppHost"));
             appData.Reload(db);
             var agentsManager = services.GetRequiredService<AgentEventsManager>();
             agentsManager.Reload(db);

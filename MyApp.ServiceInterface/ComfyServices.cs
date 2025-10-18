@@ -1,15 +1,11 @@
 using System.Data;
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MyApp.ServiceInterface.Commands;
 using MyApp.ServiceModel;
 using ServiceStack;
 using ServiceStack.Data;
-using ServiceStack.Host;
 using ServiceStack.Jobs;
 using ServiceStack.OrmLite;
-using ServiceStack.Text;
 
 namespace MyApp.ServiceInterface;
 

@@ -33,7 +33,10 @@ public class DatabaseTestsBase : TestBase
         services.AddOrmLite(options => 
             options.UsePostgres(Environment.GetEnvironmentVariable("COMFY_DB_CONNECTION"), 
                 dialect => {
-                }));
+                }))
+            .AddPostgres(
+                "jobs",
+                "Host=localhost;Port=5432;Database=jobs;Username=jobs;Password=jobs;Include Error Detail=true;");
 
         serviceProvider = services.BuildServiceProvider();
     }

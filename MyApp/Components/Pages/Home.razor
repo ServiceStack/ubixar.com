@@ -3,6 +3,7 @@
 @layout Layout.MainLayout
 
 @using MyApp.ServiceInterface
+@using ServiceStack.OrmLite
 
 @inject AppData AppData
 @inject ServiceStack.Data.IDbConnectionFactory DbFactory
@@ -170,7 +171,7 @@ store.loadBestArtifacts(artifacts, 1000)
 
     protected override void OnInitialized()
     {
-        using var db = DbFactory.OpenWithName(nameof(Home));
+        using var db = DbFactory.Open(configure:db => db.WithTag("Home"));
         FeaturedArtifacts = AppData.GetFeaturedPortraitArtifacts(db, take:20);
         Layout?.HideFooter();
     }

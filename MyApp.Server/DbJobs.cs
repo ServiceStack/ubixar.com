@@ -1,9 +1,10 @@
+#nullable enable
+#if NET6_0_OR_GREATER
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Data;
 using ServiceStack.Auth;
-using ServiceStack.Data;
 using ServiceStack.Host;
 using ServiceStack.Jobs;
 using ServiceStack.Messaging;
@@ -13,21 +14,21 @@ using ServiceStack.Web;
 
 namespace ServiceStack;
 
-public partial class DatabaseJobs : IBackgroundJobs
+public partial class DbJobs : IBackgroundJobs
 {
-    readonly ILogger<DatabaseJobs> log;
+    readonly ILogger<DbJobs> log;
     readonly DatabaseJobFeature feature;
     private IServiceProvider services;
     readonly IServiceScopeFactory scopeFactory;
     private ConcurrentDictionary<string, int> lastCommandDurations = new();
     private ConcurrentDictionary<string, int> lastApiDurations = new();
-    ConcurrentDictionary<string, DatabaseJobsWorker> workers = new();
+    ConcurrentDictionary<string, DbJobsWorker> workers = new();
     static ConcurrentQueue<BackgroundJobStatusUpdate> updates = new();
     string Table;
     Columns columns;
     private long ticks = 0;
     
-    public DatabaseJobs(ILogger<DatabaseJobs> log, 
+    public DbJobs(ILogger<DbJobs> log, 
         DatabaseJobFeature feature, IServiceProvider services, IServiceScopeFactory scopeFactory)
     {
         // Need to store local references to these dependencies otherwise won't exist on BG Thread callbacks
@@ -36,7 +37,7 @@ public partial class DatabaseJobs : IBackgroundJobs
         this.services = services;
         this.scopeFactory = scopeFactory;
 
-        var dialect = feature.DialectProvider;
+        var dialect = feature.Dialect;
         this.Table = dialect.GetQuotedTableName(typeof(BackgroundJob));
         this.columns = new(
             Logs:dialect.GetQuotedColumnName(nameof(BackgroundJob.Logs)),
@@ -898,7 +899,7 @@ public partial class DatabaseJobs : IBackgroundJobs
         if (job.Worker != null)
         {
             var worker = workers.GetOrAdd(job.Worker, 
-                _ => new DatabaseJobsWorker(this, ct, transient:false, feature.DefaultTimeoutSecs) { Name = job.Worker });
+                _ => new DbJobsWorker(this, ct, transient:false, feature.DefaultTimeoutSecs) { Name = job.Worker });
             if (worker.HasJobQueued(job.Id))
             {
                 var runningTime = worker.RunningTime ?? TimeSpan.Zero;
@@ -910,7 +911,7 @@ public partial class DatabaseJobs : IBackgroundJobs
                 {
                     CancelWorker(job.Worker);
                     worker = workers.GetOrAdd(job.Worker, 
-                        _ => new DatabaseJobsWorker(this, ct, transient:false, feature.DefaultTimeoutSecs) { Name = job.Worker });
+                        _ => new DbJobsWorker(this, ct, transient:false, feature.DefaultTimeoutSecs) { Name = job.Worker });
                 }
                 else
                 {
@@ -923,7 +924,7 @@ public partial class DatabaseJobs : IBackgroundJobs
         else
         {
             // Otherwise invoke a new worker immediately
-            new DatabaseJobsWorker(this, ct, transient:true, feature.DefaultTimeoutSecs).Enqueue(job);
+            new DbJobsWorker(this, ct, transient:true, feature.DefaultTimeoutSecs).Enqueue(job);
         }
     }
 
@@ -936,7 +937,7 @@ public partial class DatabaseJobs : IBackgroundJobs
             
             // Transfer jobs to new Worker before disposing
             var newWorker = workers.GetOrAdd(worker, 
-                _ => new DatabaseJobsWorker(this, ct, transient:false, feature.DefaultTimeoutSecs) { Name = worker });
+                _ => new DbJobsWorker(this, ct, transient:false, feature.DefaultTimeoutSecs) { Name = worker });
             while (bgWorker.Queue.TryDequeue(out var job))
             {
                 newWorker.Enqueue(job);
@@ -1233,3 +1234,4 @@ public partial class DatabaseJobs : IBackgroundJobs
         ClearScheduledTasks();
     }
 }
+#endif

@@ -83,12 +83,4 @@ public static class AppDbExtensions
         }
         db.BulkInsert(artifactTags);
     }
-
-    public static string? GetName(this IDbConnection db) => (db as OrmLiteConnection)?.Name;
-    public static string? GetDbName(this IDbConnection db) => (db as OrmLiteConnection)?.NamedConnection ?? Workers.AppDb;
-    public static string? GetName(this IDbCommand cmd) => (cmd as OrmLiteCommand)?.OrmLiteConnection?.Name;
-    public static string? GetDbName(this IDbCommand cmd) => (cmd as OrmLiteCommand)?.OrmLiteConnection?.NamedConnection ?? Workers.AppDb;
-    public static TimeSpan? GetElapsedTime(this IDbCommand db) => (db as OrmLiteCommand)?.GetElapsedTime();
-    public static IDbConnection OpenWithName(this IDbConnectionFactory dbFactory, string name) =>
-        dbFactory.Open(x => x.WithName(name));
 }

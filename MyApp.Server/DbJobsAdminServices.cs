@@ -1,8 +1,8 @@
+#nullable enable
+#if NET6_0_OR_GREATER
 using System.Linq.Expressions;
 using Microsoft.Extensions.Logging;
 using ServiceStack.DataAnnotations;
-using ServiceStack.Host;
-using ServiceStack.NativeTypes;
 using ServiceStack.OrmLite;
 using ServiceStack.Jobs;
 
@@ -163,7 +163,7 @@ public class HourSummary
     public int Cancelled { get; set; }
 }
 
-public class AdminJobServices(ILogger<AdminJobServices> log, IBackgroundJobs jobs, IAutoQueryDb autoQuery) : Service
+public class DbJobsAdminServices(ILogger<DbJobsAdminServices> log, IBackgroundJobs jobs, IAutoQueryDb autoQuery) : Service
 {
     private DatabaseJobFeature AssertRequiredRole()
     {
@@ -561,3 +561,4 @@ public static class AdminJobServiceExtensions
         return to;
     }
 }
+#endif

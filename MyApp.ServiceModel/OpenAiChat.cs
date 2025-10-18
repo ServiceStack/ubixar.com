@@ -1,90 +1,32 @@
 using System.Runtime.Serialization;
 using ServiceStack;
-using ServiceStack.DataAnnotations;
-using ServiceStack.Jobs;
 
 namespace MyApp.ServiceModel;
 
-[Tag(Tags.AiInfo)]
 [ValidateApiKey]
-public class GetOpenAiChatRequest : IGet, IReturn<GetOpenAiChatResponse>
+[Tag(Tags.Agent)]
+public class GetChatCompletion : IGet, IReturn<ChatCompletion>
 {
-    public int? Id { get; set; }
-    public string? RefId { get; set; }
-}
-public class GetOpenAiChatResponse
-{
-    public BackgroundJobBase? Result { get; set; }
-    public ResponseStatus? ResponseStatus { get; set; }
-}
-
-[Tag(Tags.AiInfo)]
-public class GetOpenAiChatStatus : IGet, IReturn<GetOpenAiChatStatusResponse>
-{
-    public long? Id { get; set; }
-    public string? RefId { get; set; }
-}
-
-public class GetOpenAiChatStatusResponse
-{
-    [ApiMember(Description = "Unique identifier of the background job")]
-    public long JobId { get; set; }
-
-    [ApiMember(Description = "Client-provided identifier for the request")]
-    public string RefId { get; set; }
-
-    [ApiMember(Description = "Current state of the background job")]
-    public BackgroundJobState JobState { get; set; }
-
-    [ApiMember(Description = "Current status of the generation request")]
-    public string? Status { get; set; }
-    
-    [ApiMember(Description = "Detailed response status information")]
-    public ResponseStatus? ResponseStatus { get; set; }
-    
-    [ApiMember(Description = "Chat result")]
-    public OpenAiChatResponse? Result { get; set; }
-}
-
-[Tag(Tags.AiInfo)]
-[ValidateApiKey]
-public class WaitForOpenAiChat : IGet, IReturn<GetOpenAiChatResponse>
-{
-    public int? Id { get; set; }
-    public string? RefId { get; set; }
-}
-
-[Tag(Tags.AiInfo)]
-[Route("/icons/models/{Model}", "GET")]
-public class GetModelImage : IGet, IReturn<byte[]>
-{
-    public string Model { get; set; }
-}
-
-[Tag(Tags.AI)]
-[ValidateApiKey]
-[SystemJson(UseSystemJson.Response)]
-public class QueueOpenAiChatCompletion : IReturn<QueueOpenAiChatResponse>
-{
-    public string? RefId { get; set; }
-    public string? ReplyTo { get; set; }
-    public string? Tag { get; set; }
+    [ValidateNotEmpty, ValidateExactLength(32)]
+    public string Device { get; set; }
     [ValidateNotEmpty]
-    public ChatCompletion Request { get; set; }
+    public List<string> Models { get; set; }
 }
-public class QueueOpenAiChatResponse
+
+[ValidateApiKey]
+[Tag(Tags.Agent)]
+public class CompleteChatCompletion : OpenAiChatResponse, IPost, IReturn<EmptyResponse>
 {
-    public long Id { get; set; }
-    public string RefId { get; set; }
-    public string StatusUrl { get; set; }
-    public ResponseStatus? ResponseStatus { get; set; }
+    [ValidateNotEmpty]
+    public long RefId { get; set; }
 }
+
 
 [Tag(Tags.AI)]
 [ValidateApiKey]
 [Route("/v1/chat/completions", "POST")]
 [SystemJson(UseSystemJson.Response)]
-public class ChatCompletionCompletion : ChatCompletion, IPost, IReturn<OpenAiChatResponse>
+public class CreateChatCompletion : ChatCompletion, IPost, IReturn<OpenAiChatResponse>
 {
     [ApiMember(Description="Provide a unique identifier to track requests")]
     public string? RefId { get; set; }
@@ -96,7 +38,7 @@ public class ChatCompletionCompletion : ChatCompletion, IPost, IReturn<OpenAiCha
 /// <summary>
 /// https://platform.openai.com/docs/api-reference/chat/create
 /// </summary>
-[Tag(Tags.AiInfo)]
+[Tag(Tags.AI)]
 [Api("Given a list of messages comprising a conversation, the model will return a response.")]
 [DataContract]
 public class ChatCompletion
@@ -203,7 +145,7 @@ public class ChatCompletion
     
     [ApiMember(Description="Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high.")]
     [DataMember(Name = "verbosity")]
-    public string? verbosity { get; set; }
+    public string? Verbosity { get; set; }
 }
 
 [Api("Parameters for audio output. Required when audio output is requested with modalities: [audio]")]

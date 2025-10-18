@@ -179,24 +179,6 @@ public class UpdateWorkflowGeneration : IPost, IReturn<EmptyResponse>
 
 [ValidateApiKey]
 [Tag(Tags.Agent)]
-public class GetChatCompletion : IGet, IReturn<ChatCompletion>
-{
-    [ValidateNotEmpty, ValidateExactLength(32)]
-    public string Device { get; set; }
-    [ValidateNotEmpty]
-    public List<string> Models { get; set; }
-}
-
-[ValidateApiKey]
-[Tag(Tags.Agent)]
-public class CompleteChatCompletion : OpenAiChatResponse, IPost, IReturn<EmptyResponse>
-{
-    [ValidateNotEmpty]
-    public long RefId { get; set; }
-}
-
-[ValidateApiKey]
-[Tag(Tags.Agent)]
 public class AgentData : IGet, IReturn<AgentDataResponse>
 {
     [ValidateNotEmpty]

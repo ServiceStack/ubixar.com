@@ -1,10 +1,11 @@
+#if NET6_0_OR_GREATER
 using System.Collections.Concurrent;
 using ServiceStack.Jobs;
 using ServiceStack.Logging;
 
 namespace ServiceStack;
 
-public class DatabaseJobsWorker : IDisposable
+public class DbJobsWorker : IDisposable
 {
     public string? Name { get; set; }
     public ConcurrentQueue<BackgroundJob> Queue { get; } = new();
@@ -30,7 +31,7 @@ public class DatabaseJobsWorker : IDisposable
     private BackgroundJob? runningJob;
     public BackgroundJob? RunningJob => runningJob;
 
-    public DatabaseJobsWorker(IBackgroundJobs jobs, CancellationToken ct, bool transient, int defaultTimeOutSecs)
+    public DbJobsWorker(IBackgroundJobs jobs, CancellationToken ct, bool transient, int defaultTimeOutSecs)
     {
         this.jobs = jobs;
         workerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -120,7 +121,7 @@ public class DatabaseJobsWorker : IDisposable
         }
     }
 
-    ~DatabaseJobsWorker()
+    ~DbJobsWorker()
     {
         Dispose(false);
     }
@@ -161,3 +162,4 @@ public class DatabaseJobsWorker : IDisposable
         }
     }
 }
+#endif

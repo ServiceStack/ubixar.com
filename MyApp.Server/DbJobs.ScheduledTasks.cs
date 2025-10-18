@@ -1,3 +1,5 @@
+#nullable enable
+#if NET6_0_OR_GREATER
 using System.Collections.Concurrent;
 using ServiceStack.OrmLite;
 using Cronos;
@@ -5,7 +7,7 @@ using ServiceStack.Jobs;
 
 namespace ServiceStack;
 
-public partial class DatabaseJobs
+public partial class DbJobs
 {
     private ConcurrentDictionary<string, ScheduledTask> namedScheduledTasks = new();
     private ConcurrentDictionary<string, CronExpression> cronExpressions = new();
@@ -158,4 +160,4 @@ public partial class DatabaseJobs
         cronExpressions.Clear();
     }
 }
-
+#endif

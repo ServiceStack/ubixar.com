@@ -18,7 +18,7 @@ public class ChatCompletionCommand(
     ILogger<ChatCompletionCommand> logger,
     IBackgroundJobs jobs) : AsyncCommandWithResult<ChatCompletion, OpenAiChatResponse?>
 {
-    public const string LogPrefix = "[OpenAiChatCommand] ";
+    public const string LogPrefix = "[ChatCompletionCommand] ";
     public static IEnumerable<ChatCompletionResult> GetTaskResults() => Tasks.ValuesWithoutLock();
     public static ConcurrentDictionary<long,ChatCompletionResult> Tasks { get; } = new();
     public static ConcurrentDictionary<long,ChatCompletionResult?> AssignedTasks { get; } = new();
@@ -148,7 +148,7 @@ public class CaptionArtifactCommand(
                          ?? job.UserId ?? throw new ArgumentNullException(nameof(job.UserId));
             log.LogInformation("CaptionArtifactCommand {Id}/{RefId}/{ArtifactId} - {Answer}", 
                 job.Id, job.RefId, artifactId, answer);
-            using var db = dbFactory.OpenWithName(nameof(CaptionArtifactCommand));
+            using var db = await dbFactory.OpenAsync(configure:db => db.WithTag(nameof(CaptionArtifactCommand)), token:token);
             var updated = await db.UpdateOnlyAsync(() => new Artifact {
                 Caption = answer,
                 ModifiedBy = userId,
@@ -186,7 +186,7 @@ public class DescribeArtifactCommand(
                 ?? job.UserId ?? throw new ArgumentNullException(nameof(job.UserId));
             log.LogInformation("DescribeArtifactCommand {Id}/{RefId}/{ArtifactId} - {Answer}", 
                 job.Id, job.RefId, artifactId, answer);
-            using var db = dbFactory.OpenWithName(nameof(CaptionArtifactCommand));
+            using var db = await dbFactory.OpenAsync(configure:db => db.WithTag(nameof(CaptionArtifactCommand)), token:token);
             var updated = await db.UpdateOnlyAsync(() => new Artifact {
                 Description = answer,
                 ModifiedBy = userId,

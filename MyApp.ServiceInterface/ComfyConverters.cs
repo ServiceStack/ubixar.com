@@ -436,11 +436,10 @@ public static class ComfyConverters
     
     public static WorkflowResult ParseComfyResult(Dictionary<string, object?> result, string? comfyApiBaseUrl = null)
     {
-        var promptId = result.Keys.First();
         // Access the outputs section for this execution
-        var elPrompt = (Dictionary<string, object?>)result[promptId]!;
+        var prompt = (Dictionary<string, object?>)result.Values.First()!;
 
-        var ret = elPrompt.GetValueOrDefault("outputs") is Dictionary<string, object?> elOutputs
+        var ret = prompt.TryGetObject("outputs", out var elOutputs) 
             ? GetOutputs(elOutputs, minRating:Rating.PG)
             : new WorkflowResult();
 
@@ -455,21 +454,15 @@ public static class ComfyConverters
             }
         }
 
-        if (elPrompt.TryGetValue("prompt", out var objPromptTuple) && objPromptTuple is List<object> promptTuple)
+        if (prompt.TryGetValue("prompt", out List<object> tuple) && tuple.Count > 3)
         {
-            if (promptTuple.Count > 3)
+            if (tuple[3] is Dictionary<string, object?> extraData
+                && extraData.TryGetValue("client_id", out string clientId))
             {
-                var extraData = promptTuple[3];
-                if (extraData is Dictionary<string, object?> extraDataDict)
-                {
-                    if (extraDataDict.TryGetValue("client_id", out var oClientId))
-                    {
-                        ret.ClientId = oClientId?.ToString();
-                    }
-                }
+                ret.ClientId = clientId;
             }
         }
-        if (elPrompt.TryGetValue("status", out var oStatus) && oStatus is Dictionary<string, object?> status)
+        if (prompt.TryGetObject("status", out var status))
         {
             ret.Duration = GetDuration(status);
         }

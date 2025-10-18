@@ -7,14 +7,6 @@ using MyApp.Data;
 
 namespace MyApp;
 
-public class SeedUser
-{
-    public string Email { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    public string[]? Roles { get; set; }
-}
-
 public class ConfigureDb : IHostingStartup
 {
     public void Configure(IWebHostBuilder builder) => builder
@@ -26,12 +18,15 @@ public class ConfigureDb : IHostingStartup
                 ?? throw new Exception("DefaultConnection does not exist");
 
             services.AddOrmLite(options => options.UsePostgres(connectionString, dialect => {
-                    //dialect.NamingStrategy = new OrmLiteNamingStrategyBase();
+                    // dialect.NamingStrategy = new OrmLiteNamingStrategyBase();
                 })
                 .ConfigureJson(json => {
-                    // json.DefaultSerializer = JsonSerializerType.SystemJson;
+                    // json.DefaultSerializer = JsonSerializerType.ServiceStackJson;
                 })
-            );
+            )
+            .AddPostgres(
+                "jobs", 
+                "Host=localhost;Port=5432;Database=jobs;Username=jobs;Password=jobs;Include Error Detail=true;");
             
             // $ dotnet ef migrations add CreateIdentitySchema
             // $ dotnet ef database update
@@ -42,8 +37,6 @@ public class ConfigureDb : IHostingStartup
             
             // Enable built-in Database Admin UI at /admin-ui/database
             services.AddPlugin(new AdminDatabaseFeature());
-
-            // LoggingOrmLiteExecFilter.Configure();
         });
 }
 

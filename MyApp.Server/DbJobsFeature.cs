@@ -1,3 +1,4 @@
+#if NET6_0_OR_GREATER
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 using Microsoft.Extensions.Logging;
@@ -15,12 +16,13 @@ public class DatabaseJobFeature : IPlugin, Model.IHasStringId, IConfigureService
     /// Limit API access to users in role
     /// </summary>
     public string AccessRole { get; set; } = RoleNames.Admin;
-    public DbJobsProvider DbProvider { get; set; }
-    public Action<IOrmLiteDialectProvider>? ConfigureDialectProvider { get; set; }
-    public IOrmLiteDialectProvider DialectProvider => DbProvider.Dialect;
+    public IDbConnectionFactory DbFactory { get; set; } = null!;
+    public string? NamedConnection { get; set; }
+    public DbJobsProvider DbProvider { get; set; } = null!;
+    public IOrmLiteDialectProvider Dialect => DbProvider.Dialect;
+    public Action<IOrmLiteDialectProvider>? ConfigureDialect { get; set; }
     public bool AutoInitSchema { get; set; } = true;
     public bool EnableAdmin { get; set; } = true;
-    public IDbConnectionFactory DbFactory { get; set; } = null!;
     public IAppHostNetCore AppHost { get; set; } = null!;
     public CommandsFeature CommandsFeature { get; set; } = null!;
     public IBackgroundJobs Jobs { get; set; } = null!;
@@ -45,8 +47,8 @@ public class DatabaseJobFeature : IPlugin, Model.IHasStringId, IConfigureService
     public void Configure(IServiceCollection services)
     {
         services.AddSingleton(this);
-        services.AddSingleton<IBackgroundJobs>(c => new DatabaseJobs(
-            c.GetRequiredService<ILogger<DatabaseJobs>>(),
+        services.AddSingleton<IBackgroundJobs>(c => new DbJobs(
+            c.GetRequiredService<ILogger<DbJobs>>(),
             Resolve(c),
             c,
             c.GetRequiredService<IServiceScopeFactory>()
@@ -54,7 +56,7 @@ public class DatabaseJobFeature : IPlugin, Model.IHasStringId, IConfigureService
 
         if (EnableAdmin)
         {
-            services.RegisterService<AdminJobServices>();
+            services.RegisterService<DbJobsAdminServices>();
             AutoQueryFeature ??= new() { MaxLimit = 1000 };
             AutoQueryFeature.RegisterAutoQueryDbIfNotExists();
         }
@@ -64,8 +66,8 @@ public class DatabaseJobFeature : IPlugin, Model.IHasStringId, IConfigureService
     {
         DbFactory ??= services.GetService<IDbConnectionFactory>() 
             ?? throw new Exception($"{nameof(IDbConnectionFactory)} is not registered");
-        DbProvider ??= DbJobsProvider.Create(DbFactory);
-        var dateConverter = DialectProvider.GetDateTimeConverter();
+        DbProvider ??= DbJobsProvider.Create(DbFactory, NamedConnection);
+        var dateConverter = Dialect.GetDateTimeConverter();
         if (dateConverter.DateStyle == DateTimeKind.Unspecified)
             dateConverter.DateStyle = DateTimeKind.Utc;
     }
@@ -80,7 +82,7 @@ public class DatabaseJobFeature : IPlugin, Model.IHasStringId, IConfigureService
         Jobs ??= services.GetService<IBackgroundJobs>() 
             ?? throw new Exception($"{nameof(IBackgroundJobs)} is not registered");
 
-        ConfigureDialectProvider?.Invoke(DbProvider.Dialect);
+        ConfigureDialect?.Invoke(DbProvider.Dialect);
 
         AppHost ??= (IAppHostNetCore)appHost;
 
@@ -115,3 +117,4 @@ public class DatabaseJobFeature : IPlugin, Model.IHasStringId, IConfigureService
 
     public IServiceProvider Services => AppHost!.App.ApplicationServices;
 }
+#endif

@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>ServiceStack</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ServiceStack" Version="8.*" />
+        <PackageReference Include="ServiceStack.Ormlite" Version="8.*" />
+        <PackageReference Include="ServiceStack.Server" Version="8.*" />
+        <PackageReference Include="Cronos" Version="0.11.1" />
+    </ItemGroup>
+
+</Project>

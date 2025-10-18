@@ -1,5 +1,4 @@
 using MyApp.Data;
-using ServiceStack;
 using ServiceStack.Data;
 using ServiceStack.OrmLite;
 using ServiceStack.Configuration;

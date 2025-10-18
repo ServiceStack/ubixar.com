@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyApp.ServiceModel;
 using NUnit.Framework;
-using ServiceStack;
 using ServiceStack.Data;
 using ServiceStack.OrmLite;
 

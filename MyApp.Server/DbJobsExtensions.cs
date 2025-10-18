@@ -1,20 +1,23 @@
+#nullable enable
+#if NET6_0_OR_GREATER
 using Microsoft.Extensions.DependencyInjection;
 using ServiceStack.Data;
 
 namespace ServiceStack;
 
-public static class DatabaseJobsExtensions
+public static class DbJobsExtensions
 {
     // Admin UI requires AutoQuery functionality
     public static void RegisterAutoQueryDbIfNotExists(this AutoQueryFeature feature)
     {
-        ServiceStackHost.GlobalAfterConfigureServices.Add(c =>
+        ServiceStackHost.GlobalAfterConfigureServices.Add(services =>
         {
-            if (!c.Exists<IAutoQueryDb>())
+            if (!services.Exists<IAutoQueryDb>())
             {
-                c.AddSingleton<IAutoQueryDb>(c => 
+                services.AddSingleton<IAutoQueryDb>(c => 
                     feature.CreateAutoQueryDb(c.GetService<IDbConnectionFactory>()));
             }
         });
     }    
 }
+#endif
