@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@servicestack/client": "^2.1.13",
+    "@servicestack/react": "^2.0.15",
     "idb": "^8.0.3",
     "next": "16.0.3",
     "react": "19.2.0",
