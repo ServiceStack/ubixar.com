@@ -25,13 +25,14 @@ export function WorkflowSelector({ workflows, selectedWorkflow, onSelect }: Work
 
   return (
     <div className="space-y-3">
-      {workflows.map((workflow) => (
+      {workflows.map((workflow, index) => (
         <div
           key={workflow.id}
           onClick={() => onSelect(workflow)}
-          className={`p-4 rounded-lg cursor-pointer transition ${
+          style={{ animationDelay: `${index * 50}ms` }}
+          className={`p-4 rounded-lg cursor-pointer animate-slide-up hover-lift ${
             selectedWorkflow?.id === workflow.id
-              ? 'bg-blue-600 text-white'
+              ? 'bg-blue-600 text-white shadow-lg'
               : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >

@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/lib/store'
 import { authService, workflowService } from '@/lib/services'
-import { Loading, WorkflowSelector, WorkflowPrompt, RecentThreads } from '@/components'
+import { Loading, WorkflowSelector, WorkflowPrompt, RecentThreads, useToast, WorkflowCardSkeleton, FormSkeleton } from '@/components'
 import { useGenerationPolling } from '@/lib/hooks'
 import { QueueWorkflow } from '@/lib/dtos'
 import { apiClient } from '@/lib/api-client'
@@ -23,6 +23,7 @@ export default function GeneratePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const [showThreads, setShowThreads] = useState(true)
+  const toast = useToast()
 
   const {
     isAuthenticated,
@@ -111,14 +112,15 @@ export default function GeneratePage() {
 
       if (result.succeeded) {
         console.log('Workflow queued successfully:', result.response)
+        toast.success('Workflow queued successfully! Generating...')
         // Polling will automatically pick up the new generation
       } else {
         console.error('Failed to queue workflow:', result.error)
-        alert('Failed to queue workflow. Please try again.')
+        toast.error('Failed to queue workflow. Please try again.')
       }
     } catch (error) {
       console.error('Error queuing workflow:', error)
-      alert('An error occurred. Please try again.')
+      toast.error('An error occurred. Please try again.')
     } finally {
       setIsGenerating(false)
     }
@@ -158,7 +160,13 @@ export default function GeneratePage() {
           )}
         </div>
 
-        {!selectedWorkflow ? (
+        {workflows.length === 0 && !selectedWorkflow ? (
+          <div className="space-y-3">
+            <WorkflowCardSkeleton />
+            <WorkflowCardSkeleton />
+            <WorkflowCardSkeleton />
+          </div>
+        ) : !selectedWorkflow ? (
           <WorkflowSelector
             workflows={workflows}
             selectedWorkflow={selectedWorkflow}
@@ -181,7 +189,7 @@ export default function GeneratePage() {
       {/* Center Panel - Workflow Prompt */}
       <div className="py-4 px-6 overflow-y-auto">
         {selectedWorkflow ? (
-          <div>
+          <div className="animate-slide-up">
             <h2 className="text-2xl font-bold mb-6">Configure {selectedWorkflow.name}</h2>
             <WorkflowPrompt
               workflow={selectedWorkflow}

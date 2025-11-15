@@ -43,13 +43,14 @@ export function ArtifactGrid({ artifacts, onArtifactClick }: ArtifactGridProps) 
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {artifacts.map((artifact) => {
+        {artifacts.map((artifact, index) => {
           if (imageError.has(artifact.id || 0)) return null
 
           return (
             <div
               key={artifact.id}
-              className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition group relative"
+              style={{ animationDelay: `${(index % 10) * 30}ms` }}
+              className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover-scale transition group relative animate-fade-in"
               onClick={() => handleArtifactClick(artifact)}
             >
               {artifact.filePath ? (
