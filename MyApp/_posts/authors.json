@@ -1,5 +1,14 @@
 [
   {
+    "name": "mythz",
+    "email": "demis.bellot@gmail.com",
+    "bio": "Father of 3 when not deving @ servicestack.net",
+    "profileUrl": "/img/profiles/demis.webp",
+    "gitHubUrl": "https://github.com/mythz",
+    "twitterUrl": "https://twitter.com/demisbellot",
+    "threadsUrl": "https://threads.net/@demisbellot"
+  },
+  {
     "name": "Lucy Bates",
     "email": "lucy@email.org",
     "bio": "Works in software design, company building, and the aerospace industry.",
