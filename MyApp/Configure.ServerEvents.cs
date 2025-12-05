@@ -1,4 +1,4 @@
-#if NET9_0_OR_GREATER
+#if false
 using System.Net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;

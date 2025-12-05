@@ -42,9 +42,9 @@ jobs:
 #            https://okai.servicestack.com/dropbox/ubixar.txt
           
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.*'
+          dotnet-version: 10.x
 
       - name: build
         run: dotnet build
