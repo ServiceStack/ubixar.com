@@ -1306,7 +1306,7 @@ public static string LabelClasses { get; set; } = "flex justify-center w-full h-
 <h1 class=@ClassNames(Classes, Class) @attributes="AdditionalAttributes">@ChildContent</h1>
 @code {
 [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
-public static string Classes { get; set; } = "mb-4 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl";
+public static string Classes { get; set; } = "mb-4 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl focus:outline-none";
 }
 @inherits UiComponentLiteBase
 <h2 class=@ClassNames(Classes, Class) @attributes="AdditionalAttributes">@ChildContent</h2>
