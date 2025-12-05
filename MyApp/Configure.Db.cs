@@ -24,9 +24,7 @@ public class ConfigureDb : IHostingStartup
                     // json.DefaultSerializer = JsonSerializerType.ServiceStackJson;
                 })
             )
-            .AddPostgres(
-                "jobs", 
-                "Host=localhost;Port=5432;Database=jobs;Username=jobs;Password=jobs;Include Error Detail=true;");
+            .AddPostgres("jobs", connectionString.Replace("Database=ubixar;", "Database=jobs;"));
             
             // $ dotnet ef migrations add CreateIdentitySchema
             // $ dotnet ef database update
