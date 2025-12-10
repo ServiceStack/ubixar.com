@@ -3,13 +3,13 @@ import { useRoute, useRouter } from "vue-router"
 import { useAuth, useUtils } from "@servicestack/vue"
 import { lastRightPart } from "@servicestack/client";
 import { ArtifactGallery, ArtifactDownloads } from "./Artifacts.mjs"
-import { AllRatings, toArtifacts, formatDuration, formatRating, sortByCreatedDesc, sortByCreatedAsc, sortByModifiedDesc, sortByModifiedAsc } from "../lib/utils.mjs"
+import { AllRatings, toArtifacts, formatDuration, formatRating, matchesRating, sortByCreatedDesc, sortByCreatedAsc, sortByModifiedDesc, sortByModifiedAsc } from "../lib/utils.mjs"
 
 import AudioPlayer from "./AudioPlayer.mjs"
 import ListenButton from "./ListenButton.mjs"
 
 const PlayButton = {
-    template:`
+    template: `
       <button data-slug="@episode.Slug" data-title="@episode.Title" data-url="@episode.Url"
               type="button" aria-label="Play episode @episode.Title"
               onclick="togglePlayButton(this)"
@@ -50,7 +50,7 @@ export default {
         ListenButton,
         PlayButton,
     },
-    template:`
+    template: `
     <ErrorSummary :status="error" />
     <div class="relative mt-2 border-b border-gray-200 dark:border-gray-700 min-h-full flex justify-between">
         <nav class="flex space-x-8" aria-label="Tabs">
@@ -208,7 +208,7 @@ export default {
                                 </div>
                                 <div class="flex flex-wrap">
                                     <template v-for="(desc, rating) of AllRatings">
-                                    <span v-if="artifact.rating == rating" :class="gen.publishedDate ? 'bg-yellow-600/50 dark:bg-yellow-300/30' : 'bg-gray-300 dark:bg-gray-600'" class="text-gray-600 dark:text-gray-300  inline-flex items-center rounded-md px-1 py-0.5 text-xs font-medium ring-1 ring-inset ring-gray-500/10 dark:ring-gray-700/10" :title="formatRating(rating) + ' - Suggested Rating'">
+                                    <span v-if="matchesRating(artifact.rating, rating)" :class="gen.publishedDate ? 'bg-yellow-600/50 dark:bg-yellow-300/30' : 'bg-gray-300 dark:bg-gray-600'" class="text-gray-600 dark:text-gray-300  inline-flex items-center rounded-md px-1 py-0.5 text-xs font-medium ring-1 ring-inset ring-gray-500/10 dark:ring-gray-700/10" :title="formatRating(rating) + ' - Suggested Rating'">
                                         {{formatRating(rating)}}
                                     </span>
                                     <button v-else type="button" @click="changeRating(gen, artifact, rating)" class="m-0 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 inline-flex items-center rounded-md px-1 py-0.5 text-xs font-medium ring-1 ring-inset ring-gray-500/10 dark:ring-gray-700/10"
@@ -265,7 +265,7 @@ export default {
     props: {
         thread: Object,
     },
-    emits:['selectGeneration','retryGeneration'],
+    emits: ['selectGeneration', 'retryGeneration'],
     setup(props, { emit }) {
         const store = inject('store')
         const events = inject('events')
@@ -293,16 +293,16 @@ export default {
 
         // Initialize sort from query parameter, default to '-created' if invalid
         const validSorts = ['-created', 'created', '-modified', 'modified']
-        const initialSort = validSorts.includes(route.query.sort) 
-            ? route.query.sort 
+        const initialSort = validSorts.includes(route.query.sort)
+            ? route.query.sort
             : '-created'
         const sortBy = ref(initialSort)
-        
+
         const visibleGenerations = ref(50)
         const pagedGenerations = computed(() => {
             return generations.value.slice(0, visibleGenerations.value)
         })
-        
+
         const generations = computed(() => {
             let filtered = store.threadGenerations
 
@@ -362,7 +362,7 @@ export default {
                 query: { ...route.query, sort }
             })
         }
-        
+
         function togglePlayButton(url, title) {
             if (refAudio.value?.player) {
                 if (playAudio.value?.src === url) {
@@ -383,11 +383,11 @@ export default {
             }
             emit('selectGeneration', gen)
         }
-        
+
         function isRegenerating(gen) {
             return regeneratingIdMap.value[gen.id] && new Date(regeneratingIdMap.value[gen.id]) >= new Date(gen.modifiedDate)
         }
-        
+
         async function retryGeneration(gen) {
             regeneratingIdMap.value[gen.id] = gen.modifiedDate
             if (gen.result?.assets?.length) {
@@ -525,6 +525,7 @@ export default {
             toArtifacts,
             formatDuration,
             formatRating,
+            matchesRating,
             setFilter,
             setSortBy,
             selectGeneration,

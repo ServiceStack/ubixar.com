@@ -216,6 +216,12 @@ export function formatRating(rating) {
     return rating?.replace('PG13', 'PG-13')
 }
 
+export function matchesRating(a, b) {
+    if (!a || !b) return true
+    const normalize = r => r === 'PG-13' ? 'PG13' : r
+    return normalize(a) === normalize(b)
+}
+
 export function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);

@@ -1,7 +1,7 @@
 import { ref, inject, onUnmounted } from "vue"
 import { useClient, useAuth } from "@servicestack/vue"
 import { SubmitArtifactModeration, RequeueGeneration } from "dtos.mjs"
-import { formatRating } from "../lib/utils.mjs"
+import { formatRating, matchesRating } from "../lib/utils.mjs"
 
 export default {
     template:`
@@ -33,11 +33,11 @@ export default {
                             @click="handleAction('rating', menu.artifact, { rating })"
                             :class="[
                                 'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center',
-                                menu.artifact?.rating === rating
+                                matchesRating(menu.artifact?.rating, rating)
                                     ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
                                     : 'text-gray-700 dark:text-gray-200'
                             ]">
-                        <svg v-if="menu.artifact?.rating === rating" class="size-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg v-if="matchesRating(menu.artifact?.rating, rating)" class="size-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 6L9 17l-5-5"/>
                         </svg>
                         <span v-else class="size-4 mr-2"></span>
@@ -328,6 +328,7 @@ export default {
             isType,
             isRegenerating,
             formatRating,
+            matchesRating,
             handleAction,
             hideToastError,
             toggleRatingSubmenu,
