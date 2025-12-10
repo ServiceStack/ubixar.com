@@ -301,5 +301,19 @@ public class ComfyWorkflowParseTests : TestBase
         Assert.That(workflow.CustomNodes, Is.EquivalentTo(new[] { "ssitu/ComfyUI_UltimateSDUpscale" }));
         Assert.That(workflow.PipPackages, Is.EquivalentTo(new[] { "servicestack" }));
     }
+
+    [Test]
+    public void Can_parse_z_image_turbo_Workflow()
+    {
+        var workflowPath = "./workflows/text-to-image/z_image_turbo.json";
+        var workflowJson = File.ReadAllText(workflowPath);
+        var workflowObj = workflowJson.ParseAsObjectDictionary();
+        var workflow = ComfyWorkflowParser.Parse(workflowObj, "z_image_turbo.json", NodeDefs) ?? throw new Exception($"Could not parse {workflowPath}");
+        workflow.PrintDump();
+        ComfyWorkflowParser.ExtractAssetPaths(workflowObj).PrintDump();
+        var inputNames = workflow.Inputs.Map(x => x.Name);
+        Assert.That(workflow.Type, Is.EqualTo(ComfyWorkflowType.TextToImage));
+        Assert.That(inputNames,Is.EquivalentTo("positivePrompt,width,height,batch_size,seed,steps,cfg,sampler_name,scheduler,denoise".Split(',')));
+    }
     
 }
