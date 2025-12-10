@@ -14,7 +14,7 @@ public class AppConfig
     public string AppDataPath { get; set; } = "App_Data";
     public string ArtifactsPath { get; set; } = "App_Data/artifacts";
     public string FilesPath { get; set; } = "App_Data/files";
-    public string VisualLanguageModel { get; set; } = "qwen2.5vl:7b";
+    public string VisualLanguageModel { get; set; } = "qwen3-vl:8b";
     public string ChatLanguageModel { get; set; }
     public string? GitPagesBaseUrl { get; set; }
 

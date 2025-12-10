@@ -19,7 +19,7 @@ public class ChatCompletionTests : TestBase
         "API QueueOpenAiChatCompletion".Print();
         var ret = await client.ApiAsync(new QueueOpenAiChatCompletion {
             Request = new() {
-                Model = "qwen2.5vl:7b",
+                Model = "qwen3-vl:8b",
                 Messages = [
                     new() { Role = "user", Content = "Capital of France?" },
                 ]
@@ -37,10 +37,10 @@ public class ChatCompletionTests : TestBase
         var result = await client.ApiAsync(new GetAiTaskRequest { RefId = refId });
         result.Response.PrintDump();
         
-        $"API GetAiTasks({DeviceId},'qwen2.5vl:7b','OpenAiChat')".Print();
+        $"API GetAiTasks({DeviceId},'qwen3-vl:8b','OpenAiChat')".Print();
         var api = await client.ApiAsync(new GetAiTasks {
             DeviceId = DeviceId,
-            Models = ["qwen2.5vl:7b"],
+            Models = ["qwen3-vl:8b"],
             Types = [AiTaskType.OpenAiChat],
         });
 
@@ -73,7 +73,7 @@ public class ChatCompletionTests : TestBase
         var client = CreateClientWithApiKey();
 
         var task = client.ApiAsync(new ChatCompletionCompletion {
-            Model = "qwen2.5vl:7b",
+            Model = "qwen3-vl:8b",
             Messages = [
                 new() { Role = "user", Content = "Capital of France?" },
             ]
@@ -106,7 +106,7 @@ public class ChatCompletionTests : TestBase
         {
             return client.ApiAsync(new QueueOpenAiChatCompletion {
                 Request = new() {
-                    Model = "qwen2.5vl:7b",
+                    Model = "qwen3-vl:8b",
                     Messages = [
                         new() { Role = "user", Content = $"{i}+{i}*{i}-{i}=" },
                     ]
@@ -124,7 +124,7 @@ public class ChatCompletionTests : TestBase
         
         var api = await client.ApiAsync(new GetAiTasks {
             DeviceId = DeviceId,
-            Models = ["qwen2.5vl:7b"],
+            Models = ["qwen3-vl:8b"],
             Types = [AiTaskType.OpenAiChat],
             Take = Times,
         });
@@ -172,7 +172,7 @@ public class ChatCompletionTests : TestBase
     {
         var api = client.Api(new GetAiTasks {
             DeviceId = DeviceId,
-            Models = ["qwen2.5vl:7b"],
+            Models = ["qwen3-vl:8b"],
             Types = [AiTaskType.OpenAiChat],
         });
 

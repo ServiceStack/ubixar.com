@@ -678,7 +678,7 @@ public class AdminServices(ILogger<AdminServices> log,
 
     public object Any(SendCaptionArtifactEvent request)
     {
-        var model = request.Model ?? "qwen2.5vl:7b";
+        var model = request.Model ?? appConfig.VisualLanguageModel;
         var nextArtifactUrls = Db.ColumnDistinct<string>(Db.From<Artifact>()
             .Where(x => x.Caption == null && (request.ArtifactIds == null || request.ArtifactIds.Contains(x.Id)))
             .OrderBy(x => x.Id)
