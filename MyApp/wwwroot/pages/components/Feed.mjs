@@ -402,6 +402,7 @@ export default {
 
         async function changeRating(generation, asset, rating) {
             error.value = null
+            rating = formatRating(rating)
             const api = await store.updateGenerationAsset(generation, asset, { rating })
             error.value = api.error
         }

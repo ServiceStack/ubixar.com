@@ -1,6 +1,6 @@
 /* Options:
-Date: 2025-10-01 09:26:59
-Version: 8.81
+Date: 2025-12-10 21:13:05
+Version: 10.05
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: http://localhost:5000
 
@@ -1476,6 +1476,24 @@ export class OpenAiTools {
      * @description The type of the tool. Currently, only function is supported. */
     type;
 }
+export class OwnerAgentInfo extends AgentInfo {
+    /** @param {{deviceId?:string,userId?:string,userName?:string,lastIp?:string,status?:string,modelSettings?:{ [index:string]: ModelSettings; },settings?:ComfyAgentSettings,id?:number,shortId?:string,userId?:string,gpus?:GpuInfo[],nodes?:string[],models?:{ [index:string]: string[]; },languageModels?:string[],requirePip?:string[],requireNodes?:string[],requireModels?:string[],installedPip?:string[],installedNodes?:string[],installedModels?:string[],hiddenModels?:string[],enabled?:boolean,offlineDate?:string,createdDate?:string,modifiedDate?:string,lastUpdate?:string,queueCount?:number,devicePool?:string}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
+    /** @type {string} */
+    deviceId;
+    /** @type {string} */
+    userId;
+    /** @type {?string} */
+    userName;
+    /** @type {?string} */
+    lastIp;
+    /** @type {?string} */
+    status;
+    /** @type {?{ [index:string]: ModelSettings; }} */
+    modelSettings;
+    /** @type {ComfyAgentSettings} */
+    settings;
+}
 export class GetPendingArtifactTasksResponse {
     /** @param {{missingArtifacts?:number[],existingCaptionArtifacts?:number[],existingDescribeArtifacts?:number[],requeueCaptionArtifacts?:number[],requeueDescribeArtifacts?:number[],responseStatus?:ResponseStatus}} [init] */
     constructor(init) { Object.assign(this, init) }
@@ -1725,24 +1743,6 @@ export class GetAppDataResponse {
     defaultGatewayNodes = [];
     /** @type {?ResponseStatus} */
     responseStatus;
-}
-export class OwnerAgentInfo extends AgentInfo {
-    /** @param {{deviceId?:string,userId?:string,userName?:string,lastIp?:string,status?:string,modelSettings?:{ [index:string]: ModelSettings; },settings?:ComfyAgentSettings,id?:number,shortId?:string,userId?:string,gpus?:GpuInfo[],nodes?:string[],models?:{ [index:string]: string[]; },languageModels?:string[],requirePip?:string[],requireNodes?:string[],requireModels?:string[],installedPip?:string[],installedNodes?:string[],installedModels?:string[],hiddenModels?:string[],enabled?:boolean,offlineDate?:string,createdDate?:string,modifiedDate?:string,lastUpdate?:string,queueCount?:number,devicePool?:string}} [init] */
-    constructor(init) { super(init); Object.assign(this, init) }
-    /** @type {string} */
-    deviceId;
-    /** @type {string} */
-    userId;
-    /** @type {?string} */
-    userName;
-    /** @type {?string} */
-    lastIp;
-    /** @type {?string} */
-    status;
-    /** @type {?{ [index:string]: ModelSettings; }} */
-    modelSettings;
-    /** @type {ComfyAgentSettings} */
-    settings;
 }
 export class UpdateComfyAgentSettingsResponse {
     /** @param {{result?:OwnerAgentInfo,responseStatus?:ResponseStatus}} [init] */
@@ -2200,33 +2200,33 @@ export class ChatCompletion {
 export class AuthenticateResponse {
     /** @param {{userId?:string,sessionId?:string,userName?:string,displayName?:string,referrerUrl?:string,bearerToken?:string,refreshToken?:string,refreshTokenExpiry?:string,profileUrl?:string,roles?:string[],permissions?:string[],authProvider?:string,responseStatus?:ResponseStatus,meta?:{ [index:string]: string; }}} [init] */
     constructor(init) { Object.assign(this, init) }
-    /** @type {string} */
+    /** @type {?string} */
     userId;
-    /** @type {string} */
+    /** @type {?string} */
     sessionId;
-    /** @type {string} */
+    /** @type {?string} */
     userName;
-    /** @type {string} */
+    /** @type {?string} */
     displayName;
-    /** @type {string} */
+    /** @type {?string} */
     referrerUrl;
-    /** @type {string} */
+    /** @type {?string} */
     bearerToken;
-    /** @type {string} */
+    /** @type {?string} */
     refreshToken;
     /** @type {?string} */
     refreshTokenExpiry;
-    /** @type {string} */
+    /** @type {?string} */
     profileUrl;
-    /** @type {string[]} */
+    /** @type {?string[]} */
     roles;
-    /** @type {string[]} */
+    /** @type {?string[]} */
     permissions;
-    /** @type {string} */
+    /** @type {?string} */
     authProvider;
-    /** @type {ResponseStatus} */
+    /** @type {?ResponseStatus} */
     responseStatus;
-    /** @type {{ [index:string]: string; }} */
+    /** @type {?{ [index:string]: string; }} */
     meta;
 }
 export class GetPendingArtifactTasks {
@@ -3498,24 +3498,24 @@ export class Authenticate {
     /** @param {{provider?:string,userName?:string,password?:string,rememberMe?:boolean,accessToken?:string,accessTokenSecret?:string,returnUrl?:string,errorView?:string,meta?:{ [index:string]: string; }}} [init] */
     constructor(init) { Object.assign(this, init) }
     /**
-     * @type {string}
+     * @type {?string}
      * @description AuthProvider, e.g. credentials */
     provider;
-    /** @type {string} */
+    /** @type {?string} */
     userName;
-    /** @type {string} */
+    /** @type {?string} */
     password;
     /** @type {?boolean} */
     rememberMe;
-    /** @type {string} */
+    /** @type {?string} */
     accessToken;
-    /** @type {string} */
+    /** @type {?string} */
     accessTokenSecret;
-    /** @type {string} */
+    /** @type {?string} */
     returnUrl;
-    /** @type {string} */
+    /** @type {?string} */
     errorView;
-    /** @type {{ [index:string]: string; }} */
+    /** @type {?{ [index:string]: string; }} */
     meta;
     getTypeName() { return 'Authenticate' }
     getMethod() { return 'POST' }
