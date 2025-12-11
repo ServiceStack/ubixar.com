@@ -22,7 +22,57 @@ public class GetAppDataResponse
     public ResponseStatus? ResponseStatus { get; set; }
 }
 
+[Route("/appinfo")]
+[Tag(Tags.Admin)]
+[ValidateIsAdmin]
+public class AppInfo : IGet, IReturn<AppInfoResponse>
+{
+}
+public class AppInfoResponse
+{
+    // Process / memory
+    public int ProcessId { get; set; }
+    public DateTime StartTime { get; set; }
+    public TimeSpan Uptime { get; set; }
+    public long WorkingSetBytes { get; set; }
+    public long PrivateMemoryBytes { get; set; }
+    public long ManagedMemoryBytes { get; set; }
+    public long GcTotalAllocatedBytes { get; set; }
+    public int GcGen0Collections { get; set; }
+    public int GcGen1Collections { get; set; }
+    public int GcGen2Collections { get; set; }
 
+    // CPU
+    public TimeSpan TotalProcessorTime { get; set; }
+    public TimeSpan UserProcessorTime { get; set; }
+    public double CpuUsagePercentApprox { get; set; }
+
+    // Threads
+    public int ThreadCount { get; set; }
+    public List<ThreadInfo> Threads { get; set; } = [];
+
+    // Npgsql / DB connection stats (from pg_stat_activity)
+    public int PgTotalConnections { get; set; }
+    public int PgActiveConnections { get; set; }
+    public int PgIdleConnections { get; set; }
+    public int PgIdleInTransaction { get; set; }
+    public int PgWaitingConnections { get; set; }
+
+    // Pool settings (parsed from connection string when available)
+    public int? PoolMaxSize { get; set; }
+    public int? PoolMinSize { get; set; }
+    public bool? Pooling { get; set; }
+
+    public ResponseStatus? ResponseStatus { get; set; }
+}
+
+public class ThreadInfo
+{
+    public int ManagedThreadId { get; set; }
+    public string? Name { get; set; }
+    public string State { get; set; }
+    public TimeSpan TotalProcessorTime { get; set; }
+}
 
 [Tag(Tags.Admin)]
 [ValidateIsAdmin]

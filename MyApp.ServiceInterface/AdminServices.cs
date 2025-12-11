@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using MyApp.Data;
 using MyApp.ServiceModel;
 using ServiceStack;
@@ -999,6 +1000,138 @@ public class AdminServices(ILogger<AdminServices> log,
                     ModifiedBy = userId,
                 }, where: x => x.Id == generation.Id);
             }
+        }
+    }
+
+    public object Any(MyApp.ServiceModel.AppInfo request)
+    {
+        var proc = Process.GetCurrentProcess();
+        var nowUtc = DateTime.UtcNow;
+        var startUtc = proc.StartTime.ToUniversalTime();
+        var uptime = nowUtc - startUtc;
+
+        var totalCpu = proc.TotalProcessorTime;
+        var userCpu = proc.UserProcessorTime;
+        var cpuApprox = uptime.TotalMilliseconds > 0
+            ? Math.Clamp(totalCpu.TotalMilliseconds / (uptime.TotalMilliseconds * Environment.ProcessorCount) * 100.0, 0, 100)
+            : 0;
+
+        var threads = new List<ThreadInfo>();
+        try
+        {
+            foreach (ProcessThread t in proc.Threads)
+            {
+                threads.Add(new ThreadInfo
+                {
+                    ManagedThreadId = t.Id, // OS thread id, used here as identifier
+                    Name = null,
+                    State = t.ThreadState.ToString(),
+                    TotalProcessorTime = SafeGet(() => t.TotalProcessorTime, TimeSpan.Zero),
+                });
+            }
+        }
+        catch { /* best-effort */ }
+
+        // Order threads by CPU time and cap list size
+        threads = threads
+            .OrderByDescending(x => x.TotalProcessorTime)
+            .Take(64)
+            .ToList();
+
+        // PostgreSQL connection stats
+        int total = 0, active = 0, idle = 0, idleTxn = 0, waiting = 0;
+        int? maxPool = null, minPool = null; bool? pooling = null;
+        try
+        {
+            var stats = Db.Single<(int Total, int Active, int Idle, int IdleInTxn, int Waiting)>(
+                @"select count(*) as Total,
+                          count(*) filter (where state = 'active') as Active,
+                          count(*) filter (where state = 'idle') as Idle,
+                          count(*) filter (where state = 'idle in transaction') as IdleInTxn,
+                          count(*) filter (where wait_event is not null) as Waiting
+                   from pg_stat_activity
+                  where datname = current_database();");
+            total = stats.Total; active = stats.Active; idle = stats.Idle; idleTxn = stats.IdleInTxn; waiting = stats.Waiting;
+        }
+        catch (Exception e)
+        {
+            log.LogDebug(e, "Failed to query pg_stat_activity");
+        }
+
+        try
+        {
+            var cs = Db.ConnectionString;
+            if (!string.IsNullOrEmpty(cs))
+            {
+                var dict = new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var part in cs.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    var kvp = part.Split('=', 2);
+                    if (kvp.Length == 2)
+                        dict[kvp[0].Trim()] = kvp[1].Trim();
+                }
+
+                int tryInt(string key)
+                    => dict.TryGetValue(key, out var s) && int.TryParse(s, out var i) ? i : 0;
+                bool? tryBool(string key)
+                    => dict.TryGetValue(key, out var s) && bool.TryParse(s, out var b) ? b : null;
+
+                // Handle common key variants
+                maxPool =
+                    (dict.TryGetValue("Max Pool Size", out var mps) && int.TryParse(mps, out var i1)) ? i1 :
+                    (dict.TryGetValue("Maximum Pool Size", out var mps2) && int.TryParse(mps2, out var i2)) ? i2 :
+                    (dict.TryGetValue("MaxPoolSize", out var mps3) && int.TryParse(mps3, out var i3)) ? i3 : (int?)null;
+
+                minPool =
+                    (dict.TryGetValue("Min Pool Size", out var mins) && int.TryParse(mins, out var mi1)) ? mi1 :
+                    (dict.TryGetValue("Minimum Pool Size", out var mins2) && int.TryParse(mins2, out var mi2)) ? mi2 :
+                    (dict.TryGetValue("MinPoolSize", out var mins3) && int.TryParse(mins3, out var mi3)) ? mi3 : (int?)null;
+
+                pooling =
+                    (dict.TryGetValue("Pooling", out var pol) && bool.TryParse(pol, out var pb)) ? pb : (bool?)null;
+            }
+        }
+        catch (Exception e)
+        {
+            log.LogDebug(e, "Failed to parse connection string for pool settings");
+        }
+
+        var response = new AppInfoResponse
+        {
+            ProcessId = proc.Id,
+            StartTime = startUtc,
+            Uptime = uptime,
+            WorkingSetBytes = proc.WorkingSet64,
+            PrivateMemoryBytes = proc.PrivateMemorySize64,
+            ManagedMemoryBytes = GC.GetTotalMemory(false),
+            GcTotalAllocatedBytes = GC.GetTotalAllocatedBytes(precise: false),
+            GcGen0Collections = GC.CollectionCount(0),
+            GcGen1Collections = GC.CollectionCount(1),
+            GcGen2Collections = GC.CollectionCount(2),
+
+            TotalProcessorTime = totalCpu,
+            UserProcessorTime = userCpu,
+            CpuUsagePercentApprox = cpuApprox,
+
+            ThreadCount = proc.Threads.Count,
+            Threads = threads,
+
+            PgTotalConnections = total,
+            PgActiveConnections = active,
+            PgIdleConnections = idle,
+            PgIdleInTransaction = idleTxn,
+            PgWaitingConnections = waiting,
+
+            PoolMaxSize = maxPool,
+            PoolMinSize = minPool,
+            Pooling = pooling,
+        };
+
+        return response;
+
+        static T SafeGet<T>(Func<T> fn, T fallback)
+        {
+            try { return fn(); } catch { return fallback; }
         }
     }
 }
