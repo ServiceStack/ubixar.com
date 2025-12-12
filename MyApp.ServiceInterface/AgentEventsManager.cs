@@ -484,8 +484,10 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
 
         if (nextArtifacts.Count == 0) 
             return new ([], [], [], [], []);
+
+        using var dbJobs = jobs.OpenDb();
         
-        var backgroundJobs = db.Select(db.From<BackgroundJob>()
+        var backgroundJobs = dbJobs.Select(dbJobs.From<BackgroundJob>()
             .Where(x => x.Callback == nameof(CaptionArtifactCommand) || x.Callback == nameof(DescribeArtifactCommand)));
         
         var existingCaptionArtifactIds = backgroundJobs.Where(x => x.Callback == nameof(CaptionArtifactCommand))
