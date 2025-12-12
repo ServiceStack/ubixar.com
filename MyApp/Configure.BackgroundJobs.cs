@@ -32,7 +32,8 @@ public class ConfigureBackgroundJobs : IHostingStartup
             //     },
             // });
             services.AddPlugin(new DatabaseJobFeature {
-                NamedConnection = "jobs"
+                NamedConnection = "jobs",
+                DefaultTimeoutSecs = 60 * 60, // 1 hour
             });
             services.AddHostedService<JobsHostedService>();
         }).ConfigureAppHost(afterAppHostInit: appHost => {
