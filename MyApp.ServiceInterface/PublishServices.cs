@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using MyApp.Data;
 using MyApp.ServiceModel;
 using ServiceStack;
 using ServiceStack.Auth;
@@ -274,6 +275,9 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
                 await using var avatarFileStream = File.OpenWrite(avatarPath);
                 resizedImage.SaveTo(avatarFileStream);
                 profileUrl = relativePath + "?v=" + PreciseTimestamp.UniqueTimestamp;
+                
+                await Db.UpdateOnlyAsync(() => new ApplicationUser { ProfileUrl = profileUrl }, 
+                    u => u.Id == user.Id);
             }
             
             await Db.UpdateOnlyAsync(() => new User
