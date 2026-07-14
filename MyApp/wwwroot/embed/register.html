@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register External User</title>
+    <!-- Declare support for both light and dark themes to help prevent white flashes -->
+    <meta name="color-scheme" content="light dark">
+    <!-- Google Fonts for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <script>
+        // Inline script to prevent Flash of Unstyled Content (FOUC) and handle ?scheme parameter
+        {
+            const urlParams = new URLSearchParams(window.location.search);
+            const scheme = urlParams.get("scheme");
+            if (scheme === "dark" || (scheme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+                document.querySelector('meta[name="color-scheme"]').content = "dark";
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.querySelector('meta[name="color-scheme"]').content = "light";
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            /* Theme color tokens - Light mode default */
+            --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff 0%, #f0f4f9 100%);
+            --text-primary: #1f1f1f;
+            --text-secondary: #5f6368;
+            --accent-color: #0b57d0;
+            --accent-hover: #0842a0;
+            --input-bg: #ffffff;
+            --input-border: #dadce0;
+            --input-border-hover: #80868b;
+            --input-focus-ring: rgba(11, 87, 208, 0.2);
+            --danger-bg: #fde8e8;
+            --danger-text: #9b1c1c;
+            --danger-border: #f8b4b4;
+            --success-bg: #edf7ed;
+            --success-text: #1e4620;
+            --success-border: #c8e6c9;
+            --info-bg: #e8f0fe;
+            --info-text: #174ea6;
+            --info-border: #d2e3fc;
+            --key-box-bg: #f1f3f4;
+            --key-box-border: #e8eaed;
+            --scrollbar-thumb: #c1c1c1;
+            --scrollbar-track: #f1f1f1;
+
+            scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+        }
+
+        /* Dark mode overrides */
+        html[data-theme="dark"] {
+            --bg-gradient: radial-gradient(circle at 50% 50%, #131924 0%, #090d16 100%);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9aa0a6;
+            --accent-color: #1a73e8;
+            --accent-hover: #2b85f5;
+            --input-bg: #090d16;
+            --input-border: #30363d;
+            --input-border-hover: #8b949e;
+            --input-focus-ring: rgba(26, 115, 232, 0.3);
+            --danger-bg: rgba(248, 113, 113, 0.15);
+            --danger-text: #fca5a5;
+            --danger-border: rgba(248, 113, 113, 0.3);
+            --success-bg: rgba(74, 222, 128, 0.15);
+            --success-text: #86efac;
+            --success-border: rgba(74, 222, 128, 0.3);
+            --info-bg: rgba(26, 115, 232, 0.15);
+            --info-text: #8ab4f8;
+            --info-border: rgba(26, 115, 232, 0.3);
+            --key-box-bg: #0b132b;
+            --key-box-border: #1e293b;
+            --scrollbar-thumb: #475569;
+            --scrollbar-track: #0f172a;
+        }
+
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Seamless container for iframe embedding (no borders or cards shadows) */
+        .card {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            max-width: 34rem;
+            padding: 2rem;
+        }
+
+        /* Header layout */
+        .card-header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            color: var(--text-secondary);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.85rem 1rem 0.85rem 2.7rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .form-input:hover {
+            border-color: var(--input-border-hover);
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px var(--input-focus-ring);
+        }
+
+        .input-help {
+            margin-top: 0.4rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Form submit button */
+        .submit-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(11, 87, 208, 0.15);
+            outline: none;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 4px 16px rgba(11, 87, 208, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+        }
+
+        .submit-btn:disabled {
+            background: var(--text-secondary);
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Spinner animation */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s ease-in-out infinite;
+            margin-right: 8px;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 0.9rem 1rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+            display: none;
+            align-items: flex-start;
+            animation: alertFadeIn 0.3s ease forwards;
+        }
+
+        @keyframes alertFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-error {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid var(--danger-border);
+        }
+
+        .alert-success {
+            background: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid var(--success-border);
+        }
+
+        .alert-icon {
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            margin-top: 1px;
+        }
+
+        .alert-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
+            fill: none;
+            stroke: currentColor;
+        }
+
+        /* Success screen styles */
+        .success-content {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .success-icon-large {
+            width: 64px;
+            height: 64px;
+            background: var(--success-bg);
+            color: var(--success-text);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--success-border);
+        }
+
+        .success-icon-large svg {
+            width: 32px;
+            height: 32px;
+            stroke-width: 2.5;
+            fill: none;
+            stroke: currentColor;
+        }
+
+        /* API Key presentation box */
+        .key-container {
+            text-align: left;
+            margin: 1.8rem 0;
+            background: var(--key-box-bg);
+            border: 1px solid var(--key-box-border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+
+        .key-container:hover {
+            border-color: var(--accent-color);
+            background: rgba(11, 87, 208, 0.05);
+        }
+
+        html[data-theme="dark"] .key-container:hover {
+            background: rgba(26, 115, 232, 0.08);
+        }
+
+        .key-header {
+            display: flex;
+            justify-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+            justify-content: space-between;
+        }
+
+        .key-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            outline: none;
+        }
+
+        .copy-btn:hover {
+            color: var(--accent-hover);
+        }
+
+        .copy-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke-width: 2;
+            fill: none;
+            stroke: currentColor;
+        }
+
+        .key-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            width: 100%;
+            word-break: break-all;
+            user-select: all;
+            outline: none;
+            line-height: 1.4;
+            padding-right: 2rem;
+        }
+
+        .tip-box {
+            text-align: left;
+            background: var(--info-bg);
+            color: var(--info-text);
+            border: 1px solid var(--info-border);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            line-height: 1.4;
+            margin-bottom: 1.8rem;
+        }
+
+        .tip-box strong {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+
+        .redirect-notice {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+        }
+
+        .redirect-link {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .redirect-link:hover {
+            text-decoration: underline;
+        }
+
+        .suggestion-pill {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: rgba(11, 87, 208, 0.1);
+            color: var(--accent-color);
+            border: 1px solid rgba(11, 87, 208, 0.2);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        html[data-theme="dark"] .suggestion-pill {
+            background: rgba(26, 115, 232, 0.15);
+            color: var(--accent-color);
+            border-color: rgba(26, 115, 232, 0.3);
+        }
+
+        .suggestion-pill:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Validation status indicators */
+        .status-indicator {
+            position: absolute;
+            right: 1rem;
+            display: none;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .status-indicator svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .status-valid {
+            color: #1e4620;
+        }
+
+        html[data-theme="dark"] .status-valid {
+            color: #86efac;
+        }
+
+        .status-invalid {
+            color: #9b1c1c;
+        }
+
+        html[data-theme="dark"] .status-invalid {
+            color: #fca5a5;
+        }
+
+        /* Terms checkbox */
+        .terms-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .terms-checkbox {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            margin-top: 2px;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .terms-label {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            cursor: pointer;
+        }
+
+        .terms-link {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .terms-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <!-- Registration Form Screen -->
+        <div id="registerScreen">
+            <div class="card-header">
+                <h1>Create Account</h1>
+                <p class="subtitle">Choose a unique username and generate your API key.</p>
+            </div>
+
+            <!-- Error Notification Alert -->
+            <div class="alert alert-error" id="errorAlert">
+                <span class="alert-icon">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </span>
+                <span id="errorMessage">Error registering user.</span>
+            </div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <input type="text" id="username" class="form-input" placeholder="Enter username"
+                            autocomplete="off" spellcheck="false" required style="padding-right: 2.7rem;">
+                        <span class="status-indicator status-valid" id="usernameValidIcon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                            </svg>
+                        </span>
+                        <span class="status-indicator status-invalid" id="usernameInvalidIcon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="input-help" id="usernameHelp">Use only letters, numbers, and underscores.</div>
+                    <div id="usernameSuggestions" style="display: none; margin-top: 0.6rem;">
+                        <div style="font-size: 0.8rem; margin-bottom: 0.4rem; color: var(--text-secondary);">Suggested
+                            usernames (click to use):</div>
+                        <div id="suggestionsList" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+                    </div>
+                </div>
+
+                <div class="form-group" id="emailFormGroup">
+                    <label for="email" class="form-label">Email Address (Optional)</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                        <input type="email" id="email" class="form-input" placeholder="name@example.com"
+                            autocomplete="off">
+                    </div>
+                    <div class="input-help">Used for password recovery. Can be left empty.</div>
+                </div>
+
+                <div class="terms-group">
+                    <input type="checkbox" id="agreeTerms" class="terms-checkbox">
+                    <label for="agreeTerms" class="terms-label">
+                        I agree to the <a href="/terms" target="_blank" class="terms-link">Terms of Service</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                    <span class="spinner" id="btnSpinner"></span>
+                    <span id="btnText">Generate API Key</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Success Presentation Screen -->
+        <div id="successScreen" class="success-content">
+            <div class="success-icon-large">
+                <svg viewBox="0 0 24 24">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                </svg>
+            </div>
+            <h1>Registration Successful</h1>
+            <p class="subtitle">Your account is created and API Key has been generated.</p>
+
+            <div class="key-container">
+                <div class="key-header">
+                    <span class="key-label">Your API Key</span>
+                    <button class="copy-btn" id="copyBtn">
+                        <svg id="copyIcon" viewBox="0 0 24 24">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span id="copyText">Copy Key</span>
+                    </button>
+                </div>
+                <div class="key-display" id="apiKeyDisplay">Loading...</div>
+            </div>
+
+            <div class="tip-box">
+                <strong>Save this key immediately!</strong>
+                This API key will only be shown once! Copy it now and store it securely.<br>
+                This API Key is used for both your account password and API access.
+            </div>
+
+            <div class="redirect-notice" id="redirectNotice" style="display: none;">
+                Redirecting in <span id="countdown">3</span> seconds...<br>
+                <a href="#" class="redirect-link" id="redirectImmediateLink">Click here to redirect immediately</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup light/dark theme logic based on scheme query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const schemeParam = urlParams.get("scheme");
+        const domainParam = urlParams.get("domain");
+        const usernameParam = urlParams.get("username");
+
+        // Hide email field if domain parameter is specified
+        if (domainParam) {
+            const emailFormGroup = document.getElementById("emailFormGroup");
+            if (emailFormGroup) {
+                emailFormGroup.style.display = "none";
+            }
+        }
+
+
+
+        // React to system preference changes if no scheme query parameter is specified
+        if (!schemeParam) {
+            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+                const newTheme = e.matches ? "dark" : "light";
+                document.documentElement.setAttribute("data-theme", newTheme);
+                document.querySelector('meta[name="color-scheme"]').content = newTheme;
+            });
+        }
+
+        // Username check and suggestions logic
+        const usernameInput = document.getElementById("username");
+        const usernameHelp = document.getElementById("usernameHelp");
+        const usernameSuggestions = document.getElementById("usernameSuggestions");
+        const suggestionsList = document.getElementById("suggestionsList");
+        const validIcon = document.getElementById("usernameValidIcon");
+        const invalidIcon = document.getElementById("usernameInvalidIcon");
+
+        let debounceTimeout;
+        let initialSuggestions = [];
+
+        async function fetchSuggestions(username) {
+            try {
+                let url = "/generate-usernames";
+                if (username) {
+                    url += "?username=" + encodeURIComponent(username);
+                }
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.suggestions || [];
+                }
+            } catch (err) {
+                console.error("Error fetching suggestions", err);
+            }
+            return [];
+        }
+
+        async function loadInitialSuggestions() {
+            initialSuggestions = await fetchSuggestions(usernameParam);
+            // Only display suggestions if the user has not started typing
+            if (initialSuggestions.length > 0 && !usernameInput.value.trim()) {
+                displaySuggestions(initialSuggestions);
+            }
+        }
+
+        function displaySuggestions(suggestions) {
+            if (!suggestions || suggestions.length === 0) {
+                usernameSuggestions.style.display = "none";
+                return;
+            }
+            suggestionsList.innerHTML = "";
+            suggestions.forEach(name => {
+                const pill = document.createElement("button");
+                pill.type = "button";
+                pill.className = "suggestion-pill";
+                pill.textContent = name;
+                pill.addEventListener("click", () => {
+                    usernameInput.value = name;
+                    usernameInput.dispatchEvent(new Event("input"));
+                });
+                suggestionsList.appendChild(pill);
+            });
+            usernameSuggestions.style.display = "block";
+        }
+
+        // Load suggestions on page load
+        loadInitialSuggestions();
+
+        usernameInput.addEventListener("input", () => {
+            clearTimeout(debounceTimeout);
+
+            const username = usernameInput.value.trim();
+            if (!username) {
+                resetUsernameStatus();
+                return;
+            }
+
+            // Client-side regex check
+            const usernameRegex = /^[a-zA-Z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                showUsernameStatus(false, "Username can only contain letters, numbers, and underscores (_). Spaces are not allowed.");
+                return;
+            }
+
+            debounceTimeout = setTimeout(async () => {
+                const requestUsername = username;
+                try {
+                    const response = await fetch("/check-username", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({ UserName: requestUsername })
+                    });
+
+                    // Avoid race condition if user kept typing
+                    if (usernameInput.value.trim() !== requestUsername) {
+                        return;
+                    }
+
+                    if (response.ok) {
+                        showUsernameStatus(true, "Username is available.");
+                    } else {
+                        let errorMsg = "Username is already taken.";
+                        try {
+                            const data = await response.json();
+                            if (data && data.responseStatus && data.responseStatus.message) {
+                                errorMsg = data.responseStatus.message;
+                            }
+                        } catch (e) {
+                            console.error("Error parsing check-username error response", e);
+                        }
+
+                        // Fetch new suggestions based on the invalid/taken username
+                        const suggestions = await fetchSuggestions(requestUsername);
+
+                        // Double check if the user has changed the input since we started fetching suggestions
+                        if (usernameInput.value.trim() !== requestUsername) {
+                            return;
+                        }
+
+                        showUsernameStatus(false, errorMsg, suggestions);
+                    }
+                } catch (err) {
+                    console.error("Error checking username availability", err);
+                }
+            }, 350);
+        });
+
+        function resetUsernameStatus() {
+            usernameHelp.textContent = "Use only letters, numbers, and underscores.";
+            usernameHelp.style.color = "";
+            validIcon.style.display = "none";
+            invalidIcon.style.display = "none";
+            if (initialSuggestions.length > 0) {
+                displaySuggestions(initialSuggestions);
+            } else {
+                usernameSuggestions.style.display = "none";
+            }
+        }
+
+        function showUsernameStatus(isValid, message, suggestions = []) {
+            usernameHelp.textContent = message;
+            if (isValid) {
+                usernameHelp.style.color = "var(--success-text)";
+                validIcon.style.display = "flex";
+                invalidIcon.style.display = "none";
+                usernameSuggestions.style.display = "none";
+            } else {
+                usernameHelp.style.color = "var(--danger-text)";
+                validIcon.style.display = "none";
+                invalidIcon.style.display = "flex";
+
+                const displayList = suggestions.length > 0 ? suggestions : initialSuggestions;
+                displaySuggestions(displayList);
+            }
+        }
+
+        // Populate username from query string if available and validate
+        if (usernameParam) {
+            usernameInput.value = usernameParam;
+            usernameInput.dispatchEvent(new Event("input"));
+        }
+
+        // Form submission and validation logic
+        const registerForm = document.getElementById("registerForm");
+        const registerScreen = document.getElementById("registerScreen");
+        const successScreen = document.getElementById("successScreen");
+        const submitBtn = document.getElementById("submitBtn");
+
+        // Terms checkbox enables/disables submit button
+        const agreeTerms = document.getElementById("agreeTerms");
+        agreeTerms.addEventListener("change", () => {
+            submitBtn.disabled = !agreeTerms.checked;
+        });
+        const btnSpinner = document.getElementById("btnSpinner");
+        const btnText = document.getElementById("btnText");
+        const errorAlert = document.getElementById("errorAlert");
+        const errorMessage = document.getElementById("errorMessage");
+        const apiKeyDisplay = document.getElementById("apiKeyDisplay");
+        const copyBtn = document.getElementById("copyBtn");
+        const copyText = document.getElementById("copyText");
+        const copyIcon = document.getElementById("copyIcon");
+        const redirectNotice = document.getElementById("redirectNotice");
+        const countdownSpan = document.getElementById("countdown");
+        const redirectImmediateLink = document.getElementById("redirectImmediateLink");
+
+        let generatedApiKey = "";
+
+        registerForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const usernameInput = document.getElementById("username");
+            const emailInput = document.getElementById("email");
+            const username = usernameInput.value.trim();
+            let email = emailInput.value.trim();
+
+            if (domainParam) {
+                email = `${username}@${domainParam}`;
+            }
+
+            // Client-side regex check for username (letters, numbers, underscores)
+            const usernameRegex = /^[a-zA-Z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                showError("Username can only contain letters, numbers, and underscores (_). Spaces are not allowed.");
+                return;
+            }
+
+            // Hide error alert and start loader
+            errorAlert.style.display = "none";
+            submitBtn.disabled = true;
+            btnSpinner.style.display = "inline-block";
+            btnText.textContent = "Registering...";
+
+            try {
+                const response = await fetch("/register-external-user", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        UserName: username,
+                        Email: email
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    generatedApiKey = data.apiKey;
+                    apiKeyDisplay.textContent = generatedApiKey;
+
+                    // Show success screen
+                    registerScreen.style.display = "none";
+                    successScreen.style.display = "block";
+
+                    // Notify parent/opener window via postMessage
+                    const messagePayload = {
+                        type: "register-success",
+                        apiKey: generatedApiKey,
+                        userName: data.userName,
+                        userId: data.userId
+                    };
+                    // If embedded inside an iframe
+                    if (window.parent !== window) {
+                        window.parent.postMessage(messagePayload, "*");
+                    }
+                    // If opened as a popup window
+                    if (window.opener) {
+                        window.opener.postMessage(messagePayload, "*");
+                    }
+
+                    // Handle redirect URL parameter
+                    const redirectUrl = urlParams.get("redirect");
+
+                    if (redirectUrl) {
+                        try {
+                            const parsedRedirect = new URL(redirectUrl);
+                            parsedRedirect.searchParams.set("token", generatedApiKey);
+                            const finalRedirectUrl = parsedRedirect.toString();
+
+                            redirectNotice.style.display = "block";
+                            redirectImmediateLink.href = finalRedirectUrl;
+
+                            let countdown = 3;
+                            const interval = setInterval(() => {
+                                countdown--;
+                                countdownSpan.textContent = countdown;
+                                if (countdown <= 0) {
+                                    clearInterval(interval);
+                                    window.location.href = finalRedirectUrl;
+                                }
+                            }, 1000);
+                        } catch (err) {
+                            console.error("Invalid redirect URL", redirectUrl);
+                        }
+                    }
+                } else {
+                    const status = data.responseStatus || {};
+                    const msg = status.message || "Failed to create account. Please check details and try again.";
+                    showError(msg);
+                }
+            } catch (err) {
+                console.error(err);
+                showError("Network error. Make sure the server is running and try again.");
+            } finally {
+                submitBtn.disabled = false;
+                btnSpinner.style.display = "none";
+                btnText.textContent = "Create Account";
+            }
+        });
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorAlert.style.display = "flex";
+            errorAlert.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Copy API key to clipboard
+        const keyContainer = document.querySelector(".key-container");
+        const copySvg = `<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>`;
+        const checkSvg = `<polyline points="20 6 9 17 4 12"></polyline>`;
+
+        async function copyApiKey() {
+            if (!generatedApiKey) return;
+            try {
+                await navigator.clipboard.writeText(generatedApiKey);
+                copyText.textContent = "Copied!";
+                copyIcon.innerHTML = checkSvg;
+                copyIcon.setAttribute("viewBox", "0 0 24 24");
+                copyBtn.style.color = "var(--success-text)";
+
+                // Reset button text and icon after 2 seconds
+                setTimeout(() => {
+                    copyText.textContent = "Copy Key";
+                    copyIcon.innerHTML = copySvg;
+                    copyBtn.style.color = "";
+                }, 2000);
+            } catch (err) {
+                console.error("Failed to copy text", err);
+            }
+        }
+
+        // Copy API key when copy button is clicked
+        copyBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            copyApiKey();
+        });
+
+        // Clicking the whole key container also copies the key
+        keyContainer.addEventListener("click", () => {
+            copyApiKey();
+        });
+    </script>
+</body>
+
+</html>
