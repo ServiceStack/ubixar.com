@@ -104,6 +104,14 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
         var fileName = await AssetManager.SaveFileAsync(uploadedFile, appConfig.FilesPath);
         return fileName;
     }
+    
+    public async Task<string> SaveToCacheAsync(IHttpFile uploadedFile)
+    {
+        var fileName = await AssetManager.SaveFileAsync(uploadedFile, appConfig.CachePath);
+        return fileName;
+    }
+    
+    public string GetCachePath(string fileName) => appConfig.CachePath.CombineWith(fileName[..2], fileName);
 
     public Stream OpenArtifactStream(string fileName) => File.OpenRead(GetArtifactPath(fileName));
     public string GetArtifactPath(string fileName) => appConfig.ArtifactsPath.CombineWith(fileName[..2], fileName);
@@ -1365,6 +1373,15 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
             ? Config.FallbackAssetsBaseUrl.CombineWith(url)
             : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23364153'/%3E%3Cg transform='translate(200,150)'%3E%3Crect x='-50' y='-40' width='100' height='80' fill='none' stroke='%23d1d5db' stroke-width='2' rx='4'/%3E%3Ccircle cx='-25' cy='-15' r='8' fill='%23d1d5db'/%3E%3Cpath d='M-35 10 L-15 -10 L5 10 L25 -5 L25 25 L-35 25 Z' fill='%23d1d5db'/%3E%3C/g%3E%3Ctext x='200' y='220' text-anchor='middle' fill='%239ca3af' font-family='Arial, sans-serif' font-size='14'%3EImage not available%3C/text%3E%3C/svg%3E"
         : url;
+    
+    public void AssertMaxUpload(long bytes, ILogger? logger = null)
+    {
+        if (bytes > Config.MaxUploadBytes)
+        {
+            logger?.LogWarning("File size {Bytes} exceeds maximum allowed size of {MaxUploadBytes} bytes", bytes, Config.MaxUploadBytes);
+            throw new ArgumentException($"File size exceeds maximum allowed size of {Config.MaxUploadBytes.HumanifyNumber()} bytes");
+        }
+    }
 }
 
 public record struct ComfyAgentQuery(

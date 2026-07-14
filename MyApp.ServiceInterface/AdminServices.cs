@@ -935,35 +935,7 @@ public class AdminServices(ILogger<AdminServices> log,
                             continue;
                         }
 
-                        var sourceWidth = originalBitmap.Width;
-                        var sourceHeight = originalBitmap.Height;
-
-                        // Calculate the scale factor to fill the target size (crop mode)
-                        var scale = Math.Max((float)targetWidth / sourceWidth, (float)targetHeight / sourceHeight);
-                        var scaledWidth = (int)(sourceWidth * scale);
-                        var scaledHeight = (int)(sourceHeight * scale);
-
-                        // Calculate crop position to center the image
-                        var cropX = (scaledWidth - targetWidth) / 2;
-                        var cropY = (scaledHeight - targetHeight) / 2;
-
-                        // Create the output bitmap
-                        using var outputBitmap = new SKBitmap(targetWidth, targetHeight);
-                        using var canvas = new SKCanvas(outputBitmap);
-                        using var paint = new SKPaint { IsAntialias = true };
-
-                        // Clear the canvas
-                        canvas.Clear(SKColors.Transparent);
-
-                        // Calculate source and destination rectangles for center crop
-                        var sourceRect = new SKRect(0, 0, sourceWidth, sourceHeight);
-                        var destRect = new SKRect(-cropX, -cropY, scaledWidth - cropX, scaledHeight - cropY);
-
-                        // Draw the scaled and cropped image
-                        canvas.DrawBitmap(originalBitmap, sourceRect, destRect, paint);
-
-                        using var image = SKImage.FromBitmap(outputBitmap);
-                        using var data = image.Encode(SKEncodedImageFormat.Webp, 90);
+                        using var data = originalBitmap.ResizeBitmapAsWebp(targetWidth, targetHeight, out var sourceWidth, out var sourceHeight);
                         
                         // Save cropped image
                         using var outputStream = File.Create(artifactPath);

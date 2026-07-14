@@ -3,28 +3,42 @@ using ServiceStack.DataAnnotations;
 
 namespace MyApp.ServiceModel;
 
-[Icon(Svg = "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='currentColor' d='M12 4a4 4 0 0 1 4 4a4 4 0 0 1-4 4a4 4 0 0 1-4-4a4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4'/></svg>")]
+[Icon(Svg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='currentColor' d='M12 4a4 4 0 0 1 4 4a4 4 0 0 1-4 4a4 4 0 0 1-4-4a4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4'/></svg>")]
 public class User
 {
-    [PrimaryKey]
-    public string Id { get; set; } // 1:1 with AspNetUsers/ApplicationUser.Id
+    [PrimaryKey] public string Id { get; set; } // 1:1 with AspNetUsers/ApplicationUser.Id
     public string UserName { get; set; }
-    [PgSqlJsonB]
-    public List<Rating> Ratings { get; set; }
+    [PgSqlJsonB] public List<Rating> Ratings { get; set; }
     public string? ProfileUrl { get; set; }
-    [PgSqlJsonB]
-    public UserPrefs Prefs { get; set; } = new();
+    [PgSqlJsonB] public UserPrefs Prefs { get; set; } = new();
     public int Karma { get; set; }
     public int Credits { get; set; }
     public QuotaTier QuotaTier { get; set; }
     public DateTime? LastBonusDate { get; set; }
     public DateTime ModifiedDate { get; set; }
+    
+    public void AddAvatar(string profile, string relativeCachePath)
+    {
+        Prefs.Avatars ??= new Dictionary<string, string>();
+        Prefs.Avatars[profile] = relativeCachePath;
+    }
+    
+    public string? GetAvatar(string profile)
+    {
+        if (Prefs.Avatars == null) return null;
+        Prefs.Avatars.TryGetValue(profile, out var avatar);
+        return avatar;
+    }
 }
+
 public class UserPrefs
 {
     public int LastReadNotificationId { get; set; }
     public int LastReadAchievementId { get; set; }
+    public Dictionary<string, string>? Avatars { get; set; }
 }
+
 public class UserCache
 {
     public string Id { get; set; }
@@ -32,12 +46,11 @@ public class UserCache
     public int Karma { get; set; }
     public int Credits { get; set; }
 }
+
 public class CreditLog
 {
-    [AutoIncrement]
-    public int Id { get; set; }
-    [Index]
-    public string UserId { get; set; }
+    [AutoIncrement] public int Id { get; set; }
+    [Index] public string UserId { get; set; }
     public int Credits { get; set; }
     public CreditReason? Reason { get; set; }
     public string? Description { get; set; }
@@ -45,6 +58,7 @@ public class CreditLog
     public string? RefUserId { get; set; }
     public DateTime CreatedDate { get; set; }
 }
+
 public enum CreditReason
 {
     SignupBonus, // 5000
@@ -64,17 +78,18 @@ public class UserInfo
 
     public DateTime? LastBonusDate { get; set; }
     public string? ClaimBonusMessage { get; set; }
+
     /// <summary>
     /// Time till next daily bonus
     /// </summary>
-    public TimeSpan TimeTillNextBonus => LastBonusDate == null || LastBonusDate.Value.Date != DateTime.UtcNow.Date 
-        ? TimeSpan.Zero 
+    public TimeSpan TimeTillNextBonus => LastBonusDate == null || LastBonusDate.Value.Date != DateTime.UtcNow.Date
+        ? TimeSpan.Zero
         : DateTime.UtcNow.Date.AddDays(1) - DateTime.UtcNow;
-    
+
     public List<MyAchievement> LatestAchievements { get; set; } = [];
     public List<MyNotification> LatestNotifications { get; set; } = [];
     public List<MyCreditLog> LatestCredits { get; set; } = [];
-    
+
     public bool HasUnreadAchievements => LatestAchievements.Any(x => x.Id > LastReadAchievementId);
     public bool HasUnreadNotifications => LatestNotifications.Any(x => x.Id > LastReadNotificationId);
 }
@@ -90,8 +105,7 @@ public enum QuotaTier
 
 public class Achievement
 {
-    [AutoIncrement]
-    public int Id { get; set; }
+    [AutoIncrement] public int Id { get; set; }
     [Index] public string UserId { get; set; }
     public AchievementType Type { get; set; }
     public string? Title { get; set; }
@@ -129,10 +143,8 @@ public enum AchievementType
 
 public class Notification
 {
-    [AutoIncrement]
-    public int Id { get; set; }
-    [Index]
-    public string UserId { get; set; }
+    [AutoIncrement] public int Id { get; set; }
+    [Index] public string UserId { get; set; }
     public NotificationType Type { get; set; }
     public string? GenerationId { get; set; }
     public int? ArtifactId { get; set; }
@@ -223,8 +235,7 @@ public class GetDeletedRowsResponse
 
 public class DeletedRow
 {
-    [AutoIncrement]
-    public int Id { get; set; }
+    [AutoIncrement] public int Id { get; set; }
     public Table Table { get; set; }
     public string Key { get; set; }
 }
@@ -243,4 +254,55 @@ public enum Table
     WorkflowGeneration = 9,
     WorkflowVersion = 10,
     Achievement = 11,
+}
+
+[Route("/register-external-user", "POST")]
+public class RegisterExternalUser : IPost, IReturn<RegisterExternalUserResponse>
+{
+    [ValidateNotEmpty]
+    [ValidateMinimumLength(3)]
+    [ValidateMaximumLength(30)]
+    public string UserName { get; set; }
+    [ValidateEmail]
+    public string Email { get; set; }
+}
+
+public class RegisterExternalUserResponse
+{
+    public string ApiKey { get; set; }
+    public string UserName { get; set; }
+    public string UserId { get; set; }
+    public ResponseStatus ResponseStatus { get; set; }
+}
+
+public class ProposedUsername
+{
+    [AutoIncrement]
+    public int Id { get; set; }
+    [Index(Unique = true)]
+    public string Name { get; set; }
+}
+
+[Route("/check-username", "POST")]
+public class CheckUsername : IPost, IReturn<CheckUsernameResponse>
+{
+    [ValidateNotEmpty]
+    public string UserName { get; set; }
+}
+public class CheckUsernameResponse
+{
+    public ResponseStatus? ResponseStatus { get; set; }
+}
+
+[Route("/generate-usernames", "GET")]
+public class GenerateUsernames : IGet, IReturn<GenerateUsernamesResponse>
+{
+    [ValidateLessThan(20)]
+    public int? Count { get; set; }
+    public string? UserName { get; set; }
+}
+public class GenerateUsernamesResponse
+{
+    public List<string>? Suggestions { get; set; }
+    public ResponseStatus? ResponseStatus { get; set; }
 }

@@ -14,6 +14,8 @@ public class AppConfig
     public string AppDataPath { get; set; } = "App_Data";
     public string ArtifactsPath { get; set; } = "App_Data/artifacts";
     public string FilesPath { get; set; } = "App_Data/files";
+    public string CachePath { get; set; } = "App_Data/cache";
+    public string ProjectsPath { get; set; } = "App_Data/projects";
     public string VisualLanguageModel { get; set; } = "qwen3-vl:8b";
     public string ChatLanguageModel { get; set; }
     public string? GitPagesBaseUrl { get; set; }
@@ -38,6 +40,8 @@ public class AppConfig
         ["width"] = 6144,
         ["height"] = 6144,
     };
+
+    public int MaxUploadBytes { get; set; } = 20 * 1024 * 1024; // 20 MB
     
     public VueAppConfig ToVueAppConfig() => new() {
         AppName = AppName,

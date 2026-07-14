@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 
 namespace MyApp.ServiceInterface;
@@ -63,5 +64,16 @@ public static class StringFormatters
         if (double.TryParse(size, out var bytes))
             return (long) bytes;
         return 0;
+    }
+    
+    public static bool HasKey(this NameValueCollection nvc, string key)
+    {
+        // Normal case: ?flag= or ?flag=1
+        if (nvc.AllKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
+            return true;
+
+        // Valueless case: ?flag — stored under null key
+        var valuelessKeys = nvc.GetValues(null);
+        return valuelessKeys?.Contains(key, StringComparer.OrdinalIgnoreCase) == true;
     }    
 }

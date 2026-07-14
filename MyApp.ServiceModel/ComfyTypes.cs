@@ -536,6 +536,7 @@ public enum AssetType
     Image,
     Video,
     Audio,
+    Speech,
     Animation,
     Text,
     Binary,

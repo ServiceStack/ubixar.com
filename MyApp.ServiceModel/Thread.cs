@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using ServiceStack;
 using ServiceStack.DataAnnotations;
 
@@ -141,11 +142,39 @@ public class CreateThreadReaction : ICreateDb<ThreadReaction>, IReturnVoid
 public class DeleteThreadReaction : IDeleteDb<ThreadReaction>, IReturn<EmptyResponse>
 {
     public int ThreadId { get; set; }
+    public Reaction Reaction { get; set; }
 }
 
 [Tag(Tags.Posts)]
 [ValidateIsAuthenticated]
-[AutoFilter(QueryTerm.Ensure, nameof(Comment.UserId), Eval = "userAuthId()")]
+[AutoFilter(QueryTerm.Ensure, nameof(ThreadReaction.UserId), Eval = "userAuthId()")]
+public class QueryThreadReactions : QueryDb<ThreadReaction>
+{
+    public int? ThreadId { get; set; }
+}
+
+[Tag(Tags.Posts)]
+[ValidateIsAuthenticated]
+[AutoFilter(QueryTerm.Ensure, nameof(ThreadReaction.UserId), Eval = "userAuthId()")]
+public class MyThreadReactions : QueryDb<ThreadReaction,ThreadReactionInfo>
+{
+    public int? AfterId { get; set; }
+}
+public class ThreadReactionInfo
+{
+    [AutoIncrement]
+    public int Id { get; set; }
+    [JsonPropertyName("t")]
+    [Index]
+    public int ThreadId { get; set; }
+    [JsonPropertyName("r")]
+    public Reaction Reaction { get; set; }
+}
+
+
+[Tag(Tags.Posts)]
+[ValidateIsAuthenticated]
+[AutoFilter(QueryTerm.Ensure, nameof(CommentReaction.UserId), Eval = "userAuthId()")]
 public class QueryCommentReactions : QueryDb<CommentReaction>
 {
     public int ThreadId { get; set; }

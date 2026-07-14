@@ -13,6 +13,7 @@ public static class Tags
     public const string AiInfo = nameof(AiInfo);
     public const string Admin = nameof(Admin);
     public const string Devices = nameof(Devices);
+    public const string Publish = nameof(Publish);
 }
 
 [Tag(Tags.Comfy)]
