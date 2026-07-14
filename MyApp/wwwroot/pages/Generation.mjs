@@ -151,7 +151,7 @@ export default {
                                 <button @click="submitComment" type="button"
                                         :disabled="!newComment.trim() || submittingComment"
                                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                                    {{ submittingComment ? 'Posting...' : 'Post Comment' }}
+                                    {{ submittingComment ? 'Commenting...' : 'Add Comment' }}
                                 </button>
                             </div>
                         </div>
@@ -189,10 +189,14 @@ export default {
                     </div>
 
                     <div v-else-if="!loadingComments" class="text-center py-8">
-                        <svg class="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.697-.413l-2.725.725.725-2.725A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                        <svg class="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                          <path fill="currentColor" d="M8 2.19c3.13 0 5.68 2.25 5.68 5s-2.55 5-5.68 5a5.7 5.7 0 0 1-1.89-.29l-.75-.26l-.56.56a14 14 0 0 1-2 1.55a.13.13 0 0 1-.07 0v-.06a6.58 6.58 0 0 0 .15-4.29a5.25 5.25 0 0 1-.55-2.16c0-2.77 2.55-5 5.68-5M8 .94c-3.83 0-6.93 2.81-6.93 6.27a6.4 6.4 0 0 0 .64 2.64a5.53 5.53 0 0 1-.18 3.48a1.32 1.32 0 0 0 2 1.5a15 15 0 0 0 2.16-1.71a6.8 6.8 0 0 0 2.31.36c3.83 0 6.93-2.81 6.93-6.27S11.83.94 8 .94"></path>
+                          <ellipse cx="5.2" cy="7.7" fill="currentColor" rx=".8" ry=".75"></ellipse><ellipse cx="8" cy="7.7" fill="currentColor" rx=".8" ry=".75"></ellipse><ellipse cx="10.8" cy="7.7" fill="currentColor" rx=".8" ry=".75"></ellipse>
                         </svg>
-                        <p class="text-gray-500 dark:text-gray-400">No comments yet. Be the first to share your thoughts!</p>
+                        <p class="text-gray-500 dark:text-gray-400">No comments yet. 
+                          <a href="/Account/Login" v-if="store.user">Be the first</a>
+                          <span v-else>Sign In</span>
+                          to share your thoughts!</p>
                     </div>
 
                     <div v-if="loadingComments" class="text-center py-4">

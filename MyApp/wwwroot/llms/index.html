@@ -1,0 +1,86 @@
+<html>
+
+<head>
+    <title>llms.py</title>
+    <base />
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="typography.css">
+    <link rel="icon" type="image/svg" href="fav.svg">
+    <style>
+        [type='button'],
+        button[type='submit'] {
+            cursor: pointer
+        }
+
+        [type='checkbox'].switch:checked:hover,
+        [type='checkbox'].switch:checked:focus,
+        [type='checkbox'].switch:checked,
+        [type='checkbox'].switch:focus,
+        [type='checkbox'].switch {
+            border: none;
+            background: none;
+            outline: none;
+            box-shadow: none;
+            cursor: pointer;
+        }
+    </style>
+    <script type="importmap"></script>
+
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script>
+        let colorScheme = location.search === "?dark"
+            ? "dark"
+            : location.search === "?light"
+                ? "light"
+                : localStorage.getItem('color-scheme')
+        let darkMode = colorScheme != null
+            ? colorScheme === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+        let html = document.documentElement
+        html.classList.toggle('dark', darkMode)
+        html.style.setProperty('color-scheme', darkMode ? 'dark' : null)
+        if (localStorage.getItem('color-scheme') === null) {
+            localStorage.setItem('color-scheme', darkMode ? 'dark' : 'light')
+        }
+        window.ARGS = {}
+        window.STATE = {
+            userAvatar: '/avatar/user',
+            agentAvatar: '/agents/avatar',
+        }
+    </script>
+
+    <div class="absolute top-1 right-1">
+        <div class="flex items-center gap-3 select-none flex-shrink-0 mt-1">
+            <a href="https://llmspy.org" target="_blank" rel="noopener"
+                class="text-xs font-semibold hover:underline flex items-center gap-1"
+                :class="[$styles.muted, $styles.linkHover]">
+                <span>llms.py</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <script type="module">/*include: themes.mjs*/</script>
+
+    <script id="data"></script>
+
+    <script type="module">/*include: bootstrap.mjs*/</script>
+
+    <script type="module">
+        /*App*/
+        const context = await globalThis.createContext(App, ARGS, STATE)
+        context.app.mount('#app')
+    </script>
+
+    <link rel="stylesheet" href="katex/katex.min.css">
+
+</body>
+
+</html>
