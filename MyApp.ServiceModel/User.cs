@@ -265,6 +265,9 @@ public class RegisterExternalUser : IPost, IReturn<RegisterExternalUserResponse>
     public string UserName { get; set; }
     [ValidateEmail]
     public string Email { get; set; }
+    public string? DisplayName { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
 }
 
 public class RegisterExternalUserResponse

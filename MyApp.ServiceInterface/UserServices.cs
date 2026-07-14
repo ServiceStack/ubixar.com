@@ -236,10 +236,22 @@ public class UserServices(
         var autoConfirmEmailDomains = new [] {
             "@llmspy.org",
         };
+        string? displayName = request.DisplayName ?? request.UserName.SplitCamelCase();
+        string? firstName = request.FirstName;
+        string? lastName = request.LastName;
+        var nameParts = request.UserName.SplitCamelCase().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (nameParts.Length == 2)
+            firstName = nameParts[0];
+        if (nameParts.Length > 1)
+            lastName = nameParts[1];
+
         var appUser = new ApplicationUser
         {
             UserName = request.UserName,
             Email = email,
+            DisplayName = displayName,
+            FirstName = firstName,
+            LastName = lastName,
             ProfileUrl = ImageCreator.Instance.CreateSvgDataUri(char.ToUpper(request.UserName[0])),
             CreatedDate = DateTime.UtcNow,
             ModifiedDate = DateTime.UtcNow,
