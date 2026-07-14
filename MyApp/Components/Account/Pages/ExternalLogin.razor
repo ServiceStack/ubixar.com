@@ -96,6 +96,9 @@
     [SupplyParameterFromQuery]
     private string? Action { get; set; }
 
+    [SupplyParameterFromQuery(Name = "username")]
+    private string? UsernameQuery { get; set; }
+
     private string? CurrentProviderDisplayName => ProviderDisplayName ?? externalLoginInfo?.ProviderDisplayName;
 
     protected override async Task OnInitializedAsync()
@@ -120,6 +123,11 @@
             LoginProvider = info.LoginProvider;
             ProviderKey = info.ProviderKey;
             ProviderDisplayName = info.ProviderDisplayName;
+
+            if (!string.IsNullOrEmpty(UsernameQuery))
+            {
+                Input.UserName = UsernameQuery;
+            }
 
             if (Action == LoginCallbackAction)
             {
