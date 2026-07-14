@@ -133,7 +133,7 @@ public partial class AppHost() : AppHostBase("ubixar.com"), IHostingStartup
     }
     
     public static void Register() =>
-        Licensing.RegisterLicense("OSS GPL-3.0 2025 https://github.com/ServiceStack/ubixar.com eWsh42R7jS5127+SoqiLlwsyko2ayxa4lF0bQ63/c0LHLR8o/l2VRmok9nFos6Z/KC1uYt5NwoehlK2bg0JRQHNkFS5qfItIK2s5HCo7APkeJvmLq7OVmWCQ0wkSNW1eWDEl/1Ues3ntKbJchzAV7CioRwqfiIhvTZTowd4ovZ0=");
+        Licensing.RegisterLicense("OSS BSD-3-Clause 2026 https://github.com/ServiceStack/ubixar.com av0tijSvD6XoVfxMYj2XpfwqGGvNfXQKv2KAr+4BryoshsHurVjvnXmerROagXdI3vxEiWSlNh7fl9KeZgbEVbz7vaFSBMVbjS7HJDQCSRfKvSXtb9swKYqslrW+sX2GncIwR3b5ZW85OcjBhvqLBf/ae4tyPbGLCaSsLnRPpZg=");
 }
 
 public static class HtmlHelpers
