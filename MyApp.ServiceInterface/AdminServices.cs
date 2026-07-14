@@ -325,9 +325,10 @@ public class AdminServices(ILogger<AdminServices> log,
     
     public object Any(DeleteDuplicateArtifacts request)
     {
+        var Url = Db.GetDialectProvider().GetQuotedColumnName(nameof(Artifact.Url));
         var urlCounts = Db.Dictionary<string, int>(Db.From<Artifact>()
             .GroupBy(x => x.Url)
-            .Having("COUNT(Url) > 1")
+            .Having($"COUNT({Url}) > 1")
             .Select(x => new { x.Url, Count = Sql.Count(x.Url) }));
 
         var ret = new DeleteDuplicateArtifactsResponse

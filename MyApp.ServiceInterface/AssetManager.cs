@@ -11,7 +11,6 @@ public class AssetManager
     /// Calculates the SHA256 hash of an uploaded file and saves it to disk
     /// with the hash as its name (plus original extension).
     /// </summary>
-    /// <param name="uploadedFile">The IFormFile to process.</param>
     /// <returns>The final filename (hash + extension) or null if an error occurred.</returns>
     public static async Task<string> SaveFileAsync(IHttpFile uploadedFile, string assetsDir)
     {
@@ -63,7 +62,7 @@ public class AssetManager
             // Ensure the specific target directory within _storagePath exists (if any subdirectories in finalFileName)
             Path.GetDirectoryName(finalFilePath).AssertDir();
 
-            // Move the temporary file to the final location
+            // Move the temporary file to the final location.
             // If a file with the same hash already exists, File.Move will throw an IOException.
             if (File.Exists(finalFilePath))
             {

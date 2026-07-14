@@ -153,7 +153,9 @@ public static partial class AppExtensions
         return to;
     }
 
-    public static string HumanifyNumber(this int n)
+    public static string HumanifyNumber(this int n) => HumanifyNumber((long)n);
+
+    public static string HumanifyNumber(this long n)
     {
         if (n < 0)
             return '-' + HumanifyNumber(-n);
