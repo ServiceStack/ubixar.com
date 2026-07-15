@@ -330,5 +330,27 @@ public class ComfyWorkflowParseTests : TestBase
         inputNames.PrintDump();
         Assert.That(inputNames,Is.EquivalentTo("positivePrompt,width,height,batch_size,seed,steps,cfg,sampler_name,scheduler,denoise".Split(',')));
     }
-    
+
+    [Test]
+    public void Can_merge_positivePrompt_into_krea2_subgraph_Workflow()
+    {
+        var workflowObj = File.ReadAllText("./workflows/text-to-image/krea2_turbo.json").ParseAsObjectDictionary();
+        var info = ComfyWorkflowParser.Parse(workflowObj, "krea2_turbo.json", NodeDefs);
+
+        // positivePrompt should retarget to the subgraph-exposed User Prompt primitive (30:19)
+        var positive = info.Inputs.First(x => x.Name == "positivePrompt");
+        Assert.That(positive.NodeId, Is.EqualTo(19));
+        Assert.That(positive.ClassType, Is.EqualTo("PrimitiveStringMultiline"));
+
+        var prompt = File.ReadAllText("./workflows/prompts/krea2_turbo-prompt.json")
+            .FromJson<Dictionary<string, ApiNode>>();
+
+        const string userPrompt = "a photo of a red fox in the snow";
+        var merged = ComfyConverters.CreatePrompt(prompt, info, new() { ["positivePrompt"] = userPrompt });
+
+        // The subgraph-prefixed node id (30:19) is resolved and its value replaced
+        Assert.That(merged["30:19"].ClassType, Is.EqualTo("PrimitiveStringMultiline"));
+        Assert.That(merged["30:19"].Inputs["value"], Is.EqualTo(userPrompt));
+    }
+
 }

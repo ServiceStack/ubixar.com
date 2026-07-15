@@ -510,7 +510,8 @@ public class ComfyServices(ILogger<ComfyServices> log,
                 inputs ??= [];
                 inputs.Add(fileName);
                 
-                var node = apiPrompt.Prompt[input.NodeId.ToString()];
+                if (!ComfyConverters.TryResolveApiNode(apiPrompt.Prompt, input, out var node))
+                    throw HttpError.NotFound($"Node {input.NodeId} not found in API prompt");
                 node.Inputs[input.Name] = fileName;
             }
         }
@@ -521,7 +522,8 @@ public class ComfyServices(ILogger<ComfyServices> log,
                 var input = workflowVersion.Info.Inputs.FirstOrDefault(x => x.Name == "image");
                 if (input != null)
                 {
-                    var node = apiPrompt.Prompt[input.NodeId.ToString()];
+                    if (!ComfyConverters.TryResolveApiNode(apiPrompt.Prompt, input, out var node))
+                        throw HttpError.NotFound($"Node {input.NodeId} not found in API prompt");
                     var artifactPath = appData.GetArtifactPath(fileName);
                     if (!File.Exists(artifactPath))
                         throw HttpError.NotFound($"Artifact not found: {fileName}");

@@ -92,9 +92,17 @@ public class NodeComfyWorkflowConverter(ILogger<NodeComfyWorkflowConverter> log,
         var workflowPath = appData.WorkflowsPath.CombineWith(workflowVersion.Path);
         try
         {
-            var promptJson = await CreateApiPromptJsonAsync(appData.ContentRootPath!, appData.Config.BunExePath!, 
+            var promptJson = await CreateApiPromptJsonAsync(appData.ContentRootPath!, appData.Config.BunExePath!,
                 nodeDefinitionPath, workflowPath);
             var apiPrompt = ConvertToApiPrompt(promptJson, clientId, workflow);
+
+            // The generated API prompt reflects the workflow defaults; merge the
+            // request args (positive/negative prompt, seed, etc.) into it.
+            if (args.Count > 0)
+            {
+                apiPrompt.Prompt = ComfyConverters.CreatePrompt(apiPrompt.Prompt, workflowVersion.Info, args, log);
+                promptJson = apiPrompt.Prompt.ToJson();
+            }
             return new ApiPromptResult(apiPrompt, workflow, promptJson);
         }
         catch (Exception e)

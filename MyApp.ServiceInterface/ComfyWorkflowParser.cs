@@ -1289,6 +1289,16 @@ public class ComfyWorkflowParser
                 }
             }
             
+            // When the encoder's text is fed by a subgraph-exposed primitive
+            // (via Switch/Concatenate relays), retarget to that primitive so the
+            // user's prompt lands on the editable node the workflow is built around.
+            var exposedPositive = ResolveExposedPromptPrimitive(positiveNodeId, "text", nodes, links);
+            if (exposedPositive != null)
+            {
+                positiveNodeId = exposedPositive.Value.nodeId;
+                positiveNodeType = exposedPositive.Value.nodeType;
+            }
+
             // Add positive prompt input
             inputs.Add(new ComfyInputDefinition
             {
@@ -1332,6 +1342,13 @@ public class ComfyWorkflowParser
                 }
 
                 
+                var exposedNegative = ResolveExposedPromptPrimitive(negativeNodeId, "text", nodes, links);
+                if (exposedNegative != null)
+                {
+                    negativeNodeId = exposedNegative.Value.nodeId;
+                    negativeNodeType = exposedNegative.Value.nodeType;
+                }
+
                 // Add negative prompt input
                 inputs.Add(new ComfyInputDefinition
                 {
@@ -1350,6 +1367,77 @@ public class ComfyWorkflowParser
         return inputs;
     }
     
+
+    // PrimitiveString source nodes whose `value` widget the user edits.
+    private static readonly HashSet<string> StringPrimitiveNodeTypes =
+        ["PrimitiveStringMultiline", "PrimitiveString", "PrimitiveNode"];
+
+    // When a prompt encoder's text input is driven by a link (e.g. through a
+    // subgraph's exposed input, routed via Switch/Concatenate relay nodes),
+    // trace back to the source PrimitiveString node exposed by the subgraph
+    // boundary. Boundary-sourced links have a negative origin node id, which
+    // distinguishes the user-editable prompt from internal string constants
+    // (e.g. an LLM system prompt). Returns null when the encoder's text is a
+    // plain widget value or no boundary-exposed primitive is found, keeping the
+    // encoder itself as the prompt target.
+    private static (int nodeId, string nodeType)? ResolveExposedPromptPrimitive(
+        int encoderNodeId, string textInputName,
+        List<Dictionary<string, object?>> nodes, List<object> links)
+    {
+        Dictionary<string, object?>? NodeById(int id) =>
+            nodes.FirstOrDefault(n => n.GetValueOrDefault("id") is int nid && nid == id);
+
+        List<int> InputLinkSources(Dictionary<string, object?> node)
+        {
+            var sources = new List<int>();
+            if (node.GetValueOrDefault("inputs") is List<object> nodeInputs)
+            {
+                foreach (var input in nodeInputs.OfType<Dictionary<string, object?>>())
+                {
+                    if (input.GetValueOrDefault("link") is int link)
+                        sources.Add(GetSourceNodeFromLink(link, links));
+                }
+            }
+            return sources;
+        }
+
+        var encoder = NodeById(encoderNodeId);
+        if (encoder?.GetValueOrDefault("inputs") is not List<object> encoderInputs)
+            return null;
+
+        // Only retarget when the encoder's text input is a link, not a widget value.
+        var textInput = encoderInputs.OfType<Dictionary<string, object?>>()
+            .FirstOrDefault(i => i.GetValueOrDefault("name") as string == textInputName);
+        if (textInput?.GetValueOrDefault("link") is not int textLink)
+            return null;
+
+        var visited = new HashSet<int>();
+        var queue = new Queue<int>();
+        queue.Enqueue(GetSourceNodeFromLink(textLink, links));
+        while (queue.Count > 0)
+        {
+            var id = queue.Dequeue();
+            if (id < 0 || !visited.Add(id))
+                continue;
+            var node = NodeById(id);
+            if (node == null)
+                continue;
+
+            var type = node.GetValueOrDefault("type") as string ?? "";
+            if (StringPrimitiveNodeTypes.Contains(type))
+            {
+                // Boundary-exposed (negative origin) primitives are the user prompt.
+                if (InputLinkSources(node).Any(src => src < 0))
+                    return (id, type);
+                continue; // internal string constant, keep searching
+            }
+
+            // Relay node: keep tracing its inputs back towards the source.
+            foreach (var src in InputLinkSources(node))
+                queue.Enqueue(src);
+        }
+        return null;
+    }
 
     private static int GetSourceNodeFromLink(int linkId, List<object> links)
     {

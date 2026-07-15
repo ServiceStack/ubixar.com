@@ -395,24 +395,24 @@ public static class ComfyConverters
         log ??= NullLogger.Instance;
         foreach (var input in info.Inputs)
         {
-            var nodeId = input.NodeId.ToString();
-            if (!prompt.TryGetValue(nodeId, out var node))
+            var value = args.GetValueOrDefault(input.Name);
+            if (value == null)
+                continue;
+
+            if (!TryResolveApiNode(prompt, input, out var node))
             {
-                log.LogWarning("Node {NodeId} not found in API prompt, Skipping.", nodeId);
+                log.LogWarning("Node {NodeId} not found in API prompt, Skipping.", input.NodeId);
                 continue;
             }
 
-            var value = args.GetValueOrDefault(input.Name);
-            if (value == null)
-            {
-                log.LogWarning("No value found for input '{InputName}', Skipping.", input.Name);
-                continue;
-            }
-            
             var inputName = input.Name;
             if (input.Name is "positivePrompt" or "negativePrompt")
             {
-                inputName = "text";
+                // Primitive string sources expose their text as `value`; text
+                // encoders expose it as `text`.
+                inputName = node.ClassType is "PrimitiveString" or "PrimitiveStringMultiline" or "PrimitiveNode"
+                    ? "value"
+                    : "text";
             }
             node.Inputs[inputName] = value;
         }
@@ -430,8 +430,32 @@ public static class ComfyConverters
         {
             prompt.Remove(id);
         }
-        
+
         return prompt;
+    }
+
+    // Workflow inputs store the node's raw id, but subgraph internal nodes are
+    // keyed "{instanceId}:{internalId}" (e.g. "30:19") in the generated API
+    // prompt. When the raw id isn't a direct key, fall back to a suffix match
+    // disambiguated by class_type.
+    public static bool TryResolveApiNode(Dictionary<string, ApiNode> prompt, ComfyInputDefinition input, out ApiNode node)
+    {
+        var nodeId = input.NodeId.ToString();
+        if (prompt.TryGetValue(nodeId, out node!))
+            return true;
+
+        var suffix = ":" + nodeId;
+        foreach (var entry in prompt)
+        {
+            if (entry.Key.EndsWith(suffix, StringComparison.Ordinal) && entry.Value.ClassType == input.ClassType)
+            {
+                node = entry.Value;
+                return true;
+            }
+        }
+
+        node = null!;
+        return false;
     }
     
     public static WorkflowResult ParseComfyResult(Dictionary<string, object?> result, string? comfyApiBaseUrl = null)

@@ -423,6 +423,28 @@ public class ComfyWorkflowExecuteTests : TestBase
     }
 
     [Test]
+    public async Task Can_execute_Krea2_Workflow_with_positivePrompt()
+    {
+        var apiPrompt = await CreateApiPrompt("text-to-image/krea2_turbo.json");
+
+        var workflowObj = File.ReadAllText(Path.Combine(AppContext.BaseDirectory,
+            "../../../workflows/text-to-image/krea2_turbo.json")).ParseAsObjectDictionary();
+        var info = ComfyWorkflowParser.Parse(workflowObj, "krea2_turbo.json", NodeDefs);
+
+        const string userPrompt = "a photo of a red fox in the snow";
+        apiPrompt.Prompt = ComfyConverters.CreatePrompt(apiPrompt.Prompt, info, new() { ["positivePrompt"] = userPrompt });
+
+        // The user's prompt replaces the workflow default on the subgraph's User Prompt primitive
+        Assert.That(apiPrompt.Prompt["30:19"].Inputs["value"], Is.EqualTo(userPrompt));
+
+        var promptJson = ClientConfig.ToSystemJson(apiPrompt);
+        DumpJson(promptJson);
+
+        var responseJson = await ExecutePrompt(promptJson);
+        DumpJson(responseJson);
+    }
+
+    [Test]
     public void Can_parse_image_outputs()
     {
         var responseJson = File.ReadAllText("../../../workflows/results/sd3.5_fp8.output.json");
