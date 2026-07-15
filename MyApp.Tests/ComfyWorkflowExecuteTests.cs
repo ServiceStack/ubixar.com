@@ -412,6 +412,17 @@ public class ComfyWorkflowExecuteTests : TestBase
     }
 
     [Test]
+    public async Task Can_execute_Krea2_Workflow()
+    {
+        var apiPrompt = await CreateApiPrompt("text-to-image/krea2_turbo.json");
+        var promptJson = ClientConfig.ToSystemJson(apiPrompt);
+        DumpJson(promptJson);
+
+        var responseJson = await ExecutePrompt(promptJson);
+        DumpJson(responseJson);
+    }
+
+    [Test]
     public void Can_parse_image_outputs()
     {
         var responseJson = File.ReadAllText("../../../workflows/results/sd3.5_fp8.output.json");

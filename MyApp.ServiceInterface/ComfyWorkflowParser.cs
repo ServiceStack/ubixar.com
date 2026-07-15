@@ -17,7 +17,59 @@ public class ComfyWorkflowParser
             log?.LogError("No nodes found in workflow JSON");
             throw new Exception("No nodes found in workflow JSON");
         }
-        return nodesObj.Map(x => (Dictionary<string, object?>)x);
+        var allNodes = nodesObj.Map(x => (Dictionary<string, object?>)x);
+
+        // Subgraphs are self-defined within the workflow - include their internal nodes
+        // so their inputs can be extracted as workflow inputs.
+        if (workflow.GetValueOrDefault("definitions") is Dictionary<string, object?> definitions
+            && definitions.GetValueOrDefault("subgraphs") is List<object> subgraphs)
+        {
+            foreach (var subgraph in subgraphs.OfType<Dictionary<string, object?>>())
+            {
+                if (subgraph.GetValueOrDefault("nodes") is List<object> subNodes)
+                {
+                    foreach (var node in subNodes.OfType<Dictionary<string, object?>>())
+                    {
+                        allNodes.Add(node);
+                    }
+                }
+            }
+        }
+
+        return allNodes;
+    }
+
+    // Subgraph internal links use object format; convert to the top-level array format
+    // [id, origin_id, origin_slot, target_id, target_slot, type] so link traversal works uniformly.
+    private static List<object> GetWorkflowLinks(Dictionary<string, object?> workflow)
+    {
+        var topLinks = workflow.GetValueOrDefault("links") as List<object> ?? [];
+        var allLinks = new List<object>(topLinks);
+
+        if (workflow.GetValueOrDefault("definitions") is Dictionary<string, object?> definitions
+            && definitions.GetValueOrDefault("subgraphs") is List<object> subgraphs)
+        {
+            foreach (var subgraph in subgraphs.OfType<Dictionary<string, object?>>())
+            {
+                if (subgraph.GetValueOrDefault("links") is List<object> subLinks)
+                {
+                    foreach (var linkObj in subLinks.OfType<Dictionary<string, object?>>())
+                    {
+                        allLinks.Add(new List<object>
+                        {
+                            linkObj.GetValueOrDefault("id")!,
+                            linkObj.GetValueOrDefault("origin_id")!,
+                            linkObj.GetValueOrDefault("origin_slot")!,
+                            linkObj.GetValueOrDefault("target_id")!,
+                            linkObj.GetValueOrDefault("target_slot")!,
+                            linkObj.GetValueOrDefault("type")!,
+                        });
+                    }
+                }
+            }
+        }
+
+        return allLinks;
     }
 
     public static HashSet<string> IgnoreClientNodes { get; } =
@@ -41,7 +93,29 @@ public class ComfyWorkflowParser
             workflowNodes.Remove(node);
         }
 
+        // Subgraphs are self-defined within the workflow, not required custom nodes
+        foreach (var subgraphId in ExtractSubgraphIds(workflow))
+        {
+            workflowNodes.Remove(subgraphId);
+        }
+
         return workflowNodes;
+    }
+
+    // Subgraph nodes have their 'type' set to the subgraph's id defined under 'definitions.subgraphs'
+    static HashSet<string> ExtractSubgraphIds(Dictionary<string, object?> workflow)
+    {
+        var ret = new HashSet<string>();
+        if (workflow.GetValueOrDefault("definitions") is Dictionary<string, object?> definitions
+            && definitions.GetValueOrDefault("subgraphs") is List<object> subgraphs)
+        {
+            foreach (var subgraph in subgraphs.OfType<Dictionary<string, object?>>())
+            {
+                if (subgraph.GetValueOrDefault("id") is string id)
+                    ret.Add(id);
+            }
+        }
+        return ret;
     }
     
     static HashSet<string> ExtractNodeTypes(Dictionary<string, object?> workflow, ILogger? log = null)
@@ -241,10 +315,11 @@ public class ComfyWorkflowParser
     public static WorkflowInfo Parse(Dictionary<string,object?> workflow, string workflowName, Dictionary<string, NodeInfo> nodeDefs, ILogger? log = null)
     {
         log ??= NullLogger.Instance;
-        if (workflow["nodes"] is not List<object> nodesObj || workflow["links"] is not List<object> links)
+        if (workflow["nodes"] is not List<object> || workflow["links"] is not List<object>)
             throw new ArgumentException("Invalid workflow JSON");
 
-        var nodes = nodesObj.Map(x => (Dictionary<string, object?>)x);
+        var nodes = GetWorkflowNodes(workflow, log);
+        var links = GetWorkflowLinks(workflow);
 
         void IfNodeType(string nodeType, int minWidgetValues, Action<Dictionary<string, object?>, List<object>> action)
         {

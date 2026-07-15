@@ -1,29 +1,16 @@
 #!/usr/bin/env bun
 
-import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraph, LGraphNode, LiteGraph, SubgraphNode } from '@comfyorg/litegraph'
 
 // Ensure proper initialization
 if (typeof globalThis !== 'undefined') {
     ;(globalThis as any).__COMFYUI_FRONTEND_VERSION__ = '1.0.0-test'
 }
 
-import {
-    ComfyWorkflowJSON,
-    validateComfyWorkflow
-} from './schemas/comfyWorkflowSchema'
-
+import { validateComfyWorkflow } from './schemas/comfyWorkflowSchema'
 import { graphToPrompt } from "./utils/executionUtil"
-import type { NodeId } from '@comfyorg/litegraph'
-import {
-  ExecutableNodeDTO,
-  LGraphEventMode,
-  SubgraphNode
-} from '@comfyorg/litegraph'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from './schemas/comfyWorkflowSchema'
-import { compressWidgetInputSlots } from './utils/litegraphUtil'
+import type { ComfyWorkflowJSON } from './schemas/comfyWorkflowSchema'
+import { fixLinkInputSlots } from './utils/litegraphUtil'
 
 // Mock node classes based on the object info
 function createMockNodeClass(nodeType: string, nodeInfo: any) {
@@ -31,6 +18,11 @@ function createMockNodeClass(nodeType: string, nodeInfo: any) {
         static override title = nodeInfo.display_name || nodeType
         static comfyClass = nodeType
         override comfyClass: string
+
+        // Dynamic combos (COMFY_DYNAMICCOMBO_V3) reveal nested widgets based on
+        // the selected option. Captured here, expanded during configure() once
+        // the selected value is known from widgets_values.
+        dynamicCombos: { name: string; options: any[] }[] = []
 
         constructor() {
             super(nodeType)
@@ -98,200 +90,211 @@ function createMockNodeClass(nodeType: string, nodeInfo: any) {
                         }
 
                         this.addWidget('text', inputName, defaultValue, () => {})
+
+                        // Record dynamic combos so their nested option widgets
+                        // can be inserted during configure().
+                        if (
+                            typeof inputType === 'string' &&
+                            inputType.startsWith('COMFY_DYNAMICCOMBO')
+                        ) {
+                            this.dynamicCombos.push({
+                                name: inputName,
+                                options: inputConfig?.options ?? []
+                            })
+                        }
+
+                        // ComfyUI adds a paired `control_after_generate` widget
+                        // after seed inputs. It is serialized into widgets_values
+                        // (so positional widget alignment during configure holds),
+                        // but excluded from the API prompt via options.serialize.
+                        if (inputName === 'seed' || inputName === 'noise_seed') {
+                            this.addWidget(
+                                'text',
+                                'control_after_generate',
+                                'randomize',
+                                () => {},
+                                { serialize: false }
+                            )
+                        }
                     }
                 })
             }
+
+            // Add widgets for optional inputs that are exposed as widgets
+            // (primitives, choice arrays, dynamic combos). Connection-typed
+            // optional inputs (IMAGE, AUDIO, ...) stay as input slots.
+            if (nodeInfo.input?.optional) {
+                const inputOrder =
+                    nodeInfo.input_order?.optional ||
+                    Object.keys(nodeInfo.input.optional)
+
+                inputOrder.forEach((inputName: string) => {
+                    const inputDef = nodeInfo.input.optional[inputName]
+                    if (!inputDef) return
+
+                    const [inputType] = inputDef
+                    if (!MockNode.isWidgetType(inputType)) return
+
+                    this.makeWidget(inputName, inputDef)
+
+                    if (
+                        typeof inputType === 'string' &&
+                        inputType.startsWith('COMFY_DYNAMICCOMBO')
+                    ) {
+                        this.dynamicCombos.push({
+                            name: inputName,
+                            options: inputDef[1]?.options ?? []
+                        })
+                    }
+                })
+            }
+        }
+
+        // An input is rendered as a widget (rather than a connection slot) when
+        // it's a choice array, a primitive, a combo, or a dynamic combo.
+        static isWidgetType(inputType: any): boolean {
+            if (Array.isArray(inputType)) return true
+            return (
+                typeof inputType === 'string' &&
+                (['INT', 'FLOAT', 'STRING', 'BOOLEAN', 'COMBO'].includes(
+                    inputType
+                ) ||
+                    inputType.startsWith('COMFY_DYNAMICCOMBO'))
+            )
+        }
+
+        makeWidget(name: string, inputDef: any) {
+            const [inputType, inputConfig] = inputDef
+            let defaultValue = inputConfig?.default
+            if (inputType === 'STRING') {
+                defaultValue = defaultValue ?? ''
+            } else if (inputType === 'INT') {
+                defaultValue = defaultValue ?? 0
+            } else if (inputType === 'FLOAT') {
+                defaultValue = defaultValue ?? 0.0
+            } else if (inputType === 'BOOLEAN') {
+                defaultValue = defaultValue ?? false
+            } else if (Array.isArray(inputType)) {
+                defaultValue = defaultValue ?? inputType[0]
+            }
+            return this.addWidget('text', name, defaultValue, () => {})
+        }
+
+        // Before litegraph applies widgets_values positionally, expand each
+        // dynamic combo's selected option into nested `<combo>.<input>` widgets
+        // so the trailing widget values align and serialize with the correct
+        // dotted names in the API prompt.
+        override configure(info: any) {
+            if (info?.widgets_values && this.dynamicCombos.length) {
+                for (const combo of this.dynamicCombos) {
+                    const comboIdx = this.widgets.findIndex(
+                        (w) => w.name === combo.name
+                    )
+                    if (comboIdx < 0) continue
+
+                    // Index within the serialize!==false widgets, matching how
+                    // litegraph maps widgets_values entries to widgets.
+                    let serialIdx = -1
+                    for (let k = 0; k <= comboIdx; k++) {
+                        if (this.widgets[k].serialize !== false) serialIdx++
+                    }
+                    const selected = info.widgets_values[serialIdx]
+                    const option = combo.options.find(
+                        (o: any) => o.key === selected
+                    )
+                    if (!option) continue
+
+                    const defs = {
+                        ...(option.inputs?.required ?? {}),
+                        ...(option.inputs?.optional ?? {})
+                    }
+                    const nested = Object.entries(defs).map(([key, def]) =>
+                        this.makeWidget(`${combo.name}.${key}`, def)
+                    )
+                    // makeWidget appended the nested widgets; move them to
+                    // directly after the combo widget.
+                    this.widgets = this.widgets.filter(
+                        (w) => !nested.includes(w)
+                    )
+                    const insertAt =
+                        this.widgets.findIndex((w) => w.name === combo.name) + 1
+                    this.widgets.splice(insertAt, 0, ...nested)
+                }
+            }
+            super.configure(info)
         }
     }
 
     return MockNode
 }
 
+/**
+ * Registers a Litegraph node type for each subgraph definition as the workflow
+ * is configured. This mirrors ComfyUI's `subgraphService.registerNewSubgraph`,
+ * allowing `LiteGraph.createNode(subgraphId)` to produce a `SubgraphNode` whose
+ * inner nodes are expanded during API prompt generation.
+ */
+function registerSubgraphNodeTypes(graph: LGraph) {
+    graph.events.addEventListener('subgraph-created', (e: any) => {
+        const subgraph = e.detail.subgraph
+        const instanceData = {
+            id: -1,
+            type: subgraph.id,
+            pos: [0, 0],
+            size: [100, 100],
+            inputs: [],
+            outputs: [],
+            flags: {},
+            order: 0,
+            mode: 0
+        }
+
+        class MockSubgraphNode extends SubgraphNode {
+            constructor() {
+                super(graph as any, subgraph, instanceData as any)
+                this.serialize_widgets = true
+            }
+
+            // Reconcile serialized inputs against the subgraph definition by
+            // name. Saved workflows compress widget-promoted input slots, so the
+            // serialized node exposes fewer slots than the definition. Rebuilding
+            // in definition order keeps subgraph boundary slots aligned; the
+            // subsequent fixLinkInputSlots() re-indexes link target slots.
+            override configure(data: any) {
+                const RESERVED = ['name', 'type', 'shape', 'localized_name']
+                const inputByName = new Map(
+                    (data.inputs ?? []).map((i: any) => [i.name, i])
+                )
+                const definedNames = new Set(this.inputs.map((i) => i.name))
+                const definedInputs = this.inputs.map((input: any) => {
+                    const inputData: any = inputByName.get(input.name)
+                    return inputData
+                        ? { ...inputData, ...pick(input, [...RESERVED, 'widget']) }
+                        : input
+                })
+                const extraInputs = (data.inputs ?? []).filter(
+                    (i: any) => !definedNames.has(i.name)
+                )
+                data.inputs = [...definedInputs, ...extraInputs]
+                super.configure(data)
+            }
+        }
+
+        LiteGraph.registerNodeType(subgraph.id, MockSubgraphNode as any)
+    })
+}
+
+function pick(obj: any, keys: string[]) {
+    const result: any = {}
+    for (const key of keys) if (obj && key in obj) result[key] = obj[key]
+    return result
+}
+
 const COMFY_BASE_URL = `http://localhost:8188`
-const __COMFYUI_FRONTEND_VERSION__ = '1.0.0-test'
 
 // Check for verbose flag
 const isVerbose = Bun.argv.includes('--verbose')
 const log = (...args: any[]) => isVerbose && console.error(...args)
-const error = (...args: any[]) => console.error(...args)
-
-/**
- * Custom input resolution that doesn't rely on nodesByExecutionId
- */
-function resolveNodeInput(node: any, inputIndex: number, graph: LGraph) {
-  const input = node.inputs[inputIndex]
-  if (!input || !input.link) {
-    return null
-  }
-
-  // Find the link in the graph
-  const link = graph.links?.get ? graph.links.get(input.link) : null
-  if (!link) {
-    return null
-  }
-
-  // Get the source node
-  const sourceNode = graph._nodes_by_id[link.origin_id]
-  if (!sourceNode) {
-    return null
-  }
-
-  return {
-    origin_id: link.origin_id,
-    origin_slot: link.origin_slot
-  }
-}
-
-/**
- * Recursively target node's parent nodes to the new output.
- */
-function recursiveAddNodesFixed(
-  nodeId: NodeId,
-  oldOutput: ComfyApiWorkflow,
-  newOutput: ComfyApiWorkflow
-) {
-  const currentId = String(nodeId)
-  const currentNode = oldOutput[currentId]!
-  if (newOutput[currentId] == null) {
-    newOutput[currentId] = currentNode
-    for (const inputValue of Object.values(currentNode.inputs || [])) {
-      if (Array.isArray(inputValue)) {
-        recursiveAddNodesFixed(inputValue[0], oldOutput, newOutput)
-      }
-    }
-  }
-  return newOutput
-}
-
-/**
- * Fixed version of graphToPrompt that doesn't use problematic resolveInput
- */
-const graphToPromptFixed = async (
-  graph: LGraph,
-  options: { sortNodes?: boolean; queueNodeIds?: NodeId[] } = {}
-): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
-  const { sortNodes = false, queueNodeIds } = options
-
-  for (const node of graph.computeExecutionOrder(false)) {
-    const innerNodes = (node as any).getInnerNodes ? (node as any).getInnerNodes() : [node]
-    for (const innerNode of innerNodes) {
-      if (innerNode.isVirtualNode) {
-        innerNode.applyToGraph?.()
-      }
-    }
-  }
-
-  const workflow = graph.serialize({ sortNodes })
-
-  // Remove localized_name from the workflow
-  for (const node of workflow.nodes) {
-    for (const slot of node.inputs ?? []) {
-      delete slot.localized_name
-    }
-    for (const slot of node.outputs ?? []) {
-      delete slot.localized_name
-    }
-  }
-
-  compressWidgetInputSlots(workflow)
-  workflow.extra ??= {}
-  workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
-
-  let output: ComfyApiWorkflow = {}
-  // Process nodes directly from the graph to preserve link information
-  for (const node of graph._nodes) {
-    // Don't serialize muted nodes
-    if (
-      node.mode === LGraphEventMode.NEVER ||
-      node.mode === LGraphEventMode.BYPASS ||
-      node.isVirtualNode
-    ) {
-      continue
-    }
-
-      const inputs: ComfyApiWorkflow[string]['inputs'] = {}
-      const { widgets } = node
-
-      // Store all widget values
-      if (widgets) {
-        for (const [i, widget] of widgets.entries()) {
-          if (!widget.name || (widget.options as any)?.serialize === false) continue
-
-          const widgetValue = (widget as any).serializeValue
-            ? await (widget as any).serializeValue(node, i)
-            : widget.value
-
-          inputs[widget.name] = Array.isArray(widgetValue)
-            ? {
-                __value__: widgetValue
-              }
-            : widgetValue
-        }
-      }
-
-      // Store all node links using our custom resolution
-      log(`DEBUG: Processing node ${node.id} (${node.comfyClass}) with ${node.inputs.length} inputs`)
-      if (node.comfyClass === 'KSampler') {
-        log(`DEBUG: Found KSampler node ${node.id}`)
-        node.inputs.forEach((input: any, i: number) => {
-          log(`DEBUG: KSampler input ${i}: name=${input.name}, link=${input.link}`)
-        })
-      }
-
-      for (const [i, input] of node.inputs.entries()) {
-        const resolvedInput = resolveNodeInput(node, i, graph)
-        if (!resolvedInput) {
-          if (node.comfyClass === 'KSampler') {
-            log(`DEBUG: KSampler input ${i} (${input.name}) failed to resolve`)
-          }
-          continue
-        }
-
-        if (node.comfyClass === 'KSampler') {
-          log(`DEBUG: KSampler input ${i} (${input.name}) resolved to ${resolvedInput.origin_id}:${resolvedInput.origin_slot}`)
-        }
-
-        inputs[input.name] = [
-          String(resolvedInput.origin_id),
-          parseInt(resolvedInput.origin_slot)
-        ]
-      }
-
-      output[String(node.id)] = {
-        inputs,
-        class_type: node.comfyClass!,
-        _meta: {
-          title: node.title
-        }
-      }
-  }
-
-  // Remove inputs connected to removed nodes
-  log(`DEBUG: Before cleanup - output keys: [${Object.keys(output).join(', ')}]`)
-  log(`DEBUG: KSampler inputs before cleanup:`, JSON.stringify(output['3']?.inputs, null, 2))
-
-  for (const { inputs } of Object.values(output)) {
-    for (const [i, input] of Object.entries(inputs)) {
-      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
-        log(`DEBUG: Removing input ${i} -> [${input[0]}, ${input[1]}] because node ${input[0]} not found`)
-        delete inputs[i]
-      }
-    }
-  }
-
-  log(`DEBUG: KSampler inputs after cleanup:`, JSON.stringify(output['3']?.inputs, null, 2))
-
-  // Partial execution
-  if (queueNodeIds?.length) {
-    const newOutput = {}
-    for (const queueNodeId of queueNodeIds) {
-      recursiveAddNodesFixed(queueNodeId, output, newOutput)
-    }
-    output = newOutput
-  }
-
-  return { workflow: workflow as unknown as ComfyWorkflowJSON, output }
-}
 
 async function getComfyObjectInfo() {
     // Mock the global frontend version variable
@@ -315,249 +318,34 @@ function registerObjectInfoNodeDefinitions(comfyObjectInfo: any) {
     )
 }
 
-function setNodeWidgetValues(
-    node: LGraphNode,
-    widgets_values: any,
-    nodeInfo: any
-) {
-    if (!widgets_values || !node.widgets) return
-
-    if (Array.isArray(widgets_values)) {
-        // Apply KSampler widget value workaround similar to app.ts loadGraphData method
-        // This handles known widget value issues for KSampler nodes in default workflow
-
-        /* KSampler object_info required input order:
-          "input_order": {
-            "required": [
-              "model",         @type {MODEL} 
-              "seed",          @type {INT} (control_after_generate:true)
-              "steps",         @type {INT}
-              "cfg",           @type {FLOAT}
-              "sampler_name",  @type {["euler","euler_cfg_pp",..,"uni_pc_bh2"]}
-              "scheduler",     @type {["simple","sgm_uniform",..,"kl_optimal"]}
-              "positive",      @type {CONDITIONING}
-              "negative",      @type {CONDITIONING}
-              "latent_image",  @type {LATENT}
-              "denoise",       @type {FLOAT}
-            ]
-          }
-        
-          KSampler values in workflow:
-          "widgets_values": [
-            1080261417831844, // "seed"
-            "randomize",      // "seed" (control_after_execute ? "randomize" : "fixed")
-            20,               // "steps"
-            8,                // "cfg"
-            "euler",          // "sampler_name"
-            "normal",         // "scheduler"
-            1.0               // "denoise"
-          ]
-        */
-        const WIDGET_VALUE_TYPES = ['INT', 'INT', 'FLOAT', 'STRING', 'BOOLEAN']
-        // Check if this is a connection type (should not be a widget)
-        const isConnectionType = (inputType: any) =>
-            typeof inputType === 'string' &&
-            ['MODEL', 'CLIP', 'VAE', 'CONDITIONING', 'LATENT', 'IMAGE'].includes(
-                inputType
-            )
-
-        // For array format, we need to map values to the correct widget order
-        // The widgets are created in the order they appear in nodeInfo.input.required
-        const widgetInputs: string[] = []
-        if (nodeInfo?.input?.required) {
-            Object.entries(nodeInfo.input.required).forEach(
-                ([inputName, inputDef]: [string, any]) => {
-                    const [inputType] = inputDef
-
-                    if (
-                        Array.isArray(inputType) ||
-                        (typeof inputType === 'string' &&
-                            WIDGET_VALUE_TYPES.includes(inputType))
-                    ) {
-                        widgetInputs.push(inputName)
-                        if (inputName === 'seed' || inputName === 'noise_seed') {
-                            widgetInputs.push('control_after_generate')
-                        }
-                    }
-                }
-            )
-        }
-
-        // Map array values to correct widgets by name
-        for (
-            let i = 0;
-            i < Math.min(widgets_values.length, widgetInputs.length);
-            i++
-        ) {
-            const widgetName = widgetInputs[i]
-            const widget = node.widgets?.find((w) => w.name === widgetName)
-            if (widget && widgets_values[i] !== undefined) {
-                widget.value = widgets_values[i] as any
-                if (widgetName === 'sampler_name') {
-                    if (
-                        typeof widget.value === 'string' &&
-                        widget.value.startsWith('sample_')
-                    ) {
-                        widget.value = widget.value.slice(7)
-                    }
-                }
-            }
-        }
-    } else if (typeof widgets_values === 'object') {
-        Object.entries(widgets_values).forEach(([key, value]) => {
-            const widget = node.widgets?.find((w) => w.name === key)
-            if (widget) {
-                widget.value = value as any
-            }
-        })
-    }
-}
-
-function createNodeFromData(
-    nodeData: any,
-    graph: LGraph,
-    nodeMap: Map<string | number, LGraphNode>,
-    comfyObjectInfo: any,
-    errors:string[]
-) {
-    
-    const node = LiteGraph.createNode(nodeData.type)
-    if (!node) {
-        errors.push(`Failed to create node of type: ${nodeData.type}`)
-        return
-    }
-
-    // Add missing inputs that are expected by the workflow but not created by the mock node class
-    if (nodeData.inputs) {
-        const existingInputNames = new Set(node.inputs?.map((i) => i.name) || [])
-
-        for (const expectedInput of nodeData.inputs) {
-            if (!existingInputNames.has(expectedInput.name)) {
-                // Add the missing input
-                node.addInput(expectedInput.name, expectedInput.type)
-            }
-        }
-    }
-
-    // Set basic node properties
-    node.id = nodeData.id
-    node.pos = [nodeData.pos[0], nodeData.pos[1]] as [number, number]
-    if (nodeData.size) {
-        node.size = [nodeData.size[0], nodeData.size[1]] as [number, number]
-    }
-
-    // Set widget values using node info from comfyObjectInfo
-    const nodeInfo = comfyObjectInfo[nodeData.type]
-    setNodeWidgetValues(node, nodeData.widgets_values, nodeInfo)
-
-    // Set node mode
-    if (nodeData.mode) {
-        node.mode = nodeData.mode
-    }
-    
-    // Set node colors
-    if (nodeData.color) {
-        node.color = nodeData.color
-    }
-    if (nodeData.bgcolor) {
-        node.bgcolor = nodeData.bgcolor
-    }
-
-    // Add node to graph and store in map
-    graph.add(node)
-    nodeMap.set(nodeData.id, node)
-}
-
 function createWorkflowGraph(
     comfyObjectInfo: any,
     workflow: ComfyWorkflowJSON,
-    errors:string[]
+    errors: string[]
 ) {
     const graph = new LGraph()
-    const nodeMap = new Map<string | number, LGraphNode>()
 
-    // First pass: Create all nodes
-    for (const nodeData of workflow.nodes) {
-        createNodeFromData(nodeData, graph, nodeMap, comfyObjectInfo, errors)
-    }
+    // Register subgraph definitions as node types before configure() creates
+    // the graph nodes (subgraph-created fires during configure, ahead of nodes).
+    registerSubgraphNodeTypes(graph)
 
-    // Second pass: Create connections based on links
-    if (workflow.links && Array.isArray(workflow.links)) {
-        log(`DEBUG: Processing ${workflow.links.length} workflow links`)
-        // Create a map of link IDs to link data for quick lookup
-        const linkMap = new Map()
-        for (const link of workflow.links) {
-            if (Array.isArray(link) && link.length >= 6) {
-                // Link format: [link_id, source_node_id, source_slot, target_node_id, target_slot, type]
-                linkMap.set(link[0], link)
-            }
-        }
-        log(`DEBUG: Created linkMap with ${linkMap.size} entries`)
+    try {
+        // Native Litegraph configure handles node creation, widget value
+        // application, link wiring and subgraph definition/instance expansion.
+        graph.configure(workflow as any)
 
-        // Connect nodes based on the node inputs that reference links
-        for (const nodeData of workflow.nodes) {
-            const targetNode = nodeMap.get(nodeData.id)
-            if (!targetNode || !nodeData.inputs) continue
-
-            for (const input of nodeData.inputs) {
-                if (input.link && linkMap.has(input.link)) {
-                    const link = linkMap.get(input.link)
-                    const [, sourceNodeId, sourceSlot] = link
-                    const sourceNode = nodeMap.get(sourceNodeId)
-
-                    // Find the actual input index by name in the target node
-                    const targetInputIndex = targetNode.inputs.findIndex(
-                        (nodeInput) => nodeInput.name === input.name
-                    )
-
-                    if (sourceNode && targetInputIndex !== -1) {
-                        try {
-                            log(`DEBUG: Connecting ${sourceNodeId}:${sourceSlot} -> ${nodeData.id}:${targetInputIndex} (${input.name})`)
-                            sourceNode.connect(sourceSlot, targetNode, targetInputIndex)
-                        } catch (error) {
-                            log(`DEBUG: Connection failed: ${error.message ?? error}`)
-                            errors.push(`Failed to connect nodes ${sourceNodeId}:${sourceSlot} -> ${nodeData.id}:${targetInputIndex} (${input.name}): ${error.message ?? error}`)
-                        }
-                    } else {
-                        log(`DEBUG: Cannot connect - missing source node or target input:`, {
-                            sourceNodeExists: !!sourceNode,
-                            targetInputIndex,
-                            inputName: input.name
-                        })
-                    }
-                } else {
-                    log(`DEBUG: Skipping input ${input.name} - no link or link not in map:`, {
-                        hasLink: !!input.link,
-                        linkInMap: input.link ? linkMap.has(input.link) : false
-                    })
-                }
-            }
-        }
-    } else {
-        log(`DEBUG: No workflow links found or not an array:`, {
-            hasLinks: !!workflow.links,
-            isArray: Array.isArray(workflow.links),
-            linksLength: workflow.links?.length
-        })
+        // Re-index link target slots to match the actual node input slots.
+        // Required after subgraph nodes expand their compressed widget inputs.
+        fixLinkInputSlots(graph)
+    } catch (e: any) {
+        errors.push(`Failed to configure workflow graph: ${e?.message ?? e}`)
     }
 
     return graph
 }
 
 async function generateWorkflowApiPrompt(graph: LGraph) {
-    try {
-        log(`DEBUG: Trying original graphToPrompt function`)
-        const apiPrompt = await graphToPrompt(graph)
-        log(`DEBUG: Original graphToPrompt succeeded`)
-        return apiPrompt
-    } catch (error) {
-        log(`DEBUG: Original graphToPrompt failed: ${error.message ?? error}`)
-        log(`DEBUG: Falling back to graphToPromptFixed`)
-        // Fall back to fixed version if original fails
-        const apiPrompt = await graphToPromptFixed(graph)
-        log(`DEBUG: graphToPromptFixed completed`)
-        return apiPrompt
-    }
+    return await graphToPrompt(graph)
 }
 
 async function test() {
@@ -598,10 +386,6 @@ async function test() {
     console.log('Generated API prompt:')
     console.log(JSON.stringify(prompt, null, 2))
 
-    const hiResFix = Object.values(prompt).find(
-        (node: any) => node.class_type === 'easy hiresFix'
-    )
-
     const apiPrompt = { prompt }
     const r = await fetch(`${COMFY_BASE_URL}/api/prompt`, {
         method: 'POST',
@@ -620,11 +404,17 @@ async function test() {
 
 async function createApiPrompt(objectInfo:any, workflow:ComfyWorkflowJSON, errors) {
     registerObjectInfoNodeDefinitions(objectInfo)
-    
+
     const workflowGraph = createWorkflowGraph(objectInfo, workflow, errors)
 
     const result = await generateWorkflowApiPrompt(workflowGraph)
-    const prompt = result.output
+
+    // Exclude nodes that cannot be mapped to a comfyClass (e.g. frontend-only
+    // nodes like MarkdownNote that aren't part of the executable API prompt).
+    const prompt: typeof result.output = {}
+    for (const [nodeId, node] of Object.entries(result.output)) {
+        if (node.class_type) prompt[nodeId] = node
+    }
     return prompt
 }
 

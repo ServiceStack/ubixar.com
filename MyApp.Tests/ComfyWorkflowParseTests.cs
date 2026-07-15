@@ -315,5 +315,20 @@ public class ComfyWorkflowParseTests : TestBase
         Assert.That(workflow.Type, Is.EqualTo(ComfyWorkflowType.TextToImage));
         Assert.That(inputNames,Is.EquivalentTo("positivePrompt,width,height,batch_size,seed,steps,cfg,sampler_name,scheduler,denoise".Split(',')));
     }
+
+    [Test]
+    public void Can_parse_krea2_Workflow()
+    {
+        var workflowPath = "./workflows/text-to-image/krea2_turbo.json";
+        var workflowJson = File.ReadAllText(workflowPath);
+        var workflowObj = workflowJson.ParseAsObjectDictionary();
+        var workflow = ComfyWorkflowParser.Parse(workflowObj, "krea2_turbo.json", NodeDefs) ?? throw new Exception($"Could not parse {workflowPath}");
+        workflow.PrintDump();
+        ComfyWorkflowParser.ExtractAssetPaths(workflowObj).PrintDump();
+        var inputNames = workflow.Inputs.Map(x => x.Name);
+        Assert.That(workflow.Type, Is.EqualTo(ComfyWorkflowType.TextToImage));
+        inputNames.PrintDump();
+        Assert.That(inputNames,Is.EquivalentTo("positivePrompt,width,height,batch_size,seed,steps,cfg,sampler_name,scheduler,denoise".Split(',')));
+    }
     
 }
