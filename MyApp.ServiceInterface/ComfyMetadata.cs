@@ -197,7 +197,8 @@ public class ComfyMetadata
                         ret.Options[entry.Name] = value;
                         if (entry.Name == "control_after_generate")
                         {
-                            ret.ControlAfterGenerate = entry.Value.GetBoolean();
+                            // typically a boolean, but can also be a string like "fixed"
+                            ret.ControlAfterGenerate = entry.Value.ValueKind == JsonValueKind.True;
                         }
                     }
                 }
