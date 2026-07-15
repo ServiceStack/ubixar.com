@@ -14,7 +14,7 @@
         "adhoc": "dotnet run --AppTasks=adhoc"
     },
     "devDependencies": {
-        "@comfyorg/litegraph": "^0.16.3",
+        "@comfyorg/litegraph": "^0.17.2",
         "@servicestack/client": "^2.1.11",
         "@servicestack/vue": "^3.0.125",
         "@types/bun": "^1.2.17",
