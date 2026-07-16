@@ -588,7 +588,7 @@ const App = {
                         </div>
 
                         <!-- Description Card -->
-                        <div v-if="parsedMedia.description" class="px-2 rounded-2xl border" :class="[$styles.card]">
+                        <div v-if="parsedMedia.description" class="px-2 rounded-2xl border max-h-84 overflow-auto" :class="[$styles.card]">
                             <div v-html="$fmt.markdown(parsedMedia.description)" class="prose prose-xs max-w-none dark:prose-invert description-content" :class="[$styles.muted]"></div>
                         </div>
 
