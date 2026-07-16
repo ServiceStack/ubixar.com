@@ -797,6 +797,20 @@ public class AgentServices(ILogger<AgentServices> log,
         {
             await AgentManager.WaitForUpdatedClassificationsAsync(startedAt + waitFor - DateTime.UtcNow);
         }
+        
+        // Check for any new QueuedArtifactRefs (PublishedMedia)
+        if (AgentManager.QueuedArtifactRefs.Count > 0)
+        {
+            // Remove from QueuedArtifactRefs ConcurrentDictionary and add to results
+            var queuedArtifacts = AgentManager.QueuedArtifactRefs.Values.ToArray();
+            foreach (var artifactRef in queuedArtifacts)
+            {
+                if (AgentManager.QueuedArtifactRefs.TryRemove(artifactRef.Id, out var _))
+                {
+                    results.Add(artifactRef);
+                }
+            }
+        }
 
         // Query one last time for any new artifacts
         if (results.Count == 0)
@@ -814,66 +828,108 @@ public class AgentServices(ILogger<AgentServices> log,
         var userId = Request.AssertApiKeyUserId();
         using var db = Db;
 
-        var artifact = db.AssertArtifact(request.ArtifactId);
-
-        if (artifact.DeviceId != request.DeviceId && artifact.DeviceId != null)
+        if (request.ArtifactId < 0)
         {
-            if (!Request.GetClaimsPrincipal().IsAdmin())
-                throw HttpError.Conflict("This Device does not own this Artifact");
-        }
-        
-        artifact.Tags = request.Tags ?? artifact.Tags;
-        artifact.Categories = request.Categories ?? artifact.Categories;
-        artifact.Objects = request.Objects ?? artifact.Objects;
-        artifact.Phash = request.Phash ?? artifact.Phash;
-        artifact.Color = request.Color ?? artifact.Color;
-        artifact.Error = request.Error;
-        
-        if (request is { Objects: not null, Tags: not null, Ratings: not null } && artifact.Type == AssetType.Image)
-        {
-            var gen = await db.AssertGenerationAsync(artifact.GenerationId);
-            var genResult = gen.Result?.Assets?.Find(x => x.Url == artifact.Url);
-            var prompt = gen.Args?.GetValueOrDefault("positivePrompt") as string ?? gen.Description;
-
-            artifact.Ratings = request.Ratings;
-            var minRating = appData.GetMinRatingForPrompt(prompt);
-            artifact.Rating = artifact.ToAssetRating(minRating);
-
-            if (genResult != null)
+            var mediaId = request.ArtifactId * -1;
+            var media = db.SingleById<PublishedMedia>(mediaId);
+            if (media == null)
+                throw HttpError.NotFound("PublishedMedia could not be found");
+            if (media.DeviceId != request.DeviceId && media.DeviceId != null)
             {
-                genResult.Rating = artifact.Rating;
-                await db.UpdateOnlyAsync(() => new WorkflowGeneration
-                {
-                    Result = gen.Result,
-                    ModifiedBy = userId,
-                    ModifiedDate = DateTime.UtcNow,
-                }, where: x => x.Id == artifact.GenerationId);
+                if (!Request.GetClaimsPrincipal().IsAdmin())
+                    throw HttpError.Conflict("This Device does not own this PublishedMedia");
             }
-        }
-        if (artifact.Type == AssetType.Audio)
-        {
-            if (request is { Tags: not null, Categories: null })
-            {
-                artifact.Categories = ComfyConverters.GetAudioCategories(artifact.Tags!);
-            }
-        }
-        
-        await db.UpdateOnlyAsync(() => new Artifact
-        {
-            Tags = artifact.Tags,
-            Categories = artifact.Categories,
-            Objects = artifact.Objects,
-            Ratings = artifact.Ratings,
-            Rating = artifact.Rating,
-            Phash = artifact.Phash,
-            Color = artifact.Color,
-            Error = artifact.Error,
+            media.Tags = request.Tags ?? media.Tags;
+            media.Categories = request.Categories ?? media.Categories;
+            media.Objects = request.Objects ?? media.Objects;
+            media.Phash = request.Phash ?? media.Phash;
+            media.Color = request.Color ?? media.Color;
+            media.Error = request.Error;
             
-            DeviceId = request.DeviceId,
-            ModifiedBy = userId,
-            ModifiedDate = DateTime.UtcNow,
-        }, x => x.Id == artifact.Id);
-        
+            if (request is { Objects: not null, Tags: not null, Ratings: not null } && media.Type == AssetType.Image)
+            {
+                media.Ratings = request.Ratings;
+                var minRating = appData.GetMinRatingForPrompt(media.Prompt);
+                media.Rating = media.ToAssetRating(minRating);
+            }
+                    
+            await db.UpdateOnlyAsync(() => new PublishedMedia
+            {
+                Tags = media.Tags,
+                Categories = media.Categories,
+                Objects = media.Objects,
+                Ratings = media.Ratings,
+                Rating = media.Rating,
+                Phash = media.Phash,
+                Color = media.Color,
+                Error = media.Error,
+            
+                DeviceId = request.DeviceId,
+            }, x => x.Id == media.Id);
+        }
+        else
+        {
+            var artifact = db.AssertArtifact(request.ArtifactId);
+
+            if (artifact.DeviceId != request.DeviceId && artifact.DeviceId != null)
+            {
+                if (!Request.GetClaimsPrincipal().IsAdmin())
+                    throw HttpError.Conflict("This Device does not own this Artifact");
+            }
+            
+            artifact.Tags = request.Tags ?? artifact.Tags;
+            artifact.Categories = request.Categories ?? artifact.Categories;
+            artifact.Objects = request.Objects ?? artifact.Objects;
+            artifact.Phash = request.Phash ?? artifact.Phash;
+            artifact.Color = request.Color ?? artifact.Color;
+            artifact.Error = request.Error;
+            
+            if (request is { Objects: not null, Tags: not null, Ratings: not null } && artifact.Type == AssetType.Image)
+            {
+                var gen = await db.AssertGenerationAsync(artifact.GenerationId);
+                var genResult = gen.Result?.Assets?.Find(x => x.Url == artifact.Url);
+                var prompt = gen.Args?.GetValueOrDefault("positivePrompt") as string ?? gen.Description;
+
+                artifact.Ratings = request.Ratings;
+                var minRating = appData.GetMinRatingForPrompt(prompt);
+                artifact.Rating = artifact.ToAssetRating(minRating);
+
+                if (genResult != null)
+                {
+                    genResult.Rating = artifact.Rating;
+                    await db.UpdateOnlyAsync(() => new WorkflowGeneration
+                    {
+                        Result = gen.Result,
+                        ModifiedBy = userId,
+                        ModifiedDate = DateTime.UtcNow,
+                    }, where: x => x.Id == artifact.GenerationId);
+                }
+            }
+            if (artifact.Type == AssetType.Audio)
+            {
+                if (request is { Tags: not null, Categories: null })
+                {
+                    artifact.Categories = ComfyConverters.GetAudioCategories(artifact.Tags!);
+                }
+            }
+            
+            await db.UpdateOnlyAsync(() => new Artifact
+            {
+                Tags = artifact.Tags,
+                Categories = artifact.Categories,
+                Objects = artifact.Objects,
+                Ratings = artifact.Ratings,
+                Rating = artifact.Rating,
+                Phash = artifact.Phash,
+                Color = artifact.Color,
+                Error = artifact.Error,
+                
+                DeviceId = request.DeviceId,
+                ModifiedBy = userId,
+                ModifiedDate = DateTime.UtcNow,
+            }, x => x.Id == artifact.Id);
+        }
+
         return new EmptyResponse();
     }
 }

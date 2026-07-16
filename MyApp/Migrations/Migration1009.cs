@@ -127,12 +127,12 @@ public class Migration1009 : MigrationBase
         [PgSqlJsonB]
         public Dictionary<string,double>? Categories { get; set; }
         [PgSqlJsonB]
-        public List<string>? Tags { get; set; }
-        public string? Rating { get; set; }
+        public Dictionary<string,double>? Tags { get; set; }
+        public Rating? Rating { get; set; }
         [PgSqlJsonB]
-        public Dictionary<string,object>? Ratings { get; set; }
+        public Ratings? Ratings { get; set; }
         [PgSqlJsonB]
-        public List<object>? Objects { get; set; }
+        public List<ObjectDetection>? Objects { get; set; }
         public DateTime? Published { get; set; }
         [PgSqlJsonB]
         public Dictionary<string,object>? Metadata { get; set; }
@@ -181,7 +181,10 @@ public class Migration1009 : MigrationBase
         /// </summary>
         public int? PublicThreadId { get; set; } 
     }
-    
+
+    public class Ratings {}
+    public class ObjectDetection {}
+    public enum Rating {}
     public enum AssetType {}
     
     public override void Up()

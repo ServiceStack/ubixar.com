@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using MyApp.Data;
+using MyApp.ServiceInterface.Commands;
 using MyApp.ServiceModel;
 using ServiceStack;
 using ServiceStack.Auth;
@@ -10,7 +11,7 @@ using Thread = MyApp.ServiceModel.Thread;
 
 namespace MyApp.ServiceInterface;
 
-public class PublishServices(ILogger<PublishServices> log, AppData appData) : Service
+public class PublishServices(ILogger<PublishServices> log, AppData appData, AgentEventsManager agentManager) : Service
 {
     private async Task<User> AssertUser()
     {
@@ -357,6 +358,8 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
         var to = new PublishToCacheResponse { PublishedUrls = new() };
         await AssertUser();
 
+        var userId = Request.GetRequiredUserId();
+
         foreach (var file in Request.Files)
         {
             appData.AssertMaxUpload(file.ContentLength, log);
@@ -393,7 +396,7 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
                 media.RemoteId = media.Id;
                 media.RemoteIp = Request.UserHostAddress;
                 media.PublishedAt = DateTime.UtcNow;
-                media.PublishedBy = Request.GetRequiredUserId();
+                media.PublishedBy = userId;
                 media.ExternalRef = PreciseTimestamp.UniqueTimestamp.EncodeBase64Url();
                 media.PublishedUrl = Request.ResolveAbsoluteUrl($"~/m/{media.ExternalRef}");
                 media.Id = 0; // AutoIncrement
@@ -406,12 +409,12 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
                     if (existingMedia.PublishedBy != media.PublishedBy)
                         throw new Exception("Media already exists but was published by a different user");
             
-                    media.ExternalRef = existingMedia.ExternalRef;
-                    media.PublishedUrl = existingMedia.PublishedUrl;
-                    media.PublicThreadId = existingMedia.PublicThreadId;
+                    UpdateFromExistingMedia(media, existingMedia);
                     await Db.DeleteAsync<PublishedMedia>(x => x.Hash == hash);
                 }
-                await Db.InsertAsync(media);
+
+                media.Id = (int) await Db.InsertAsync(media, selectIdentity:true);
+                agentManager.QueuePublishedMedia(media, userId);
 
                 to.PublishedUrls[file.FileName] = Request.ResolveAbsoluteUrl($"~/cache/{hash}{infoExt}");
             }
@@ -424,6 +427,19 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
         }
 
         return to;
+    }
+
+    private static void UpdateFromExistingMedia(PublishedMedia media, PublishedMedia existingMedia)
+    {
+        media.ExternalRef = existingMedia.ExternalRef;
+        media.PublishedUrl = existingMedia.PublishedUrl;
+        media.PublicThreadId = existingMedia.PublicThreadId;
+        media.Caption = existingMedia.Caption;
+        media.Description = existingMedia.Description;
+        media.Tags = existingMedia.Tags;
+        media.Categories = existingMedia.Categories;
+        media.Rating = existingMedia.Rating;
+        media.Ratings = existingMedia.Ratings;
     }
 
     System.Text.RegularExpressions.Regex TrimNumbersRegex = new(@"\d+$", System.Text.RegularExpressions.RegexOptions.Compiled);
@@ -514,8 +530,7 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
         var existing = await Db.SingleAsync<PublishedMedia>(p => p.Hash == publishedMedia.Hash);
         if (existing != null)
         {
-            publishedMedia.ExternalRef = existing.ExternalRef;
-            publishedMedia.PublishedUrl = existing.PublishedUrl;
+            UpdateFromExistingMedia(publishedMedia, existing);
             await Db.DeleteAsync<PublishedMedia>(p => p.Hash == publishedMedia.Hash);
         }
         else
@@ -526,6 +541,7 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
 
         publishedMedia.Id = (int) await Db.InsertAsync(publishedMedia, selectIdentity: true);
         var thread = await CreateThreadForPublishedMedia(publishedMedia);
+        agentManager.QueuePublishedMedia(publishedMedia, user.Id);
         
         log.LogDebug("Published media {MediaFileName} to cache", mediaFileName);
 
@@ -533,6 +549,19 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
         {
             PublishedUrl = publishedMedia.PublishedUrl,
         };
+    }
+
+    public async Task<object> Post(QueueMissingPublishedMedia request)
+    {
+        var mediaMissingClassification = await Db.SelectAsync<PublishedMedia>(p =>
+            (p.Tags == null || p.Caption == null || p.Description == null) && (p.Error == null));
+
+        var count = mediaMissingClassification.Count;
+        foreach (var media in mediaMissingClassification)
+        {
+            agentManager.QueuePublishedMedia(media, Request.GetRequiredUserId());
+        }
+        return new StringResponse { Result = $"Queued {count} missing published media." };
     }
     
     public async Task<object> Post(PublishProject request)
@@ -767,62 +796,5 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData) : Se
             where: x => x.Id == publishedProject.Id);
         return thread;
     }
-
-    /*
-    [Tag(Tags.Publish)]
-    public class CreateThreadForPublished : IPost, IReturn<CreateThreadForPublishedResponse>
-    {
-        public int Id { get; set; }
-        public PublishType Type { get; set; }
-    }
-    public class CreateThreadForPublishedResponse
-    {
-        public Thread Result { get; set; }
-        public ResponseStatus? ResponseStatus { get; set; }
-    }    
-    public async Task<CreateThreadForPublishedResponse> Post(CreateThreadForPublished request)
-    {
-        if (request.Type == PublishType.Media)
-        {
-            var media = await Db.SingleAsync<PublishedMedia>(m => m.Id == request.Id);
-            if (media == null)
-                throw HttpError.NotFound("Media not found");
-
-            var thread = await CreateThreadForPublishedMedia(media);
-            return new CreateThreadForPublishedResponse
-            {
-                Result = thread,
-            };
-        }
-        if (request.Type == PublishType.Thread)
-        {
-            var publishedThread = await Db.SingleAsync<PublishedThread>(t => t.Id == request.Id);
-            if (publishedThread == null)
-                throw HttpError.NotFound("Published thread not found");
-
-            var thread = await CreateThreadForPublishedThread(publishedThread);
-
-            return new CreateThreadForPublishedResponse
-            {
-                Result = thread,
-            };
-        }
-        if (request.Type == PublishType.Project)
-        {
-            var publishedProject = await Db.SingleAsync<PublishedProject>(p => p.Id == request.Id);
-            if (publishedProject == null)
-                throw HttpError.NotFound("Published project not found");
-
-            var thread = await CreateThreadForPublishedProject(publishedProject);
-
-            return new CreateThreadForPublishedResponse
-            {
-                Result = thread,
-            };
-        }
-
-        throw new NotSupportedException($"CreateThreadForPublished is not supported for type {request.Type}");
-    }
-    */
     
 }

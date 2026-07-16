@@ -15,6 +15,29 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
     private readonly ConcurrentDictionary<string, BlockingCollection<AgentEvent>> agentTaskQueues = new();
     
     public ConcurrentDictionary<string, WorkflowGeneration> QueuedGenerations = new();
+    public ConcurrentDictionary<int, ArtifactRef> QueuedArtifactRefs = new();
+
+    public void QueuePublishedMedia(PublishedMedia media, string userId)
+    {
+        if (media.Caption == null)
+        {
+            EnqueueMediaChat(media, CaptionMediaCommand.Prompt,  callback:nameof(CaptionMediaCommand),  userId:userId);
+        }
+        if (media.Description == null)
+        {
+            EnqueueMediaChat(media, DescribeMediaCommand.Prompt, callback:nameof(DescribeMediaCommand), userId:userId);
+        }
+        
+        var artifactRefId = media.Id * -1;
+        QueuedArtifactRefs[artifactRefId] = new ArtifactRef
+        {
+            Id = artifactRefId,
+            DeviceId = media.DeviceId,
+            Type = media.Type,
+            Url = media.Url,
+            Length = media.Size ?? 0,
+        };
+    }
 
     public List<ComfyAgent> GetComfyAgents(ComfyAgentQuery options = default)
     {
@@ -257,6 +280,45 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
             UserId = userId,
             Args = new() {
                 ["artifactId"] = $"{artifact.Id}",
+            },
+        });
+        return jobRef;
+    }
+    
+    public BackgroundJobRef EnqueueMediaChat(PublishedMedia media, string prompt, string? callback = null, string? userId = null, string? model = null)
+    {
+        model ??= appData.Config.VisualLanguageModel;
+        var taskId = PreciseTimestamp.UniqueUtcNowTicks;
+        var refId = $"{taskId}";
+        var replyTo = $"/api/{nameof(CompleteChatCompletion)}".AddQueryParam(nameof(refId), refId);
+        var jobRef = jobs.EnqueueCommand<ChatCompletionCommand>(new ChatCompletion {
+            Model = model,
+            Messages = [
+                new()
+                {
+                    Role = "user", 
+                    Content = new List<Dictionary<string, object>>
+                    {
+                        new () {
+                            ["type"] = "image_url", 
+                            ["image_url"] = new Dictionary<string, object> {
+                                ["url"] = media.Url,
+                            },
+                        },
+                        new() {
+                            ["type"] = "text", 
+                            ["text"] = prompt,
+                        },
+                    }
+                },
+            ]
+        }, new() {
+            RefId = refId,
+            ReplyTo = replyTo,
+            Callback = callback,
+            UserId = userId,
+            Args = new() {
+                ["mediaId"] = $"{media.Id}",
             },
         });
         return jobRef;

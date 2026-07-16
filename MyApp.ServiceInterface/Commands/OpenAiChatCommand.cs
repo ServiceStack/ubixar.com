@@ -164,6 +164,41 @@ public class CaptionArtifactCommand(
     }
 }
 
+
+public class CaptionMediaCommand(
+    ILogger<CaptionMediaCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory) 
+    : AsyncCommand<OpenAiChatResponse>
+{
+    public const string Prompt = "Caption this picture in 1 short sentence";
+    
+    protected override async Task RunAsync(OpenAiChatResponse request, CancellationToken token)
+    {
+        var job = Request.GetBackgroundJob();
+        try
+        {
+            if (request.Choices?.FirstOrDefault() == null)
+                throw new ArgumentException(GenerationStatus.NoResults);
+
+            var answer = request.Choices[0].Message.Content;
+            var log = Request.CreateJobLogger(jobs, logger);
+            var mediaId = job.Args?.GetValueOrDefault("mediaId");
+            var mediaIdValue = long.Parse(mediaId ?? throw new ArgumentNullException(nameof(mediaId)));
+            log.LogInformation("CaptionMediaCommand {Id}/{RefId}/{MediaId} - {Answer}", 
+                job.Id, job.RefId, mediaId, answer);
+            using var db = await dbFactory.OpenAsync(configure:db => db.WithTag(nameof(CaptionMediaCommand)), token:token);
+            var updated = await db.UpdateOnlyAsync(() => new PublishedMedia {
+                Caption = answer,
+            }, x => x.Id == mediaIdValue, token: token);
+            if (updated == 0)
+                throw new ArgumentNullException(nameof(PublishedMedia));
+        }
+        catch (ArgumentException e)
+        {
+            jobs.UpdateJobStatus(new(job, status: e.Message));
+        }
+    }
+}
+
 public class DescribeArtifactCommand(
     ILogger<DescribeArtifactCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory)
     : AsyncCommand<OpenAiChatResponse>
@@ -194,6 +229,40 @@ public class DescribeArtifactCommand(
             }, x => x.Id == artifactIdValue, token: token);
             if (updated == 0)
                 throw new ArgumentNullException(nameof(Artifact));
+        }
+        catch (ArgumentException e)
+        {
+            jobs.UpdateJobStatus(new(job, status: e.Message));
+        }
+    }
+}
+
+public class DescribeMediaCommand(
+    ILogger<DescribeMediaCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory)
+    : AsyncCommand<OpenAiChatResponse>
+{
+    public const string Prompt = "Description of this image";
+    
+    protected override async Task RunAsync(OpenAiChatResponse request, CancellationToken token)
+    {
+        var job = Request.GetBackgroundJob();
+        try
+        {
+            if (request.Choices?.FirstOrDefault() == null)
+                throw new ArgumentException(GenerationStatus.NoResults);
+
+            var answer = request.Choices[0].Message.Content;
+            var log = Request.CreateJobLogger(jobs, logger);
+            var mediaId = job.Args?.GetValueOrDefault("mediaId");
+            var mediaIdValue = long.Parse(mediaId ?? throw new ArgumentNullException(nameof(mediaId)));
+            log.LogInformation("DescribeMediaCommand {Id}/{RefId}/{MediaId} - {Answer}", 
+                job.Id, job.RefId, mediaId, answer);
+            using var db = await dbFactory.OpenAsync(configure:db => db.WithTag(nameof(DescribeMediaCommand)), token:token);
+            var updated = await db.UpdateOnlyAsync(() => new PublishedMedia {
+                Description = answer,
+            }, x => x.Id == mediaIdValue, token: token);
+            if (updated == 0)
+                throw new ArgumentNullException(nameof(PublishedMedia));
         }
         catch (ArgumentException e)
         {
@@ -283,7 +352,9 @@ public class ChatCompletionServices(
                                         var usePath = url.StartsWith('/')
                                             ? url.StartsWith("/artifacts/")
                                                 ? appData.GetArtifactPath(url.LastRightPart('/'))
-                                                : url
+                                                : url.StartsWith("/cache/")
+                                                    ? appData.GetCachePath(url.LastRightPart('/'))
+                                                    : url
                                             : appData.ContentRootPath.CombineWith(url);
                                         if (!File.Exists(usePath))
                                             throw HttpError.NotFound($"Image not found: {usePath}");
