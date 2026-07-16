@@ -85,8 +85,9 @@ public class PublishedMedia
     public string? Description { get; set; }
     public string? Phash { get; set; }
     public string? Color { get; set; }
+    // Category => Score
     [PgSqlJsonB]
-    public Dictionary<string,object>? Category { get; set; }
+    public Dictionary<string,double>? Categories { get; set; }
     [PgSqlJsonB]
     public List<string>? Tags { get; set; }
     public string? Rating { get; set; }
@@ -99,6 +100,8 @@ public class PublishedMedia
     public Dictionary<string,object>? Metadata { get; set; }
     public string? VariantId { get; set; }
     public string? VariantName { get; set; }
+    public string? DeviceId { get; set; }
+    public ResponseStatus? Error { get; set; }
     
     public string ExternalRef { get; set; } // Unique timestamp-based reference
     [IgnoreDataMember]
