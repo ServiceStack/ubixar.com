@@ -57,6 +57,7 @@ public class PublishedThread
     /// Thread Id used for public comments
     /// </summary>
     public int? PublicThreadId { get; set; } 
+    public int? GalleryScore { get; set; }
 }
 
 public class PublishedMedia : IAssetMetadata
@@ -116,6 +117,7 @@ public class PublishedMedia : IAssetMetadata
     /// Thread Id used for public comments
     /// </summary>
     public int? PublicThreadId { get; set; } 
+    public int? GalleryScore { get; set; }
 }
 
 public class PublishedProject
@@ -142,6 +144,7 @@ public class PublishedProject
     /// Thread Id used for public comments
     /// </summary>
     public int? PublicThreadId { get; set; }
+    public int? GalleryScore { get; set; }
 }
 
 [Tag(Tags.Publish)]

@@ -95,6 +95,7 @@ public class Migration1009 : MigrationBase
         /// Thread Id used for public comments
         /// </summary>
         public int? PublicThreadId { get; set; } 
+        public int? GalleryScore { get; set; }
     }
         
     public class PublishedMedia
@@ -153,7 +154,8 @@ public class Migration1009 : MigrationBase
         /// <summary>
         /// Thread Id used for public comments
         /// </summary>
-        public int? PublicThreadId { get; set; } 
+        public int? PublicThreadId { get; set; }
+        public int? GalleryScore { get; set; }
     }
 
     public class PublishedProject
@@ -180,6 +182,7 @@ public class Migration1009 : MigrationBase
         /// Thread Id used for public comments
         /// </summary>
         public int? PublicThreadId { get; set; } 
+        public int? GalleryScore { get; set; }
     }
 
     public class Ratings {}
