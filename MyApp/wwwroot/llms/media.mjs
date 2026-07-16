@@ -161,15 +161,81 @@ const ThemeSelector = {
     }
 }
 
+export function getRatingDisplay(media) {
+    if (!media) return null
+    // Check for direct rating first, then predicted rating
+    if (media.rating) {
+        // Convert rating enum value to string
+        const ratingMap = { 1: 'PG', 2: 'PG13', 4: 'M', 8: 'R', 16: 'X', 32: 'XXX' }
+        const ret = ratingMap[media.rating] || media.rating.toString()
+        return ret === 'PG13' ? 'PG-13' : ret
+    }
+    return media.ratings?.predictedRating || null
+}
+export function getRatingColorClass(rating) {
+    if (['R', 'X', 'XXX'].includes(rating)) {
+        // Adult ratings - Red
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 ring-red-600/40 dark:ring-red-400/50'
+    } else if (rating === 'M') {
+        // Mature rating - Orange/Amber
+        return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 ring-amber-600/40 dark:ring-amber-400/50'
+    } else {
+        // Safe ratings (PG, PG13) - Green
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 ring-green-600/40 dark:ring-green-400/50'
+    }
+}
+
+export function getRatingDescription(rating) {
+    const descriptions = {
+        'PG': 'Safe for work, family friendly content',
+        'PG13': 'Teen appropriate content, mildly suggestive',
+        'M': 'Mature content, strong language, suggestive content',
+        'R': 'R-rated adult themes, strong language, partial nudity',
+        'X': 'NSFW, Explicit sexual content, graphic nudity',
+        'XXX': 'NSFW, Extreme explicit content, hardcore pornography'
+    }
+    return descriptions[rating] || 'Content rating'
+}
+
+const RatingsBadge = {
+    template: `
+    <span v-if="getRatingDisplay(media)" 
+          class="inline-flex items-center rounded-md font-bold ring-1 ring-inset transition-all duration-200 cursor-default"
+          :class="(size==='lg' ? 'px-6 py-3 text-lg ' : size==='xs' ? 'px-1 py-0.5 text-xs ' : 'px-2 py-1 text-xs ') + getRatingColorClass(getRatingDisplay(media))"
+          :title="getRatingDescription(getRatingDisplay(media))">
+        {{ getRatingDisplay(media) }}
+    </span>
+    `,
+    props: {
+        media: Object,
+        size: String,
+    },
+    setup() {
+        return {
+            getRatingDisplay,
+            getRatingColorClass,
+            getRatingDescription,
+        }
+    }
+}
+
 const App = {
     components: {
         ThemeSelector,
         ThemeButton,
         ThreadComments,
         ThreadReactions,
+        RatingsBadge,
     },
     template: `
-    <div class="min-h-screen transition-colors duration-300 bg-fixed" :class="$styles.app">
+    <div class="min-h-screen transition-colors duration-300 bg-fixed relative" :class="$styles.app">
+        <!-- Top Right Control Panel -->
+        <div class="absolute top-1 right-20 flex items-center gap-3.5 z-[100] select-none">
+            <span v-if="parsedMedia && parsedMedia.created" class="text-xs font-semibold" :class="[$styles.muted]" :title="formatDate(parsedMedia.created)">
+                {{ formatRelative(parsedMedia.created) }}
+            </span>
+            <ThemeSelector />
+        </div>
         <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8" :class="$styles.appInner">
             
             <!-- Error Screen -->
@@ -198,22 +264,9 @@ const App = {
             <div v-else class="mx-auto max-w-6xl">
                 <!-- Header -->
                 <div class="border-b pb-4 mb-6" :class="[$styles.chromeBorder]">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
-                                {{ parsedMedia.caption || parsedMedia.name || 'Untitled Media' }}
-                            </h1>
-                            <p v-if="parsedMedia.description" class="text-sm mt-1 text-gray-600 dark:text-gray-400">
-                                {{ parsedMedia.description }}
-                            </p>
-                        </div>
-                        <div class="flex items-center gap-3 select-none shrink-0 self-end sm:self-auto">
-                            <span v-if="parsedMedia.created" class="text-xs font-semibold" :class="[$styles.muted]" :title="formatDate(parsedMedia.created)">
-                                {{ formatRelative(parsedMedia.created) }}
-                            </span>
-                            <ThemeSelector />
-                        </div>
-                    </div>
+                    <h1 class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+                        {{ parsedMedia.caption || parsedMedia.name || 'Untitled Media' }}
+                    </h1>
                 </div>
 
                 <!-- Content Layout -->
@@ -380,9 +433,66 @@ const App = {
 
                     <!-- Right Column: Metadata Sidebar -->
                     <div class="w-full lg:w-[400px] shrink-0 space-y-6">
-                        
+
                         <!-- Details Card -->
                         <div class="p-6 rounded-2xl border" :class="[$styles.card]">
+
+                            <div v-if="parsedMedia.rating || Object.keys(parsedMedia.tags ?? {}).length" class="mb-6">
+
+                                <div class="mb-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        <!-- Rating Tag -->
+                                        <div v-if="parsedMedia.rating">
+                                            <div class="flex flex-wrap gap-2">
+                                                <RatingsBadge :media="parsedMedia" />
+                                            </div>
+                                        </div>
+                                        <!-- Categories Section -->
+                                        <div v-for="(score, category) in parsedMedia.categories ?? {}"
+                                            :key="'cat-' + category"
+                                            class="group cursor-pointer relative inline-flex items-center rounded-full overflow-hidden px-3 py-1 text-xs font-medium ring-1 ring-inset hover:dark:bg-blue-900 hover:dark:ring-blue-500/80"
+                                            :class="score 
+                                                ? 'text-blue-800 dark:text-blue-200 ring-blue-600/20 dark:ring-blue-400/30' 
+                                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 ring-blue-600/20 dark:ring-blue-400/30'"
+                                            :title="'Score: ' + (score ? Math.round(score * 100) + '%' : 'No score')">
+                                            <!-- Background fill based on score -->
+                                            <div v-if="score"
+                                                class="group-hover:hidden absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-400 dark:from-blue-700 dark:to-blue-800"
+                                                :style="{ width: Math.round(score * 100) + '%' }"></div>
+                                            <!-- Light background for unfilled area -->
+                                            <div v-if="score"
+                                                class="group-hover:hidden absolute inset-0 bg-blue-100 dark:bg-blue-900/30"></div>
+                                            <!-- Text content -->
+                                            <span class="relative z-10">{{ category }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tags Section -->
+                                <div v-if="Object.keys(parsedMedia.tags ?? {}).length">
+                                    <div class="flex flex-wrap gap-2">
+                                        <div v-for="(score, tag) in parsedMedia.tags ?? {}"
+                                            :key="'tag-' + tag"
+                                            class="group cursor-pointer relative inline-flex items-center rounded-full overflow-hidden px-3 py-1 text-xs font-medium ring-1 ring-inset hover:dark:bg-green-900 hover:dark:ring-green-600/80"
+                                            :class="score 
+                                                ? 'text-emerald-800 dark:text-emerald-200 ring-emerald-600/20 dark:ring-emerald-400/30' 
+                                                : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 ring-emerald-600/20 dark:ring-emerald-400/30'"
+                                            :title="'Score: ' + (score ? Math.round(score * 100) + '%' : 'No score')">
+                                            <!-- Background fill based on score -->
+                                            <div v-if="score"
+                                                class="group-hover:hidden absolute inset-0 bg-gradient-to-r from-emerald-300 to-emerald-400 dark:from-emerald-700 dark:to-emerald-800"
+                                                :style="{ width: Math.round(score * 100) + '%' }"></div>
+                                            <!-- Light background for unfilled area -->
+                                            <div v-if="score"
+                                                class="group-hover:hidden absolute inset-0 bg-emerald-100 dark:bg-emerald-900/30"></div>
+                                            <!-- Text content -->
+                                            <span class="relative z-10">{{ tag }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
                             <h2 class="text-sm font-bold uppercase tracking-wider mb-4 border-b pb-2" :class="[$styles.heading, $styles.chromeBorder]">
                                 Media Details
                             </h2>
@@ -457,6 +567,11 @@ const App = {
                                 </div>
 
                             </div>
+                        </div>
+
+                        <!-- Description Card -->
+                        <div v-if="parsedMedia.description" class="px-2 rounded-2xl border" :class="[$styles.card]">
+                            <div v-html="$fmt.markdown(parsedMedia.description)" class="prose prose-xs max-w-none dark:prose-invert description-content" :class="[$styles.muted]"></div>
                         </div>
 
                     </div>
@@ -692,6 +807,33 @@ const App = {
                     .audio-speed-select:focus {
                         border-color: #4f46e5;
                         box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+                    }
+                    .description-content {
+                        font-size: 11px !important;
+                        line-height: 1.45 !important;
+                        opacity: 0.6 !important;
+                    }
+                    .description-content p {
+                        font-size: 11px !important;
+                        margin: 0.375rem 0 !important;
+                    }
+                    .description-content h1,
+                    .description-content h2,
+                    .description-content h3,
+                    .description-content h4 {
+                        font-size: 12px !important;
+                        font-weight: 600 !important;
+                        margin: 0.5rem 0 0.25rem 0 !important;
+                    }
+                    .description-content ul, 
+                    .description-content ol {
+                        font-size: 11px !important;
+                        margin: 0.375rem 0 !important;
+                        padding-left: 1.25rem !important;
+                    }
+                    .description-content li {
+                        font-size: 11px !important;
+                        margin: 0.25rem 0 !important;
                     }
                 `
                 document.head.appendChild(style)
