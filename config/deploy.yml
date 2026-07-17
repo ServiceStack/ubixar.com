@@ -98,3 +98,4 @@ accessories:
         - AWS_ENDPOINT_URL
     directories:
       - /opt/docker/ubixar.com/backups:/backups
+
