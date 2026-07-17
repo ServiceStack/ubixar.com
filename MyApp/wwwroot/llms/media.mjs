@@ -35,7 +35,7 @@ const ThemeButton = {
     }
 }
 
-const ThemeSelector = {
+export const ThemeSelector = {
     components: {
         ThemeButton
     },
@@ -197,7 +197,7 @@ export function getRatingDescription(rating) {
     return descriptions[rating] || 'Content rating'
 }
 
-const RatingsBadge = {
+export const RatingsBadge = {
     template: `
     <span v-if="getRatingDisplay(media)" 
           class="inline-flex items-center rounded-md font-bold ring-1 ring-inset transition-all duration-200 cursor-default"
@@ -229,6 +229,17 @@ const App = {
     },
     template: `
     <div class="min-h-screen transition-colors duration-300 bg-fixed relative" :class="$styles.app">
+        <!-- Top Left Back Link -->
+        <div class="absolute top-1 left-4 z-[100] select-none">
+            <a href="/m" title="Back to Media Gallery"
+                class="flex items-center gap-1.5 rounded-full px-2.5 py-1 border shadow-sm transition-colors text-xs"
+                :class="[$styles.dropdownButton, $styles.chromeBorder]">
+                <svg class="h-3.5 w-3.5 flex-shrink-0" :class="$styles.icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                <span class="font-medium" :class="$styles.heading">Gallery</span>
+            </a>
+        </div>
         <!-- Top Right Control Panel -->
         <div class="absolute top-1 right-20 flex items-center gap-3.5 z-[100] select-none">
             <span v-if="parsedMedia && parsedMedia.created" class="text-xs font-semibold" :class="[$styles.muted]" :title="formatDate(parsedMedia.created)">
@@ -539,13 +550,13 @@ const App = {
                                 <div>
                                     <span class="block text-xs font-bold uppercase tracking-wider mb-2" :class="[$styles.muted]">Specifications</span>
                                     <div class="grid grid-cols-2 gap-3 text-xs">
-                                        <!-- Dimensions (Image only) -->
-                                        <div v-if="parsedMedia.type === 'image' && parsedMedia.width && parsedMedia.height" class="p-3" :class="[$styles.infoCard]">
+                                        <!-- Dimensions -->
+                                        <div v-if="parsedMedia.width && parsedMedia.height" class="p-3" :class="[$styles.infoCard]">
                                             <div class="mb-0.5 font-medium" :class="[$styles.muted]">Dimensions</div>
                                             <div class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ parsedMedia.width }} × {{ parsedMedia.height }}</div>
                                         </div>
                                         <!-- Duration (Audio only) -->
-                                        <div v-if="parsedMedia.type === 'audio'" class="p-3" :class="[$styles.infoCard]">
+                                        <div v-if="parsedMedia.type && parsedMedia.type.toLowerCase() === 'audio'" class="p-3" :class="[$styles.infoCard]">
                                             <div class="mb-0.5 font-medium" :class="[$styles.muted]">Duration</div>
                                             <div class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ formatDuration(duration || parsedMedia.duration) }}</div>
                                         </div>
@@ -555,9 +566,9 @@ const App = {
                                             <div class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ $fmt.bytes(parsedMedia.size) }}</div>
                                         </div>
                                         <!-- Aspect Ratio -->
-                                        <div v-if="parsedMedia.aspect_ratio" class="p-3" :class="[$styles.infoCard]">
+                                        <div v-if="aspectRatio" class="p-3" :class="[$styles.infoCard]">
                                             <div class="mb-0.5 font-medium" :class="[$styles.muted]">Aspect Ratio</div>
-                                            <div class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ parsedMedia.aspect_ratio }}</div>
+                                            <div class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ aspectRatio }}</div>
                                         </div>
                                         <!-- Seed -->
                                         <div v-if="parsedMedia.seed" class="p-3" :class="[$styles.infoCard]">
@@ -628,6 +639,22 @@ const App = {
                 if (typeof item.metadata === 'string') item.metadata = JSON.parse(item.metadata)
             } catch (e) { }
             return item
+        })
+
+        const aspectRatio = computed(() => {
+            const media = parsedMedia.value
+            if (!media) return null
+            if (media.aspectRatio) return media.aspectRatio
+            const { width, height } = media
+            if (!width || !height) return null
+            const gcd = (a, b) => b ? gcd(b, a % b) : a
+            const d = gcd(width, height)
+            const w = width / d
+            const h = height / d
+            // fall back to a decimal ratio when the reduced terms aren't meaningful (e.g. 683:512)
+            return (w > 50 || h > 50)
+                ? `${(width / height).toFixed(2)}:1`
+                : `${w}:${h}`
         })
 
         const resolveUrl = (url) => {
@@ -971,6 +998,7 @@ const App = {
             media,
             error,
             parsedMedia,
+            aspectRatio,
             resolveUrl,
             formatDate,
             formatRelative,

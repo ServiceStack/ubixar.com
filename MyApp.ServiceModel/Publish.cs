@@ -289,6 +289,27 @@ public class ViewPublishedMedia : IGet, IReturn<string>
     public string ExternalRef { get; set; } // hash of messages json
 }
 
+[Tag(Tags.Publish)]
+[Route("/m", "GET")]
+public class ViewPublishedMedias : QueryBase, IGet, IReturn<string>
+{
+    public AssetType Type { get; set; }
+}
+
+[Tag(Tags.Publish)]
+public class QueryPublishedMedia : QueryDb<PublishedMedia>
+{
+    public AssetType? Type { get; set; }
+}
+
+[ValidateIsAdmin]
+[Tag(Tags.Publish)]
+public class DeletePublishedMedia : IPost, IReturn<StringsResponse>
+{
+    [ValidateNotEmpty]
+    public string ExternalRef { get; set; }
+}
+
 public enum PublishType
 {
     Thread,
@@ -296,8 +317,16 @@ public enum PublishType
     Media,
 }
 
+
+[Tag(Tags.Publish)]
+public class QueryPublishedProjects : QueryDb<PublishedProject>
+{
+}
+
+
 [ValidateIsAdmin]
 [Tag(Tags.Publish)]
 public class QueueMissingPublishedMedia : IPost, IReturn<StringResponse>
 {
 }
+

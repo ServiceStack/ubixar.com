@@ -11,7 +11,11 @@ using Thread = MyApp.ServiceModel.Thread;
 
 namespace MyApp.ServiceInterface;
 
-public class PublishServices(ILogger<PublishServices> log, AppData appData, AgentEventsManager agentManager) : Service
+public class PublishServices(
+    ILogger<PublishServices> log, 
+    AppData appData, 
+    AgentEventsManager agentManager,
+    IAutoQueryDb autoQuery) : Service
 {
     private async Task<User> AssertUser()
     {
@@ -212,6 +216,74 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData, Agen
         }
         
         return viewerHtml;
+    }
+
+    public async Task<object> Get(ViewPublishedMedias request)
+    {
+        var page = "medias.mjs";
+        
+        var viewerHtml = await GetViewerHtml(page);
+
+        try
+        {
+            var query = request.ConvertTo<QueryPublishedMedia>();
+            query.Type = AssetType.Image;
+            query.Take ??= 50;
+            query.Fields ??= "Id,Name,Type,Width,Height,Tags,Categories,Rating,Url,PublishedUrl,Model,Created";
+            query.OrderByDesc ??= "Id";
+            using var db = autoQuery.GetDb(query, base.Request);
+            var q = autoQuery.CreateQuery(query, base.Request, db);
+            var queryResponse = await autoQuery.ExecuteAsync(query, q, base.Request, db);
+            
+            viewerHtml = viewerHtml.Replace(
+                "<script id=\"data\"></script>",
+                $"""
+                 <script id="data">
+                 window.STATE.user = {GetAuthUser().ToJson() ?? "null"};
+                 window.ARGS.results = {queryResponse.Results.ToJson()};
+                 </script>
+                 """);
+        }
+        catch (Exception e)
+        {
+            var error = new ResponseStatus
+            {
+                ErrorCode = e.GetType().Name,
+                Message = e.Message,
+                StackTrace = e.StackTrace,
+            };
+            viewerHtml = viewerHtml.Replace(
+                "<script id=\"data\"></script>",
+                $"<script id=\"data\">window.ARGS.error = {error.ToJson()};</script>");
+        }
+        
+        return viewerHtml;
+    }
+
+    public async Task<object> Post(DeletePublishedMedia request)
+    {
+        var media = await Db.SingleAsync<PublishedMedia>(x => x.ExternalRef == request.ExternalRef);
+        if (media == null)
+            throw HttpError.NotFound("Media not found");
+
+        var ret = new StringsResponse { Results = [media.PublishedUrl] };
+        await Db.DeleteAsync<PublishedMedia>(x => x.Id == media.Id);
+        if (media.PublicThreadId != null)
+        {
+            await Db.DeleteAsync<Thread>(x => x.Id == media.PublicThreadId);
+        }
+
+        if (media.Url.StartsWith("/cache/"))
+        {
+            var filePath = appData.GetCachePath(media.Url.LastRightPart('/'));
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                ret.Results.Add(media.Url);
+            }
+        }
+        
+        return ret;
     }
     
     public async Task<PublishAvatarResponse> Post(PublishAvatar request)
@@ -647,6 +719,8 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData, Agen
 
             Directory.CreateDirectory(Path.GetDirectoryName(destDir)!);
             MoveDirectory(tmpDir, destDir);
+            
+            publishedProject.FileCount = CountFiles(destDir);
 
             DeleteDirectory(tmpDir);
 
@@ -666,6 +740,9 @@ public class PublishServices(ILogger<PublishServices> log, AppData appData, Agen
             PublishedUrl = publishedProject.PublishedUrl,
         };
     }
+    
+    public static int CountFiles(string dirPath) =>
+        Directory.EnumerateFiles(dirPath, "*", SearchOption.AllDirectories).Count();    
 
     public static void MoveDirectory(string sourceDir, string destDir)
     {
