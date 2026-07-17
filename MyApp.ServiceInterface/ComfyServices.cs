@@ -464,10 +464,10 @@ public class ComfyServices(ILogger<ComfyServices> log,
         return workflowVersion;
     }
 
-    public async Task<object> Post(QueueWorkflow request)
+    public async Task<QueueWorkflowResponse> Post(QueueWorkflow request)
     {
         using var db = Db;
-        var userId = Request.GetClaimsPrincipal().GetUserId();
+        var userId = Request.GetRequiredUserId();
         log.LogInformation("Received QueueComfyWorkflow from '{UserId}' to execute workflow '{Workflow}'",
             userId, request.WorkflowId);
 

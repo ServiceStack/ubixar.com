@@ -88,11 +88,48 @@ public partial class AppHost() : AppHostBase("ubixar.com"), IHostingStartup
             appData.Reload(db);
             var agentsManager = services.GetRequiredService<AgentEventsManager>();
             agentsManager.Reload(db);
+            
+            var apiData = new ApiData
+            {
+                ImageModels =
+                [
+                    "google/gemini-3.1-flash-lite-image", // $0.25 / $1.50 per 1M
+                    "openai/gpt-image-2", // $8 / $8 per 1M
+                    "openai/gpt-image-1-mini", // $2.50 / $2.50 per 1M
+                    "openai/gpt-image-1", // $10 / $10 per 1M
+                    "google/gemini-3.1-flash-image", // $0.50 / $3 per 1M
+                    "google/gemini-3-pro-image", // $2 / $12 per 1M
+                    "sourceful/riverflow-v2.5-pro", // from $0.13/image
+                    "sourceful/riverflow-v2.5-fast", // from $0.019/image
+                    "microsoft/mai-image-2.5", // $5/M tokens
+                    "x-ai/grok-imagine-image-quality", // from $0.05/image
+                    "recraft/recraft-v4.1-pro-vector", // from $0.30/image
+                    "recraft/recraft-v4.1-vector", // from $0.08/image
+                    "recraft/recraft-v4.1-utility-pro", // from $0.21/image
+                    "recraft/recraft-v4.1-utility", // from $0.035/image
+                    "recraft/recraft-v4.1-pro", // from $0.21/image
+                    "recraft/recraft-v4.1", // from $0.035/image
+                    "openai/gpt-5.4-image-2", // $8 / $15 per 1M
+                    "black-forest-labs/flux.2-klein-4b", // $0.014/megapixel
+                    "bytedance-seed/seedream-4.5", // $0.04/image
+                    "black-forest-labs/flux.2-max", // $0.07/megapixel
+                    "black-forest-labs/flux.2-flex", // $0.06/megapixel
+                    "black-forest-labs/flux.2-pro", // $0.03/megapixel  
+                    "openrouter/auto",
+                ]
+            };
+            ScriptContext.Args[nameof(ApiData)] = apiData;
+            appData.Workflows.ForEach(x => apiData.ImageModels.AddIfNotExists("llmspy/" + x.Slug));
         });
 
     public override void Configure()
     {
         AppConfig.Instance.GitPagesBaseUrl ??= ResolveGitBlobBaseUrl(ContentRootDirectory);
+    }
+
+    public class ApiData
+    {
+        public List<string> ImageModels { get; set; } = new();
     }
 
     public override IDbConnection GetDbConnection(IRequest? req = null)
