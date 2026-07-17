@@ -865,7 +865,7 @@ public class AdminServices(ILogger<AdminServices> log,
         if (job == null)
             throw HttpError.NotFound("Job not found");
         
-        var response = job.Job?.ResponseBody.FromJson<OpenAiChatResponse>();
+        var response = job.Job?.ResponseBody.FromJson<ChatResponse>();
         var answer = response?.Choices?.FirstOrDefault()?.Message?.Content;
         
         return new GetAiChatResponse

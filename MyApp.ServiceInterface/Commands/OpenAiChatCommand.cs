@@ -16,7 +16,7 @@ public record ChatCompletionResult(ChatCompletion Request, BackgroundJob Job);
 
 public class ChatCompletionCommand(
     ILogger<ChatCompletionCommand> logger,
-    IBackgroundJobs jobs) : AsyncCommandWithResult<ChatCompletion, OpenAiChatResponse?>
+    IBackgroundJobs jobs) : AsyncCommandWithResult<ChatCompletion, ChatResponse?>
 {
     public const string LogPrefix = "[ChatCompletionCommand] ";
     public static IEnumerable<ChatCompletionResult> GetTaskResults() => Tasks.ValuesWithoutLock();
@@ -93,7 +93,7 @@ public class ChatCompletionCommand(
         return false;
     }
 
-    protected override async Task<OpenAiChatResponse?> RunAsync(ChatCompletion request, CancellationToken token)
+    protected override async Task<ChatResponse?> RunAsync(ChatCompletion request, CancellationToken token)
     {
         var log = Request.CreateJobLogger(jobs, logger);
         var job = Request.GetBackgroundJob();
@@ -109,7 +109,7 @@ public class ChatCompletionCommand(
                && job.CompletedDate == null && job.Error == null && job.Response == null)
         {
             if (ProcessTasks(log, refId))
-                return job.TransientResponse as OpenAiChatResponse;
+                return job.TransientResponse as ChatResponse;
             if (i++ % 100 == 0)
             {
                 log.LogInformation("{LogPrefix}{JobId}/{Id} for {Model} - {Seconds} seconds elapsed",
@@ -121,18 +121,18 @@ public class ChatCompletionCommand(
         ProcessTasks(log, refId);
         Tasks.TryRemove(refId, out _);
         
-        var response = job.TransientResponse as OpenAiChatResponse;
+        var response = job.TransientResponse as ChatResponse;
         return response;
     }
 }
 
 public class CaptionArtifactCommand(
     ILogger<CaptionArtifactCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory) 
-    : AsyncCommand<OpenAiChatResponse>
+    : AsyncCommand<ChatResponse>
 {
     public const string Prompt = "Caption this image";
     
-    protected override async Task RunAsync(OpenAiChatResponse request, CancellationToken token)
+    protected override async Task RunAsync(ChatResponse request, CancellationToken token)
     {
         var job = Request.GetBackgroundJob();
         try
@@ -167,11 +167,11 @@ public class CaptionArtifactCommand(
 
 public class CaptionMediaCommand(
     ILogger<CaptionMediaCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory) 
-    : AsyncCommand<OpenAiChatResponse>
+    : AsyncCommand<ChatResponse>
 {
     public const string Prompt = "Caption this picture in 1 short sentence";
     
-    protected override async Task RunAsync(OpenAiChatResponse request, CancellationToken token)
+    protected override async Task RunAsync(ChatResponse request, CancellationToken token)
     {
         var job = Request.GetBackgroundJob();
         try
@@ -201,11 +201,11 @@ public class CaptionMediaCommand(
 
 public class DescribeArtifactCommand(
     ILogger<DescribeArtifactCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory)
-    : AsyncCommand<OpenAiChatResponse>
+    : AsyncCommand<ChatResponse>
 {
     public const string Prompt = "Description of this image";
     
-    protected override async Task RunAsync(OpenAiChatResponse request, CancellationToken token)
+    protected override async Task RunAsync(ChatResponse request, CancellationToken token)
     {
         var job = Request.GetBackgroundJob();
         try
@@ -239,11 +239,11 @@ public class DescribeArtifactCommand(
 
 public class DescribeMediaCommand(
     ILogger<DescribeMediaCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory)
-    : AsyncCommand<OpenAiChatResponse>
+    : AsyncCommand<ChatResponse>
 {
     public const string Prompt = "Description of this image";
     
-    protected override async Task RunAsync(OpenAiChatResponse request, CancellationToken token)
+    protected override async Task RunAsync(ChatResponse request, CancellationToken token)
     {
         var job = Request.GetBackgroundJob();
         try
@@ -335,47 +335,42 @@ public class ChatCompletionServices(
                     .AddQueryParam("device", request.Device);
                 foreach (var message in chatRequest.Messages)
                 {
-                    if (message.Content is JsonElement { ValueKind: JsonValueKind.Array } el)
+                    foreach (var content in message.Content.Safe())
                     {
-                        var contents = (List<object>) el.AsObject()!;
-                        foreach (var content in contents)
+                        if (content is AiImageContent imageContent)
                         {
-                            if (content is Dictionary<string,object> dict
-                                && dict.TryGetValue("image_url", out var oImageUrl) 
-                                && oImageUrl is Dictionary<string,object> imageUrl)
+                            var url = imageContent.ImageUrl?.Url;
+                            if (url != null)
                             {
-                                if (imageUrl.TryGetValue("url", out var oUrl) && oUrl is string url)
+                                byte[]? imageBytes = null;
+                                if (url.StartsWith('/') || url.StartsWith("../"))
                                 {
-                                    byte[]? imageBytes = null;
-                                    if (url.StartsWith('/') || url.StartsWith("../"))
-                                    {
-                                        var usePath = url.StartsWith('/')
-                                            ? url.StartsWith("/artifacts/")
-                                                ? appData.GetArtifactPath(url.LastRightPart('/'))
-                                                : url.StartsWith("/cache/")
-                                                    ? appData.GetCachePath(url.LastRightPart('/'))
-                                                    : url
-                                            : appData.ContentRootPath.CombineWith(url);
-                                        if (!File.Exists(usePath))
-                                            throw HttpError.NotFound($"Image not found: {usePath}");
-                                        imageBytes = File.ReadAllBytes(usePath);
-                                    }
-                                    else if (url.StartsWith("http://") || url.StartsWith("https://"))
-                                    {
-                                        imageBytes = url.GetBytesFromUrl();
-                                    }
-                                    if (imageBytes != null)
-                                    {
-                                        var base64 = Convert.ToBase64String(imageBytes);
-                                        var ext = url.LastRightPart('.');
-                                        var mimeType = MimeTypes.GetMimeType(ext);
-                                        var dataUri = $"data:{mimeType};base64,{base64}";
-                                        imageUrl["url"] = dataUri;
-                                    }
+                                    var usePath = url.StartsWith('/')
+                                        ? url.StartsWith("/artifacts/")
+                                            ? appData.GetArtifactPath(url.LastRightPart('/'))
+                                            : url.StartsWith("/cache/")
+                                                ? appData.GetCachePath(url.LastRightPart('/'))
+                                                : url
+                                        : appData.ContentRootPath.CombineWith(url);
+                                    if (!File.Exists(usePath))
+                                        throw HttpError.NotFound($"Image not found: {usePath}");
+                                    imageBytes = File.ReadAllBytes(usePath);
+                                }
+                                else if (url.StartsWith("http://") || url.StartsWith("https://"))
+                                {
+                                    imageBytes = url.GetBytesFromUrl();
+                                }
+                                if (imageBytes != null)
+                                {
+                                    var base64 = Convert.ToBase64String(imageBytes);
+                                    var ext = url.LastRightPart('.');
+                                    var mimeType = MimeTypes.GetMimeType(ext);
+                                    var dataUri = $"data:{mimeType};base64,{base64}";
+                                    imageContent.ImageUrl ??= new AiImageUrl { Url = dataUri };
+                                    imageContent.ImageUrl.Url = dataUri;
                                 }
                             }
                         }
-                        message.Content = JsonSerializer.SerializeToElement(contents);
                     }
                 }
                 return chatRequest;
@@ -443,7 +438,7 @@ public class ChatCompletionServices(
         }
         else
         {
-            job.Response = nameof(OpenAiChatResponse);
+            job.Response = nameof(ChatResponse);
             job.ResponseBody = request.ToJson();
             job.Status = GenerationStatus.GenerationCompleted;
         }

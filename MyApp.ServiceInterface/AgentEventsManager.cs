@@ -228,12 +228,12 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
                 new()
                 {
                     Role = "system", 
-                    Content = systemPrompt ?? "You are a helpful assistant.",
+                    Content = [AiContent.Text(systemPrompt ?? "You are a helpful assistant.")],
                 },
                 new()
                 {
                     Role = "user", 
-                    Content = prompt
+                    Content = [AiContent.Text(prompt)],
                 },
             ]
         }, new() {
@@ -257,20 +257,11 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
             Messages = [
                 new()
                 {
-                    Role = "user", 
-                    Content = new List<Dictionary<string, object>>
-                    {
-                        new () {
-                            ["type"] = "image_url", 
-                            ["image_url"] = new Dictionary<string, object> {
-                                ["url"] = artifact.Url,
-                            },
-                        },
-                        new() {
-                            ["type"] = "text", 
-                            ["text"] = prompt,
-                        },
-                    }
+                    Role = "user",
+                    Content = [
+                        AiContent.Image(artifact.Url),
+                        AiContent.Text(prompt)
+                    ]
                 },
             ]
         }, new() {
@@ -297,19 +288,10 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
                 new()
                 {
                     Role = "user", 
-                    Content = new List<Dictionary<string, object>>
-                    {
-                        new () {
-                            ["type"] = "image_url", 
-                            ["image_url"] = new Dictionary<string, object> {
-                                ["url"] = media.Url,
-                            },
-                        },
-                        new() {
-                            ["type"] = "text", 
-                            ["text"] = prompt,
-                        },
-                    }
+                    Content = [
+                        AiContent.Image(media.Url),
+                        AiContent.Text(prompt)
+                    ]
                 },
             ]
         }, new() {

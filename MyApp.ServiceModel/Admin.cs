@@ -287,7 +287,7 @@ public class GetAiChat : IGet, IReturn<GetAiChatResponse>
 public class GetAiChatResponse
 {
     public string Result { get; set; }
-    public OpenAiChatResponse? Response { get; set; }
+    public ChatResponse? Response { get; set; }
     public ResponseStatus? ResponseStatus { get; set; }
 }
 
