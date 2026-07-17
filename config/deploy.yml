@@ -63,9 +63,16 @@ volumes:
 
 accessories:
   postgres:
-    image: postgres
+    # Always pin the major version. An unpinned `postgres` tracks :latest, which
+    # silently rolled 17 -> 18 and took the DB down (it refuses to start against a
+    # data dir from an older major). Bumping this is a migration, never a redeploy.
+    image: postgres:18
     host: 5.78.128.205
-    port: "5434:5432"
+    # Bound to loopback: reachable only via `tailscale serve --tcp 5432 tcp://127.0.0.1:5434`,
+    # never from the public internet. Also avoids the wildcard-vs-tailscaled bind conflict on 5432.
+    # NOTE: this is the *host* port only — app containers connect over the `kamal`
+    # network to ubixar-postgres:5432, so COMFY_DB_CONNECTION must keep Port=5432.
+    port: "127.0.0.1:5434:5432"
     env:
       clear:
         POSTGRES_USER: postgres
@@ -75,8 +82,13 @@ accessories:
       secret:
         - POSTGRES_PASSWORD
     directories:
-      - /opt/docker/ubixar.com/postgres:/var/lib/postgresql/data
-      - /opt/docker/ubixar.com/initdb.d:/docker-entrypoint-initdb.d
+      # PG18+ layout: mount the PARENT dir; the image puts data in a
+      # major-version subdir (PGDATA=/var/lib/postgresql/18/docker). The old PG17
+      # dir (.../postgres -> /var/lib/postgresql/data) is retained for rollback.
+      - /opt/docker/ubixar.com/postgres18:/var/lib/postgresql
+      # NOTE: /docker-entrypoint-initdb.d is deliberately NOT mounted. Those scripts
+      # run against ANY empty data dir, and initdb.d holds a 534MB Sept-2025 dump —
+      # mounting it here would silently restore a stale snapshot over a new cluster.
   backup:
     image: ghcr.io/servicestack/backup-postgres:latest
     host: 5.78.128.205
