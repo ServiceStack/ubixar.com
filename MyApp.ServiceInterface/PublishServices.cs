@@ -939,8 +939,20 @@ public class PublishServices(
         if (project == null)
             throw HttpError.NotFound($"Project not found: {request.ExternalRef}");
 
-        var projectDir = Path.Combine(appData.Config.ProjectsPath, user.UserName, project.Name);
-        DeleteDirectory(projectDir);
+        // Project files live under the publisher's username folder, not the (Admin) requester's
+        var ownerName = project.PublishedBy == user.Id
+            ? user.UserName
+            : appData.GetUserCacheById(Db, project.PublishedBy)?.UserName;
+        if (ownerName != null)
+        {
+            var projectDir = Path.Combine(appData.Config.ProjectsPath, ownerName, project.Name);
+            DeleteDirectory(projectDir);
+        }
+        else
+        {
+            log.LogWarning("Could not resolve owner {PublishedBy} for project {ExternalRef}; skipping file deletion",
+                project.PublishedBy, project.ExternalRef);
+        }
         
         if (project.PosterImage != null)
         {

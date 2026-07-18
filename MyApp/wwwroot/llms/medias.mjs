@@ -1,6 +1,6 @@
 import { ref, computed, inject, onMounted, onUnmounted, reactive, watch } from "vue"
 import { QueryPublishedMedia, QueryPublishedProjects, UpdatePublishedMedia, DeletePublishedMedia,
-    UpdatePublishedProject, GetPublishProjectPosterImage } from "./dtos.mjs"
+    UpdatePublishedProject, DeletePublishedProject, GetPublishProjectPosterImage } from "./dtos.mjs"
 import { ThemeSelector, RatingsBadge } from "./media.mjs"
 import { ThreadReactions } from "./components/Threads.mjs"
 import { VisibilityIcon, SignInModal } from "./components/VisibilityIcon.mjs"
@@ -339,8 +339,9 @@ const MediaCard = {
                         {{ tag }}
                     </button>
                 </div>
-                <div v-if="item.publicThreadId && hovered" class="pointer-events-auto pt-1">
-                    <ThreadReactions :threadId="item.publicThreadId" :reactions="item.reactions" class="media-card-reactions text-white max-w-52" />
+                <div v-if="item.publicThreadId && hovered" class="pointer-events-auto pt-1.5">
+                    <ThreadReactions :threadId="item.publicThreadId" :reactions="item.reactions"
+                        class="media-card-reactions text-white rounded-xl bg-white/10 ring-1 ring-white/15 backdrop-blur-sm px-1 py-0.5" />
                 </div>
             </div>
         </div>
@@ -419,7 +420,7 @@ const AudioCard = {
         </div>
 
         <!-- Prompt (clipped to keep cards a consistent height) -->
-        <p class="px-4 pb-3 text-xs leading-relaxed line-clamp-2 min-h-[2.5rem]" :class="$styles.muted" :title="item.prompt">
+        <p class="px-4 pb-3 text-xs leading-relaxed line-clamp-2 min-h-[3rem]" :class="$styles.muted" :title="item.prompt">
             {{ item.prompt }}
         </p>
 
@@ -510,6 +511,20 @@ const ProjectCard = {
             <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFile" />
         </template>
 
+        <!-- Admin: delete project -->
+        <button v-if="isAdmin" type="button" :disabled="deleting" title="Delete project"
+            @click.stop.prevent="del"
+            class="absolute top-2 z-10 size-7 rounded-full flex items-center justify-center bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-600/90 backdrop-blur-sm shadow-md transition-opacity disabled:opacity-80"
+            :class="canEdit ? 'left-11' : 'left-2'">
+            <svg v-if="!deleting" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+            <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </button>
+
         <!-- Body -->
         <div class="p-4 flex flex-col flex-1">
             <div class="flex justify-between">
@@ -545,14 +560,15 @@ const ProjectCard = {
                 <span v-if="item.publishedAt" class="ml-auto">{{ formatRelative(item.publishedAt) }}</span>
             </div>
 
-            <p v-if="uploadError" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ uploadError }}</p>
+            <p v-if="uploadError || deleteError" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ uploadError || deleteError }}</p>
         </div>
     </div>
     `,
     props: {
         item: Object
     },
-    setup(props) {
+    emits: ['deleted'],
+    setup(props, { emit }) {
         const client = inject('client')
         const ctx = inject('ctx')
         const user = computed(() => ctx?.state?.user)
@@ -564,6 +580,8 @@ const ProjectCard = {
         const broken = ref(false)
         const uploading = ref(false)
         const uploadError = ref('')
+        const deleting = ref(false)
+        const deleteError = ref('')
         const fileInput = ref(null)
         const posterVersion = ref(0)
 
@@ -614,18 +632,43 @@ const ProjectCard = {
             }
         }
 
+        // Admin-only: permanently delete the published project
+        async function del() {
+            if (deleting.value) return
+            if (!window.confirm(`Delete "${props.item.name || 'this project'}"? This cannot be undone.`)) return
+            deleting.value = true
+            deleteError.value = ''
+            try {
+                const api = await client.api(new DeletePublishedProject({
+                    externalRef: props.item.externalRef,
+                }))
+                if (api.succeeded) {
+                    emit('deleted', props.item)
+                } else {
+                    deleteError.value = api.error?.message || 'Failed to delete project'
+                }
+            } catch (err) {
+                deleteError.value = err.message || 'Failed to delete project'
+            } finally {
+                deleting.value = false
+            }
+        }
+
         return {
             isAdmin,
             canEdit,
             broken,
             uploading,
             uploadError,
+            deleting,
+            deleteError,
             fileInput,
             itemUrl,
             userName,
             posterUrl,
             pickFile,
             onFile,
+            del,
             formatRelative,
             formatBytes,
         }
@@ -890,7 +933,7 @@ const ProjectGrid = {
         </div>
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-            <ProjectCard v-for="item in items" :key="item.id" :item="item" />
+            <ProjectCard v-for="item in items" :key="item.id" :item="item" @deleted="removeItem" />
         </div>
 
         <div v-if="loadError" class="mt-6 text-center">
@@ -963,6 +1006,11 @@ const ProjectGrid = {
             }
         }
 
+        function removeItem(item) {
+            const i = items.value.findIndex(x => x.id === item.id)
+            if (i >= 0) items.value.splice(i, 1)
+        }
+
         // Discard current results and re-query from the start (e.g. after sort order change)
         async function reload() {
             items.value = []
@@ -1006,6 +1054,7 @@ const ProjectGrid = {
             sentinel,
             rootEl,
             loadMore,
+            removeItem,
             reload,
         }
     }
@@ -1186,15 +1235,21 @@ const App = {
                         transform: translateY(-2px);
                     }
                     .media-card-reactions button {
-                        color: rgba(255, 255, 255, 0.8) !important;
-                        transition: all 0.2s;
+                        color: rgba(255, 255, 255, 0.82) !important;
+                        border-radius: 0.5rem !important;
+                        font-weight: 600;
+                        transition: transform 0.15s, background-color 0.2s, color 0.2s;
                     }
                     .media-card-reactions button:hover {
-                        background-color: rgba(255, 255, 255, 0.15) !important;
+                        background-color: rgba(255, 255, 255, 0.18) !important;
                         color: #fff !important;
+                        transform: translateY(-1px);
+                    }
+                    .media-card-reactions button:active {
+                        transform: translateY(0) scale(0.96);
                     }
                     .media-card-reactions button.shadow-sm {
-                        background-color: rgba(255, 255, 255, 0.25) !important;
+                        background-color: rgba(255, 255, 255, 0.28) !important;
                         color: #fff !important;
                     }
                     .text-2xs {

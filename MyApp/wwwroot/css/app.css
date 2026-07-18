@@ -627,6 +627,9 @@
   .left-8 {
     left: calc(var(--spacing) * 8);
   }
+  .left-11 {
+    left: calc(var(--spacing) * 11);
+  }
   .left-26 {
     left: calc(var(--spacing) * 26);
   }
@@ -1290,8 +1293,8 @@
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
   }
-  .min-h-\[2\.5rem\] {
-    min-height: 2.5rem;
+  .min-h-\[3rem\] {
+    min-height: 3rem;
   }
   .min-h-\[350px\] {
     min-height: 350px;
@@ -3179,6 +3182,12 @@
       background-color: color-mix(in oklab, var(--color-white) 5%, transparent);
     }
   }
+  .bg-white\/10 {
+    background-color: color-mix(in srgb, #fff 10%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+    }
+  }
   .bg-white\/20 {
     background-color: color-mix(in srgb, #fff 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -4766,6 +4775,12 @@
       --tw-ring-color: color-mix(in oklab, var(--color-slate-900) 5%, transparent);
     }
   }
+  .ring-white\/15 {
+    --tw-ring-color: color-mix(in srgb, #fff 15%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      --tw-ring-color: color-mix(in oklab, var(--color-white) 15%, transparent);
+    }
+  }
   .ring-offset-gray-600 {
     --tw-ring-offset-color: var(--color-gray-600);
   }
@@ -5914,6 +5929,16 @@
         background-color: color-mix(in srgb, oklch(63.7% 0.237 25.331) 10%, transparent);
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--color-red-500) 10%, transparent);
+        }
+      }
+    }
+  }
+  .hover\:bg-red-600\/90 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: color-mix(in srgb, oklch(57.7% 0.245 27.325) 90%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--color-red-600) 90%, transparent);
         }
       }
     }
