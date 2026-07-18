@@ -1,5 +1,5 @@
 /* Options:
-Date: 2026-07-18 21:29:08
+Date: 2026-07-19 02:57:39
 Version: 10.09
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: http://localhost:5000
@@ -438,8 +438,14 @@ export class AiImageContent extends AiContent {
      * @description The image for this content. */
     image_url;
 }
+/** @typedef From {any} */
+/** @typedef  Into {any} */
+export class QueryDb_2 extends QueryBase {
+    /** @param {{skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
+}
 export class PublishedMedia {
-    /** @param {{id?:number,name?:string,type?:AssetType,prompt?:string,model?:string,created?:string,cost?:number,seed?:number,url?:string,hash?:string,aspectRatio?:string,width?:number,height?:number,size?:number,duration?:number,user?:string,reactions?:{ [index:string]: Object; },caption?:string,description?:string,phash?:string,color?:string,categories?:{ [index:string]: number; },tags?:{ [index:string]: number; },rating?:Rating,ratings?:Ratings,objects?:ObjectDetection[],published?:string,metadata?:{ [index:string]: Object; },variantId?:string,variantName?:string,deviceId?:string,error?:ResponseStatus,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number}} [init] */
+    /** @param {{id?:number,name?:string,type?:AssetType,prompt?:string,model?:string,created?:string,cost?:number,seed?:number,url?:string,hash?:string,aspectRatio?:string,width?:number,height?:number,size?:number,duration?:number,user?:string,caption?:string,description?:string,phash?:string,color?:string,categories?:{ [index:string]: number; },tags?:{ [index:string]: number; },rating?:Rating,ratings?:Ratings,objects?:ObjectDetection[],published?:string,metadata?:{ [index:string]: Object; },variantId?:string,variantName?:string,deviceId?:string,error?:ResponseStatus,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {number} */
     id;
@@ -473,8 +479,6 @@ export class PublishedMedia {
     duration;
     /** @type {?string} */
     user;
-    /** @type {?{ [index:string]: Object; }} */
-    reactions;
     /** @type {?string} */
     caption;
     /** @type {?string} */
@@ -517,6 +521,106 @@ export class PublishedMedia {
     publicThreadId;
     /** @type {?number} */
     galleryScore;
+}
+export class MediaInfo {
+    /** @param {{id?:number,name?:string,type?:AssetType,width?:number,height?:number,tags?:{ [index:string]: number; },categories?:{ [index:string]: number; },rating?:Rating,url?:string,publishedUrl?:string,externalRef?:string,model?:string,prompt?:string,created?:string,publicThreadId?:number,reactions?:{ [index:string]: number; },reactionsCount?:number}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {number} */
+    id;
+    /** @type {string} */
+    name;
+    /** @type {AssetType} */
+    type;
+    /** @type {number} */
+    width;
+    /** @type {number} */
+    height;
+    /** @type {?{ [index:string]: number; }} */
+    tags;
+    /** @type {?{ [index:string]: number; }} */
+    categories;
+    /** @type {?Rating} */
+    rating;
+    /** @type {string} */
+    url;
+    /** @type {string} */
+    publishedUrl;
+    /** @type {string} */
+    externalRef;
+    /** @type {string} */
+    model;
+    /** @type {string} */
+    prompt;
+    /** @type {string} */
+    created;
+    /** @type {?number} */
+    publicThreadId;
+    /** @type {{ [index:string]: number; }} */
+    reactions = {};
+    /** @type {number} */
+    reactionsCount;
+}
+export class PublishedProject {
+    /** @param {{id?:number,name?:string,description?:string,paths?:string[],size?:number,fileCount?:number,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number,posterImage?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {number} */
+    id;
+    /** @type {string} */
+    name;
+    /** @type {string} */
+    description;
+    /** @type {?string[]} */
+    paths;
+    /** @type {number} */
+    size;
+    /** @type {number} */
+    fileCount;
+    /** @type {string} */
+    externalRef;
+    /** @type {string} */
+    publishedBy;
+    /** @type {string} */
+    publishedAt;
+    /** @type {string} */
+    publishedUrl;
+    /** @type {?number} */
+    publicThreadId;
+    /** @type {?number} */
+    galleryScore;
+    /** @type {?string} */
+    posterImage;
+}
+export class ProjectInfo {
+    /** @param {{id?:number,name?:string,description?:string,size?:number,fileCount?:number,publishedAt?:string,publishedUrl?:string,publishedBy?:string,posterImage?:string,externalRef?:string,galleryScore?:number,publicThreadId?:number,reactions?:{ [index:string]: number; },reactionsCount?:number}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {number} */
+    id;
+    /** @type {string} */
+    name;
+    /** @type {string} */
+    description;
+    /** @type {number} */
+    size;
+    /** @type {number} */
+    fileCount;
+    /** @type {string} */
+    publishedAt;
+    /** @type {string} */
+    publishedUrl;
+    /** @type {string} */
+    publishedBy;
+    /** @type {?string} */
+    posterImage;
+    /** @type {string} */
+    externalRef;
+    /** @type {?number} */
+    galleryScore;
+    /** @type {?number} */
+    publicThreadId;
+    /** @type {{ [index:string]: number; }} */
+    reactions = {};
+    /** @type {number} */
+    reactionsCount;
 }
 export class Poco {
     /** @param {{name?:string}} [init] */
@@ -903,12 +1007,6 @@ export class User {
     /** @type {string} */
     modifiedDate;
 }
-/** @typedef From {any} */
-/** @typedef  Into {any} */
-export class QueryDb_2 extends QueryBase {
-    /** @param {{skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
-    constructor(init) { super(init); Object.assign(this, init) }
-}
 export class ArtifactReactionInfo {
     /** @param {{id?:number,artifactId?:number,reaction?:Reaction}} [init] */
     constructor(init) { Object.assign(this, init) }
@@ -1265,36 +1363,6 @@ export class Asset {
     modifiedDate;
     /** @type {?string} */
     modifiedBy;
-}
-export class PublishedProject {
-    /** @param {{id?:number,name?:string,description?:string,paths?:string[],size?:number,fileCount?:number,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number,posterImage?:string}} [init] */
-    constructor(init) { Object.assign(this, init) }
-    /** @type {number} */
-    id;
-    /** @type {string} */
-    name;
-    /** @type {string} */
-    description;
-    /** @type {?string[]} */
-    paths;
-    /** @type {number} */
-    size;
-    /** @type {number} */
-    fileCount;
-    /** @type {string} */
-    externalRef;
-    /** @type {string} */
-    publishedBy;
-    /** @type {string} */
-    publishedAt;
-    /** @type {string} */
-    publishedUrl;
-    /** @type {?number} */
-    publicThreadId;
-    /** @type {?number} */
-    galleryScore;
-    /** @type {?string} */
-    posterImage;
 }
 export class CommentResult {
     /** @param {{id?:number,threadId?:number,replyId?:number,content?:string,upVotes?:number,downVotes?:number,votes?:number,flagReason?:string,notes?:string,userName?:string,handle?:string,profileUrl?:string,avatar?:string,createdDate?:string,modifiedDate?:string}} [init] */
@@ -3900,7 +3968,7 @@ export class ViewPublishedMedias extends QueryBase {
     getMethod() { return 'GET' }
     createResponse() { return '' }
 }
-export class QueryPublishedMedia extends QueryDb_1 {
+export class QueryPublishedMedia extends QueryDb_2 {
     /** @param {{type?:AssetType,category?:string,tag?:string,user?:string,userId?:string,skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
     constructor(init) { super(init); Object.assign(this, init) }
     /** @type {?AssetType} */
@@ -3914,6 +3982,17 @@ export class QueryPublishedMedia extends QueryDb_1 {
     /** @type {?string} */
     userId;
     getTypeName() { return 'QueryPublishedMedia' }
+    getMethod() { return 'GET' }
+    createResponse() { return new QueryResponse() }
+}
+export class QueryPublishedProjects extends QueryDb_2 {
+    /** @param {{user?:string,userId?:string,skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
+    /** @type {?string} */
+    user;
+    /** @type {?string} */
+    userId;
+    getTypeName() { return 'QueryPublishedProjects' }
     getMethod() { return 'GET' }
     createResponse() { return new QueryResponse() }
 }
@@ -3976,6 +4055,15 @@ export class PublishProject {
     getTypeName() { return 'PublishProject' }
     getMethod() { return 'POST' }
     createResponse() { return new PublishProjectResponse() }
+}
+export class DeletePublishedProject {
+    /** @param {{externalRef?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    getTypeName() { return 'DeletePublishedProject' }
+    getMethod() { return 'POST' }
+    createResponse() { return new StringsResponse() }
 }
 export class GetPublishedProjectFile {
     /** @param {{userName?:string,projectName?:string,path?:string,original?:boolean}} [init] */
@@ -4414,13 +4502,6 @@ export class QueryAssets extends QueryDb_1 {
     getMethod() { return 'GET' }
     createResponse() { return new QueryResponse() }
 }
-export class QueryPublishedProjects extends QueryDb_1 {
-    /** @param {{skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
-    constructor(init) { super(init); Object.assign(this, init) }
-    getTypeName() { return 'QueryPublishedProjects' }
-    getMethod() { return 'GET' }
-    createResponse() { return new QueryResponse() }
-}
 export class MyThreads extends QueryDb_1 {
     /** @param {{afterId?:number,afterModifiedDate?:string,skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
     constructor(init) { super(init); Object.assign(this, init) }
@@ -4451,10 +4532,12 @@ export class QueryThreadReactions extends QueryDb_1 {
     createResponse() { return new QueryResponse() }
 }
 export class MyThreadReactions extends QueryDb_2 {
-    /** @param {{afterId?:number,skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
+    /** @param {{afterId?:number,threadIds?:number[],skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
     constructor(init) { super(init); Object.assign(this, init) }
     /** @type {?number} */
     afterId;
+    /** @type {?number[]} */
+    threadIds;
     getTypeName() { return 'MyThreadReactions' }
     getMethod() { return 'GET' }
     createResponse() { return new QueryResponse() }
