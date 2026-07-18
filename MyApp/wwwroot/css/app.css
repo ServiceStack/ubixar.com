@@ -542,6 +542,9 @@
   .top-4 {
     top: calc(var(--spacing) * 4);
   }
+  .top-5 {
+    top: calc(var(--spacing) * 5);
+  }
   .top-6 {
     top: calc(var(--spacing) * 6);
   }
@@ -583,6 +586,9 @@
   }
   .right-4 {
     right: calc(var(--spacing) * 4);
+  }
+  .right-5 {
+    right: calc(var(--spacing) * 5);
   }
   .right-20 {
     right: calc(var(--spacing) * 20);
@@ -8058,6 +8064,11 @@
   .lg\:col-span-2 {
     @media (width >= 64rem) {
       grid-column: span 2 / span 2;
+    }
+  }
+  .lg\:col-span-3 {
+    @media (width >= 64rem) {
+      grid-column: span 3 / span 3;
     }
   }
   .lg\:-mx-8 {
