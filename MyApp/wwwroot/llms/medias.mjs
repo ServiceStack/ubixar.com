@@ -1126,7 +1126,7 @@ const App = {
 
                 <!-- Panels (lazy-mounted, kept alive via v-show) -->
                 <div v-show="activeTab === 'media'">
-                    <MediaGrid v-if="visited.media" ref="mediaGrid" type="Image" :initial-items="results" :order-by="orderBy" empty-text="No images yet" />
+                    <MediaGrid v-if="visited.media" ref="mediaGrid" type="Image" :initial-items="seedResults" :order-by="orderBy" empty-text="No images yet" />
                 </div>
                 <div v-show="activeTab === 'audio'">
                     <MediaGrid v-if="visited.audio" ref="audioGrid" type="Audio" audio :order-by="orderBy" empty-text="No audio yet" />
@@ -1139,6 +1139,7 @@ const App = {
     </div>
     `,
     setup() {
+        const ctx = inject('ctx')
         const results = inject('results', null)
         const error = inject('error', null)
 
@@ -1162,18 +1163,32 @@ const App = {
         const projectGrid = ref(null)
 
         // Sort order per tab: projects have their own options; width/height don't apply to audio
-        const orderBy = ref('-publishedAt')
+        // Restored from saved prefs so the last-used order survives browser restarts
+        const orderBy = ref(ctx.prefs.mediaOrderBy || '-publishedAt')
         const orderOptions = computed(() => {
             if (activeTab.value === 'projects') return ProjectOrderOptions
             if (activeTab.value === 'audio') return OrderOptions.filter(o => !['-width', '-height'].includes(o.value))
             return OrderOptions
         })
+        // Drop a restored order that isn't valid for the initial tab (e.g. '-width' on projects)
+        if (!orderOptions.value.some(o => o.value === orderBy.value)) {
+            orderBy.value = '-publishedAt'
+        }
         // Reset to a valid order when switching to a tab that doesn't support the current one
         watch(activeTab, () => {
             if (!orderOptions.value.some(o => o.value === orderBy.value)) {
                 orderBy.value = '-publishedAt'
             }
         })
+        // Persist the selected order across browser restarts
+        watch(orderBy, val => {
+            ctx.prefs.mediaOrderBy = val
+            ctx.savePrefs()
+        })
+
+        // Server-rendered results are newest-first; only seed the grid with them when the
+        // restored order matches, otherwise let MediaGrid re-query in the restored order
+        const seedResults = computed(() => orderBy.value === '-publishedAt' ? results : [])
 
         // Ratings prefs changed: re-query the media/audio grids so results reflect the new prefs
         function onRatingsChanged() {
@@ -1274,6 +1289,7 @@ const App = {
 
         return {
             results,
+            seedResults,
             error,
             tabs,
             activeTab,
