@@ -332,7 +332,7 @@ export class AppContext {
     get ratingsKey() { return `gateway:${this.state.user?.userName ?? 'anon'}:ratings` }
 
     loadSelectedRatings() {
-        const DefaultRatings = ['PG', 'PG13']
+        const DefaultRatings = ['PG', 'PG13', 'M']
         return this.state.selectedRatings = localStorage.getItem(this.ratingsKey)
             ? this.storageArray(this.ratingsKey)
             : DefaultRatings
