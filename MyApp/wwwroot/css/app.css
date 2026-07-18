@@ -1458,6 +1458,12 @@
   .max-w-48 {
     max-width: calc(var(--spacing) * 48);
   }
+  .max-w-52 {
+    max-width: calc(var(--spacing) * 52);
+  }
+  .max-w-60 {
+    max-width: calc(var(--spacing) * 60);
+  }
   .max-w-\[10rem\] {
     max-width: 10rem;
   }

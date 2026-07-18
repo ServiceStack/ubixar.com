@@ -1,13 +1,12 @@
-import { ref, computed, inject, onMounted, onUnmounted, reactive } from "vue"
+import { ref, computed, inject, onMounted, onUnmounted, reactive, watch } from "vue"
 import { QueryPublishedMedia, QueryPublishedProjects, UpdatePublishedMedia, DeletePublishedMedia,
     UpdatePublishedProject, GetPublishProjectPosterImage } from "./dtos.mjs"
 import { ThemeSelector, RatingsBadge } from "./media.mjs"
+import { ThreadReactions } from "./components/Threads.mjs"
 import { VisibilityIcon, SignInModal } from "./components/VisibilityIcon.mjs"
 import { UserAvatar } from "./components/UserAvatar.mjs"
 
 const PageSize = 50
-const MediaFields = 'Id,Name,Type,Width,Height,Tags,Categories,Rating,Url,PublishedUrl,ExternalRef,Model,Prompt,Created'
-const ProjectFields = 'Id,Name,Description,Size,FileCount,PublishedAt,PublishedUrl,PublishedBy,PosterImage,ExternalRef,GalleryScore'
 
 const AllCategories = [
     "woman",
@@ -44,6 +43,25 @@ const AllCategories = [
 
 // Available content Ratings (Rating enum values) an Admin can assign to a PublishedMedia
 const RatingOptions = ['PG', 'PG-13', 'M', 'R', 'X', 'XXX']
+
+// Sort orders for QueryPublishedMedia (?orderBy=): '-' prefix = descending.
+// 'reactionsCount' is computed server-side from the media's public Thread.
+const OrderOptions = [
+    { value: '-publishedAt', label: 'Newest First' },
+    { value: '-reactionsCount', label: 'Most Reactions' },
+    { value: 'publishedAt', label: 'Oldest First' },
+    { value: '-width', label: 'Landscape First' },
+    { value: '-height', label: 'Portrait First' },
+]
+
+// Sort orders for QueryPublishedProjects (projects have no width/height, but do have file count/size)
+const ProjectOrderOptions = [
+    { value: '-publishedAt', label: 'Newest First' },
+    { value: '-reactionsCount', label: 'Most Reactions' },
+    { value: 'publishedAt', label: 'Oldest First' },
+    { value: '-fileCount', label: 'Most Files' },
+    { value: '-size', label: 'Largest' },
+]
 
 function resolveMediaUrl(url) {
     if (!url) return ''
@@ -245,6 +263,7 @@ const MediaCard = {
     components: {
         RatingsBadge,
         AdminMenu,
+        ThreadReactions,
     },
     template: `
     <a :href="itemUrl" class="media-card group relative block mb-4 rounded-2xl overflow-hidden border shadow-sm hover:shadow-2xl transition-all duration-300"
@@ -366,6 +385,7 @@ const AudioCard = {
     components: {
         RatingsBadge,
         AdminMenu,
+        ThreadReactions,
     },
     template: `
     <div class="group relative rounded-2xl overflow-hidden border shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
@@ -408,6 +428,8 @@ const AudioCard = {
                 {{ tag }}
             </button>
         </div>
+
+        <ThreadReactions :threadId="item.publicThreadId" :reactions="item.reactions" class="py-2 max-w-60 mx-auto" />      
     </div>
     `,
     props: {
@@ -436,6 +458,9 @@ const AudioCard = {
 }
 
 const ProjectCard = {
+    components: {
+        ThreadReactions,
+    },
     template: `
     <div class="group relative flex flex-col rounded-2xl overflow-hidden border shadow-sm hover:shadow-xl transition-all duration-300"
         :class="[$styles.card]"
@@ -481,36 +506,40 @@ const ProjectCard = {
 
         <!-- Body -->
         <div class="p-4 flex flex-col flex-1">
-            <div class="flex items-start gap-3">
+            <div class="flex justify-between">
+              <div class="flex items-start gap-3">
                 <div class="size-10 flex-shrink-0 rounded-xl flex items-center justify-center"
-                    style="background:rgba(127,127,127,0.12)">
-                    <svg class="w-5 h-5" :class="$styles.heading" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-                    </svg>
+                     style="background:rgba(127,127,127,0.12)">
+                  <svg class="w-5 h-5" :class="$styles.heading" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                  </svg>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <a :href="itemUrl" target="_blank" rel="noopener"
-                        class="block truncate text-base font-bold capitalize hover:underline" :class="$styles.heading">
-                        {{ item.name }}
-                    </a>
-                    <p v-if="userName" class="text-2xs font-medium truncate" :class="$styles.muted">{{ userName }}</p>
+                  <a :href="itemUrl" target="_blank" rel="noopener"
+                     class="block truncate text-base font-bold capitalize hover:underline" :class="$styles.heading">
+                    {{ item.name }}
+                  </a>
+                  <p v-if="userName" class="text-2xs font-medium truncate" :class="$styles.muted">{{ userName }}</p>
                 </div>
+              </div>
+
+              <ThreadReactions :threadId="item.publicThreadId" :reactions="item.reactions" class="max-w-52" />
             </div>
 
             <p v-if="item.description" class="mt-3 text-sm leading-relaxed line-clamp-2" :class="$styles.muted">
                 {{ item.description }}
             </p>
 
-            <div class="mt-auto pt-3 border-t flex items-center flex-wrap gap-x-3 gap-y-1 text-2xs font-medium" :class="[$styles.chromeBorder, $styles.muted]">
+            <div class="mt-auto pt-3 border-t flex items-center flex-wrap gap-x-3 gap-y-1 text-xs font-medium" :class="[$styles.chromeBorder, $styles.muted]">
                 <span class="inline-flex items-center gap-1">
-                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
                     {{ item.fileCount }} file{{ item.fileCount === 1 ? '' : 's' }}
                 </span>
                 <span v-if="item.size">{{ formatBytes(item.size) }}</span>
                 <span v-if="item.publishedAt" class="ml-auto">{{ formatRelative(item.publishedAt) }}</span>
             </div>
 
-            <p v-if="uploadError" class="mt-2 text-2xs text-red-600 dark:text-red-400">{{ uploadError }}</p>
+            <p v-if="uploadError" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ uploadError }}</p>
         </div>
     </div>
     `,
@@ -691,6 +720,7 @@ const MediaGrid = {
         audio: { type: Boolean, default: false },
         initialItems: { type: Array, default: () => [] },
         emptyText: { type: String, default: 'No media yet' },
+        orderBy: { type: String, default: '-publishedAt' },
     },
     setup(props) {
         const client = inject('client')
@@ -708,6 +738,12 @@ const MediaGrid = {
         const activeTag = ref('')
         const showAllCategories = ref(false)
 
+        // Sort order changed (owned by the App tabs row): re-query from the start
+        watch(() => props.orderBy, () => {
+            scrollToTop()
+            reload()
+        })
+
         async function loadMore() {
             if (loading.value || (initialized.value && !hasMore.value)) return
             loading.value = true
@@ -716,8 +752,8 @@ const MediaGrid = {
                 const query = new QueryPublishedMedia({
                     skip: items.value.length,
                     take: PageSize,
-                    fields: MediaFields,
-                    orderByDesc: 'Id',
+                    // '-id' tiebreak keeps pagination stable (reactionsCount adds its own server-side)
+                    orderBy: props.orderBy === '-reactionsCount' ? props.orderBy : props.orderBy + ',-id',
                 })
                 if (props.type) query.type = props.type
                 if (activeCategory.value) query.category = activeCategory.value
@@ -836,7 +872,7 @@ const ProjectGrid = {
         ProjectCard,
     },
     template: `
-    <div>
+    <div ref="rootEl">
         <div v-if="initialized && !items.length && !loading" class="mx-auto max-w-md mt-16 text-center">
             <div class="p-6 rounded-2xl border shadow-sm" :class="[$styles.card]">
                 <div class="size-12 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-4">
@@ -874,7 +910,10 @@ const ProjectGrid = {
         </div>
     </div>
     `,
-    setup() {
+    props: {
+        orderBy: { type: String, default: '-publishedAt' },
+    },
+    setup(props) {
         const client = inject('client')
 
         const items = ref([])
@@ -883,6 +922,13 @@ const ProjectGrid = {
         const initialized = ref(false)
         const hasMore = ref(true)
         const sentinel = ref(null)
+        const rootEl = ref(null)
+
+        // Sort order changed (owned by the App tabs row): re-query from the start
+        watch(() => props.orderBy, () => {
+            scrollToTop()
+            reload()
+        })
 
         async function loadMore() {
             if (loading.value || (initialized.value && !hasMore.value)) return
@@ -892,8 +938,8 @@ const ProjectGrid = {
                 const api = await client.api(new QueryPublishedProjects({
                     skip: items.value.length,
                     take: PageSize,
-                    fields: ProjectFields,
-                    orderByDesc: 'Id',
+                    // '-id' tiebreak keeps pagination stable (reactionsCount adds its own server-side)
+                    orderBy: props.orderBy === '-reactionsCount' ? props.orderBy : props.orderBy + ',-id',
                 }))
                 if (api.succeeded) {
                     const newResults = api.response?.results || []
@@ -909,6 +955,18 @@ const ProjectGrid = {
                 loading.value = false
                 initialized.value = true
             }
+        }
+
+        // Discard current results and re-query from the start (e.g. after sort order change)
+        async function reload() {
+            items.value = []
+            initialized.value = false
+            hasMore.value = true
+            await loadMore()
+        }
+
+        function scrollToTop() {
+            rootEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
 
         let observer = null
@@ -940,7 +998,9 @@ const ProjectGrid = {
             initialized,
             hasMore,
             sentinel,
+            rootEl,
             loadMore,
+            reload,
         }
     }
 }
@@ -992,7 +1052,7 @@ const App = {
                         {{ activeSubtitle }}
                     </p>
 
-                    <!-- Tabs -->
+                    <!-- Tabs + sort order -->
                     <nav class="mt-4 flex items-center gap-1">
                         <button v-for="tab in tabs" :key="tab.id" type="button"
                             @click="selectTab(tab.id)"
@@ -1002,18 +1062,22 @@ const App = {
                                 : ['hover:bg-gray-200/60 dark:hover:bg-gray-700/40', $styles.muted]">
                             {{ tab.label }}
                         </button>
+                        <select v-model="orderBy" title="Order results"
+                            class="ml-auto text-sm font-medium rounded-lg px-2.5 py-1.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option v-for="o in orderOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+                        </select>
                     </nav>
                 </div>
 
                 <!-- Panels (lazy-mounted, kept alive via v-show) -->
                 <div v-show="activeTab === 'media'">
-                    <MediaGrid v-if="visited.media" ref="mediaGrid" type="Image" :initial-items="results" empty-text="No images yet" />
+                    <MediaGrid v-if="visited.media" ref="mediaGrid" type="Image" :initial-items="results" :order-by="orderBy" empty-text="No images yet" />
                 </div>
                 <div v-show="activeTab === 'audio'">
-                    <MediaGrid v-if="visited.audio" ref="audioGrid" type="Audio" audio empty-text="No audio yet" />
+                    <MediaGrid v-if="visited.audio" ref="audioGrid" type="Audio" audio :order-by="orderBy" empty-text="No audio yet" />
                 </div>
                 <div v-show="activeTab === 'projects'">
-                    <ProjectGrid v-if="visited.projects" />
+                    <ProjectGrid v-if="visited.projects" ref="projectGrid" :order-by="orderBy" />
                 </div>
             </div>
         </div>
@@ -1040,6 +1104,21 @@ const App = {
 
         const mediaGrid = ref(null)
         const audioGrid = ref(null)
+        const projectGrid = ref(null)
+
+        // Sort order per tab: projects have their own options; width/height don't apply to audio
+        const orderBy = ref('-publishedAt')
+        const orderOptions = computed(() => {
+            if (activeTab.value === 'projects') return ProjectOrderOptions
+            if (activeTab.value === 'audio') return OrderOptions.filter(o => !['-width', '-height'].includes(o.value))
+            return OrderOptions
+        })
+        // Reset to a valid order when switching to a tab that doesn't support the current one
+        watch(activeTab, () => {
+            if (!orderOptions.value.some(o => o.value === orderBy.value)) {
+                orderBy.value = '-publishedAt'
+            }
+        })
 
         // Ratings prefs changed: re-query the media/audio grids so results reflect the new prefs
         function onRatingsChanged() {
@@ -1130,7 +1209,10 @@ const App = {
             selectTab,
             mediaGrid,
             audioGrid,
+            projectGrid,
             onRatingsChanged,
+            orderBy,
+            orderOptions,
         }
     }
 }

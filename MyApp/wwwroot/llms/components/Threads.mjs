@@ -212,9 +212,9 @@ export const ThreadComments = {
 export const ThreadReactions = {
     template: `
     <div class="text-sm flex items-center justify-between w-full">
-        <button v-for="(count,emoji) of reactionCounts(thread.reactions)" type="button" @click.prevent.stop="toggleReaction(emoji)"
+        <button v-for="(count,emoji) of reactionCounts(reactions)" type="button" @click.prevent.stop="toggleReaction(emoji)"
                 :title="'React with ' + emoji"
-                class="px-1 py-0.5 lg:px-2 rounded border border-transparent" :class="[ hasReaction(thread.id, emoji) ? 'shadow-sm bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-200 dark:hover:bg-gray-700' ]">
+                class="px-1 py-0.5 lg:px-2 rounded border border-transparent" :class="[ hasReaction(threadId, emoji) ? 'shadow-sm bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-200 dark:hover:bg-gray-700' ]">
             <div>
                 <span class="flex gap-1">
                     <div :class="{ 'text-red-500': emoji == '❤' }">{{emoji === '❤' ? '&hearts;' : emoji}}</div> {{count}}
@@ -223,12 +223,15 @@ export const ThreadReactions = {
         </button>
     </div>
     `,
+    props: {
+        threadId: Number,
+        reactions: Object,
+    },
     emits: ['changed'],
     setup(props, { emit }) {
         const ctx = inject('ctx')
         const client = inject('client')
-        const thread = inject('thread')
-
+        
         const threadReactionsMap = ref({})
 
         function hasReaction(threadId, reaction) {
@@ -236,7 +239,7 @@ export const ThreadReactions = {
         }
 
         async function loadMyThreadReactions() {
-            const api = await client.api(new MyThreadReactions({ threadId: thread.id }))
+            const api = await client.api(new MyThreadReactions({ threadId: props.threadId }))
             if (api.response) {
                 threadReactionsMap.value = {}
                 for (const reaction of api.response.results) {
@@ -249,25 +252,25 @@ export const ThreadReactions = {
         async function toggleReaction(reactionChar) {
             if (redirectedAnonUser(ctx)) return
 
-            const hadReaction = hasReaction(thread.id, reactionChar)
+            const hadReaction = hasReaction(props.threadId, reactionChar)
             const reaction = reactionChar.codePointAt(0)
-            const threadId = thread.id
+            const threadId = props.threadId
             const request = hadReaction
                 ? new DeleteThreadReaction({ threadId, reaction })
                 : new CreateThreadReaction({ threadId, reaction })
             const api = await client.apiVoid(request)
             if (api.succeeded) {
                 const reactionChar = String.fromCodePoint(reaction)
-                if (thread.reactions[reactionChar] == null) {
-                    thread.reactions[reactionChar] = 0
+                if (props.reactions[reactionChar] == null) {
+                    props.reactions[reactionChar] = 0
                 }
                 if (hadReaction) {
-                    threadReactionsMap.value[thread.id] = threadReactionsMap.value[thread.id].filter(x => x !== reactionChar)
-                    thread.reactions[reactionChar]--
+                    threadReactionsMap.value[props.threadId] = threadReactionsMap.value[props.threadId].filter(x => x !== reactionChar)
+                    props.reactions[reactionChar]--
                 } else {
-                    threadReactionsMap.value[thread.id] ??= []
-                    threadReactionsMap.value[thread.id].push(reactionChar)
-                    thread.reactions[reactionChar]++
+                    threadReactionsMap.value[props.threadId] ??= []
+                    threadReactionsMap.value[props.threadId].push(reactionChar)
+                    props.reactions[reactionChar]++
                 }
             }
             return api
@@ -278,7 +281,6 @@ export const ThreadReactions = {
         })
 
         return {
-            thread,
             hasReaction,
             toggleReaction,
             reactionCounts,

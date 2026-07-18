@@ -575,7 +575,7 @@ const App = {
                 </div>
 
                 <div class="my-2 w-72 mx-auto">
-                    <ThreadReactions />
+                    <ThreadReactions :threadId="thread.id" :reactions="thread.reactions" />
                 </div>
             </div>
 
@@ -594,7 +594,7 @@ const App = {
                 </span>
             </div>
 
-            <ThreadComments class="mt-8" />
+            <ThreadComments :thread="thread" class="mt-8" />
 
         </div>
     </div>

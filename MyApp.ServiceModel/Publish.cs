@@ -80,8 +80,6 @@ public class PublishedMedia : IAssetMetadata
     public int? Size { get; set; }
     public int? Duration { get; set; }
     public string? User { get; set; }
-    [PgSqlJsonB]
-    public Dictionary<string,object>? Reactions { get; set; }
     public string? Caption { get; set; }
     public string? Description { get; set; }
     public string? Phash { get; set; }
@@ -299,13 +297,34 @@ public class ViewPublishedMedias : QueryBase, IGet, IReturn<string>
 
 [SystemJson(UseSystemJson.Never)]
 [Tag(Tags.Publish)]
-public class QueryPublishedMedia : QueryDb<PublishedMedia>
+public class QueryPublishedMedia : QueryDb<PublishedMedia, MediaInfo>
 {
     public AssetType? Type { get; set; }
     public string? Category { get; set; }
     public string? Tag { get; set; }
     public string? User { get; set; }
     public string? UserId { get; set; }
+}
+
+public class MediaInfo
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public AssetType Type { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public Dictionary<string,double>? Tags { get; set; }
+    public Dictionary<string,double>? Categories { get; set; }
+    public Rating? Rating { get; set; }
+    public string Url { get; set; }
+    public string PublishedUrl { get; set; }
+    public string ExternalRef { get; set; }
+    public string Model { get; set; }
+    public string Prompt { get; set; }
+    public DateTime Created { get; set; }
+    public int? PublicThreadId { get; set; }
+    public Dictionary<string, long> Reactions { get; set; } = new();
+    public int ReactionsCount { get; set; }
 }
 
 [ValidateIsAdmin]
@@ -348,8 +367,28 @@ public enum PublishType
 
 
 [Tag(Tags.Publish)]
-public class QueryPublishedProjects : QueryDb<PublishedProject>
+public class QueryPublishedProjects : QueryDb<PublishedProject,ProjectInfo>
 {
+    public string? User { get; set; }
+    public string? UserId { get; set; }
+}
+
+public class ProjectInfo
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public long Size { get; set; }
+    public long FileCount { get; set; }
+    public DateTime PublishedAt { get; set; }
+    public string PublishedUrl { get; set; }
+    public string PublishedBy { get; set; }
+    public string? PosterImage { get; set; }
+    public string ExternalRef { get; set; }
+    public int? GalleryScore { get; set; }
+    public int? PublicThreadId { get; set; }
+    public Dictionary<string, long> Reactions { get; set; } = new();
+    public int ReactionsCount { get; set; }
 }
 
 

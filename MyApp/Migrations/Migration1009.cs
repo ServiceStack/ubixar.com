@@ -118,8 +118,6 @@ public class Migration1009 : MigrationBase
         public int? Size { get; set; }
         public int? Duration { get; set; }
         public string? User { get; set; }
-        [PgSqlJsonB]
-        public Dictionary<string,object>? Reactions { get; set; }
         public string? Caption { get; set; }
         public string? Description { get; set; }
         public string? Phash { get; set; }

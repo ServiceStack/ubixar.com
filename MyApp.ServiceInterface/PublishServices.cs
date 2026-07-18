@@ -268,10 +268,30 @@ public class PublishServices(
         return viewerHtml;
     }
     
-    public async Task<QueryResponse<PublishedMedia>> Get(QueryPublishedMedia request)
+    public async Task<QueryResponse<MediaInfo>> Get(QueryPublishedMedia request)
     {
+        // 'reactionsCount' isn't a PublishedMedia column: remove before CreateQuery and
+        // order by the ReactionsCount of the media's public comment Thread instead
+        string? orderByReactions = null;
+        if (request.OrderBy?.TrimStart('-')?.ToLower() == "reactionscount")
+        {
+            orderByReactions = request.OrderBy;
+            request.OrderBy = null;
+        }
+
         using var db = autoQuery.GetDb(request, base.Request);
         var q = autoQuery.CreateQuery(request, base.Request, db);
+        q.LeftJoin<Thread>((m,t) => m.PublicThreadId == t.Id);
+
+        if (orderByReactions != null)
+        {
+            var dir = orderByReactions.StartsWith('-') ? "DESC" : "ASC";
+            var reactionsCount = q.Column<Thread>(t => t.ReactionsCount, prefixTable: true);
+            var mediaId = q.Column<PublishedMedia>(x => x.Id, prefixTable: true);
+            // COALESCE so media without a public Thread sort as 0 reactions
+            // (Postgres would otherwise put NULLs first on DESC)
+            q.UnsafeOrderBy($"COALESCE({reactionsCount}, 0) {dir}, {mediaId} DESC");
+        }
 
         var userId = Request.GetUserId();
         var userCache = userId != null 
@@ -331,7 +351,63 @@ public class PublishServices(
                 if (cachedUser == null)
                 {
                     log.LogWarning("Unknown user {User}", request.User);
-                    return new QueryResponse<PublishedMedia> { Results = [] };
+                    return new QueryResponse<MediaInfo> { Results = [] };
+                }
+                q.Where(x => x.PublishedBy == cachedUser.Id);
+            }
+        }
+        else if (request.UserId != null)
+        {
+            q.Where(x => x.PublishedBy == request.UserId);
+        }
+        
+        return await autoQuery.ExecuteAsync(request, q, base.Request, db);
+    }
+
+    public async Task<object> Get(QueryPublishedProjects request)
+    {
+        // 'reactionsCount' isn't a PublishedMedia column: remove before CreateQuery and
+        // order by the ReactionsCount of the media's public comment Thread instead
+        string? orderByReactions = null;
+        if (request.OrderBy?.TrimStart('-')?.ToLower() == "reactionscount")
+        {
+            orderByReactions = request.OrderBy;
+            request.OrderBy = null;
+        }
+
+        using var db = autoQuery.GetDb(request, base.Request);
+        var q = autoQuery.CreateQuery(request, base.Request, db);
+        q.LeftJoin<Thread>((m,t) => m.PublicThreadId == t.Id);
+
+        if (orderByReactions != null)
+        {
+            var dir = orderByReactions.StartsWith('-') ? "DESC" : "ASC";
+            var reactionsCount = q.Column<Thread>(t => t.ReactionsCount, prefixTable: true);
+            var projectId = q.Column<PublishedProject>(x => x.Id, prefixTable: true);
+            // COALESCE so projects without a public Thread sort as 0 reactions
+            // (Postgres would otherwise put NULLs first on DESC)
+            q.UnsafeOrderBy($"COALESCE({reactionsCount}, 0) {dir}, {projectId} DESC");
+        }
+
+        if (request.User != null)
+        {
+            request.UserId = request.User == "me"
+                ? Request.GetRequiredUserId()
+                : request.User.Length == 36 && Guid.TryParse(request.User, out _)
+                    ? request.User
+                    : null;
+
+            if (request.UserId != null)
+            {
+                q.Where(x => x.PublishedBy == request.UserId);
+            }
+            else
+            {
+                var cachedUser = appData.GetUserCacheByName(Db, request.User);
+                if (cachedUser == null)
+                {
+                    log.LogWarning("Unknown user {User}", request.User);
+                    return new QueryResponse<MediaInfo> { Results = [] };
                 }
                 q.Where(x => x.PublishedBy == cachedUser.Id);
             }
@@ -730,6 +806,7 @@ public class PublishServices(
             publishedProject.ExternalRef = existing.ExternalRef;
             publishedProject.PublishedUrl = existing.PublishedUrl;
             publishedProject.PublicThreadId = existing.PublicThreadId;
+            publishedProject.PosterImage = existing.PosterImage;
             await Db.DeleteAsync<PublishedProject>(p => p.Id == existing.Id);
         }
         else
@@ -778,7 +855,7 @@ public class PublishServices(
             Directory.CreateDirectory(Path.GetDirectoryName(destDir)!);
             MoveDirectory(tmpDir, destDir);
             
-            publishedProject.FileCount = CountFiles(destDir);
+            (publishedProject.FileCount, publishedProject.Size) = CountFiles(destDir);
 
             DeleteDirectory(tmpDir);
 
@@ -799,8 +876,17 @@ public class PublishServices(
         };
     }
     
-    public static int CountFiles(string dirPath) =>
-        Directory.EnumerateFiles(dirPath, "*", SearchOption.AllDirectories).Count();    
+    public static (long,long) CountFiles(string dirPath)
+    {
+        long fileCount = 0;
+        long byteCount = 0;
+        foreach (var file in Directory.EnumerateFiles(dirPath, "*", SearchOption.AllDirectories))
+        {
+            fileCount++;
+            byteCount += new FileInfo(file).Length;
+        }
+        return (fileCount, byteCount);
+    }
 
     public static void MoveDirectory(string sourceDir, string destDir)
     {

@@ -466,7 +466,7 @@ const App = {
                             </div>
 
                             <div class="my-2 w-72 mx-auto">
-                                <ThreadReactions />
+                                <ThreadReactions :threadId="thread.id" :reactions="thread.reactions" />
                             </div>
                         </div>
                     </div>
@@ -636,7 +636,7 @@ const App = {
 
                 </div>
 
-                <ThreadComments class="mt-8 max-w-[45em]" />
+                <ThreadComments :thread="thread" class="mt-8 max-w-[45em]" />
             </div>
         </div>
     </div>
@@ -645,6 +645,7 @@ const App = {
         const ctx = inject('ctx')
         const media = inject('media', null)
         const error = inject('error', null)
+        const thread = inject('thread', null)
 
         // Audio player state
         const refPlayer = ref(null)
@@ -1024,6 +1025,7 @@ const App = {
         })
 
         return {
+            thread,
             media,
             error,
             parsedMedia,
