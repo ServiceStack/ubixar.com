@@ -344,6 +344,14 @@ public class UpdatePublishedMedia : IPost, IReturn<EmptyResponse>
     public Rating? Rating { get; set; }
 }
 
+[ValidateIsAdmin]
+[Tag(Tags.Publish)]
+public class DeletePublishedProject : IPost, IReturn<StringsResponse>
+{
+    [ValidateNotEmpty]
+    public string ExternalRef { get; set; }
+}
+
 [ValidateIsAuthenticated]
 [Tag(Tags.Publish)]
 public class UpdatePublishedProject : IPost, IReturn<EmptyResponse>

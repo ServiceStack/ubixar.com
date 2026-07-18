@@ -930,6 +930,40 @@ public class PublishServices(
         }
     }
 
+    public async Task<object> Post(DeletePublishedProject request)
+    {
+        var user = await AssertUser();
+        var to = new StringsResponse();
+
+        var project = await Db.SingleAsync<PublishedProject>(p => p.ExternalRef == request.ExternalRef);
+        if (project == null)
+            throw HttpError.NotFound($"Project not found: {request.ExternalRef}");
+
+        var projectDir = Path.Combine(appData.Config.ProjectsPath, user.UserName, project.Name);
+        DeleteDirectory(projectDir);
+        
+        if (project.PosterImage != null)
+        {
+            var posterPath = appData.GetCachePath(project.PosterImage.LastRightPart('/'));
+            if (File.Exists(posterPath))
+            {
+                File.Delete(posterPath);
+                to.Results.Add(project.PosterImage);
+            }
+        }
+
+        if (project.PublicThreadId != null)
+        {
+            await Db.DeleteAsync<Thread>(t => t.Id == project.PublicThreadId);
+            to.Results.Add($"PublicThreadId: {project.PublicThreadId}");
+        }
+
+        await Db.DeleteAsync<PublishedProject>(p => p.Id == project.Id);
+        to.Results.Add($"Id: {project.Id}");
+
+        return new EmptyResponse();
+    }
+
     public async Task<object> Get(GetPublishedProjectFile request)
     {
         var projectDir = Path.Combine(appData.Config.ProjectsPath, request.UserName, request.ProjectName);
