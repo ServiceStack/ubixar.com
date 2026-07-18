@@ -961,7 +961,7 @@ public class PublishServices(
         await Db.DeleteAsync<PublishedProject>(p => p.Id == project.Id);
         to.Results.Add($"Id: {project.Id}");
 
-        return new EmptyResponse();
+        return to;
     }
 
     public async Task<object> Get(GetPublishedProjectFile request)
