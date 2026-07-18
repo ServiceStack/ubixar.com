@@ -29,11 +29,11 @@ export default {
     <div class="flex flex-wrap items-center">
         <div class="absolute z-10 top-2 left-2 sm:static flex-shrink flex-grow-0">
             <div class="cursor-pointer">
-                <RouterLink :to="{ path:'/' }" class="navbar-brand flex items-center">
+                <a href="/ubixar" class="navbar-brand flex items-center">
                     <img class="inline-block dark:hidden w-6 h-6 sm:ml-2 sm:w-8 sm:h-8" :src="store.appConfig.appIcon.replace('currentColor','%23000')" alt="Logo">
                     <img class="hidden dark:inline-block w-6 h-6 sm:ml-2 sm:w-8 sm:h-8" :src="store.appConfig.appIcon.replace('currentColor','%23fff')" alt="Logo">
                     <span class="hidden ml-2 sm:block text-2xl font-semibold">{{store.appConfig.appName}}</span>
-                </RouterLink>
+                </a>
             </div>
         </div>
         <div class="flex flex-grow flex-shrink flex-nowrap justify-end items-center">
