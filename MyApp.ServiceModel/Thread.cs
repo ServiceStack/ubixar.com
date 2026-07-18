@@ -159,6 +159,7 @@ public class QueryThreadReactions : QueryDb<ThreadReaction>
 public class MyThreadReactions : QueryDb<ThreadReaction,ThreadReactionInfo>
 {
     public int? AfterId { get; set; }
+    public List<int>? ThreadIds { get; set; }
 }
 public class ThreadReactionInfo
 {

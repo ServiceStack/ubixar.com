@@ -269,7 +269,8 @@ const MediaCard = {
     <a :href="itemUrl" class="media-card group relative block mb-4 rounded-2xl overflow-hidden border shadow-sm hover:shadow-2xl transition-all duration-300"
         :class="[$styles.card]"
         :title="item.name"
-        @contextmenu="onContextMenu">
+        @contextmenu="onContextMenu"
+        @mouseenter="hovered = true">
 
         <AdminMenu ref="adminMenu" :item="item" @deleted="$emit('deleted', item)" />
 
@@ -338,6 +339,9 @@ const MediaCard = {
                         {{ tag }}
                     </button>
                 </div>
+                <div v-if="item.publicThreadId && hovered" class="pointer-events-auto pt-1">
+                    <ThreadReactions :threadId="item.publicThreadId" :reactions="item.reactions" class="media-card-reactions text-white max-w-52" />
+                </div>
             </div>
         </div>
     </a>
@@ -349,6 +353,7 @@ const MediaCard = {
     setup(props) {
         const broken = ref(false)
         const adminMenu = ref(null)
+        const hovered = ref(false)
 
         function onContextMenu(e) {
             adminMenu.value?.openAt(e)
@@ -370,6 +375,7 @@ const MediaCard = {
         return {
             broken,
             adminMenu,
+            hovered,
             onContextMenu,
             isImage,
             aspectStyle,
@@ -1178,6 +1184,18 @@ const App = {
                     }
                     .media-card:hover {
                         transform: translateY(-2px);
+                    }
+                    .media-card-reactions button {
+                        color: rgba(255, 255, 255, 0.8) !important;
+                        transition: all 0.2s;
+                    }
+                    .media-card-reactions button:hover {
+                        background-color: rgba(255, 255, 255, 0.15) !important;
+                        color: #fff !important;
+                    }
+                    .media-card-reactions button.shadow-sm {
+                        background-color: rgba(255, 255, 255, 0.25) !important;
+                        color: #fff !important;
                     }
                     .text-2xs {
                         font-size: 10px;

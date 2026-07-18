@@ -35,8 +35,9 @@ const reactionEmojis = ["👍", "❤", "😂", "😢"]
 export function reactionCounts(reactions, emojis = null) {
     const ret = {}
     emojis ??= reactionEmojis
+    const rx = reactions || {}
     emojis.forEach(emoji => {
-        ret[emoji] = reactions[emoji] || 0
+        ret[emoji] = rx[emoji] || 0
     })
     return ret
 }
@@ -239,6 +240,7 @@ export const ThreadReactions = {
         }
 
         async function loadMyThreadReactions() {
+            if (!ctx?.state?.user) return
             const api = await client.api(new MyThreadReactions({ threadId: props.threadId }))
             if (api.response) {
                 threadReactionsMap.value = {}

@@ -239,7 +239,6 @@ public class PublishServices(
             var query = request.ConvertTo<QueryPublishedMedia>();
             query.Type = AssetType.Image;
             query.Take ??= 50;
-            query.Fields ??= "Id,Name,Type,Width,Height,Tags,Categories,Rating,Url,PublishedUrl,ExternalRef,Model,Created";
             query.OrderByDesc ??= "Id";
             var queryResponse = await Get(query);
             
