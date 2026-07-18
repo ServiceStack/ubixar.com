@@ -1,10 +1,11 @@
-import { createApp, reactive } from 'vue'
+import {createApp, reactive, watch} from 'vue'
 import ServiceStackVue, { useFormatters } from "@servicestack/vue"
 import { JsonServiceClient } from "@servicestack/client"
 import IconsModule from './modules/icons.mjs'
 import KatexModule from './katex/index.mjs'
 import { utilsFunctions, utilsFormatters, storageObject, isHtml, sanitizeHtml } from './utils.mjs'
 import { marked, markedFallback } from './markdown.mjs'
+import {Rating, UpdatePreferences} from "./dtos.mjs";
 
 const base = ''
 const headers = { 'Accept': 'application/json' }
@@ -118,6 +119,7 @@ export class AppContext {
             theme,
             styles: theme.styles,
             profile: localStorage.getItem('llms.profile') || 'default',
+            showSignIn: false,
             ...state,
         })
         this.modalComponents = {}
@@ -137,15 +139,8 @@ export class AppContext {
         this.layout = reactive(storageObject(`llms.layout`))
 
         const oldPrefsKey = ai.prefsKey
-        const prefsKey = ai.prefsKey + '.' + this.state.profile
-        if (localStorage.getItem(oldPrefsKey)) {
-            if (!localStorage.getItem(prefsKey)) {
-                const oldPrefs = storageObject(oldPrefsKey)
-                storageObject(prefsKey, oldPrefs)
-            }
-            localStorage.removeItem(oldPrefsKey)
-        }
-        this.prefs = reactive(storageObject(prefsKey))
+        this.prefsKey = ai.prefsKey + '.' + this.state.profile
+        this.prefs = reactive(storageObject(this.prefsKey))
 
         this._onRouterBeforeEach = []
         this._onClass = []
@@ -167,6 +162,7 @@ export class AppContext {
             globalThis[key] = app.config.globalProperties[key]
         })
         this.setTheme(this.getTheme(this.selectedTheme))
+        this.loadSelectedRatings()
     }
     async init() {
         Object.assign(this.state, await this.ai.init(this))
@@ -191,6 +187,10 @@ export class AppContext {
     setPrefs(o) {
         console.log('setPrefs', o)
         storageObject(this.getPrefsKey(), Object.assign(this.prefs, o))
+    }
+    savePrefs() {
+        console.log('savePrefs', this.prefs)
+        storageObject(this.getPrefsKey(), this.prefs)
     }
     getColorScheme() {
         return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
@@ -300,6 +300,70 @@ export class AppContext {
         if (!theme) return
         this.changeTheme(theme)
     }
+    
+    showSignIn() {
+        this.state.showSignIn = true
+    }
+    hideSignIn() {
+        this.state.showSignIn = false
+    }
+
+    toJsonArray(json) {
+        try {
+            return json ? JSON.parse(json) : []
+        } catch (e) {
+            return []
+        }
+    }
+    toJsonObject(json) {
+        try {
+            return json ? JSON.parse(json) : null
+        } catch (e) {
+            return null
+        }
+    }
+    storageArray(key) {
+        return this.toJsonArray(localStorage.getItem(key)) ?? []
+    }
+    storageObject(key) {
+        return this.toJsonObject(localStorage.getItem(key)) ?? {}
+    }
+
+    get ratingsKey() { return `gateway:${this.state.user?.userName ?? 'anon'}:ratings` }
+
+    loadSelectedRatings() {
+        const DefaultRatings = ['PG', 'PG13']
+        return this.state.selectedRatings = localStorage.getItem(this.ratingsKey)
+            ? this.storageArray(this.ratingsKey)
+            : DefaultRatings
+    }
+
+    async saveSelectedRatings() {
+        localStorage.setItem(this.ratingsKey, JSON.stringify(this.state.selectedRatings))
+        const ratings = this.state.selectedRatings.map(x => Rating[x]).filter(x => !!x)
+        await this.client.api(new UpdatePreferences({ ratings }))
+    }
+
+    getRatingDisplay(media) {
+        if (!media) return null
+        // Check for direct rating first, then predicted rating
+        if (media.rating) {
+            // Convert rating enum value to string
+            const ratingMap = { 1: 'PG', 2: 'PG13', 4: 'M', 8: 'R', 16: 'X', 32: 'XXX' }
+            const ret = ratingMap[media.rating] || media.rating.toString()
+            return ret === 'PG13' ? 'PG-13' : ret
+        }
+        return media.ratings?.predictedRating || null
+    }
+    
+    isRatingViewable(media) {
+        if (!media) return false
+        const rating = this.getRatingDisplay(media)
+        const useRating = rating === 'PG-13' ? 'PG13' : rating
+        const isViewable = !rating || this.state.selectedRatings.includes(useRating)
+        return isViewable
+    }
+    
 }
 
 const BuiltInModules = {

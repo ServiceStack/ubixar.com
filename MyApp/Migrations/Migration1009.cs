@@ -183,6 +183,7 @@ public class Migration1009 : MigrationBase
         /// </summary>
         public int? PublicThreadId { get; set; } 
         public int? GalleryScore { get; set; }
+        public string? PosterImage { get; set; }
     }
 
     public class Ratings {}

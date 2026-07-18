@@ -1,5 +1,7 @@
 import { ref, computed, inject, onMounted, onUnmounted } from "vue"
 import { ThreadComments, ThreadReactions } from "./components/Threads.mjs"
+import { VisibilityIcon, SignInModal } from "./components/VisibilityIcon.mjs"
+import { UserAvatar } from "./components/UserAvatar.mjs"
 
 const ThemeButton = {
     template: `
@@ -221,11 +223,14 @@ export const RatingsBadge = {
 
 const App = {
     components: {
+        SignInModal,
         ThemeSelector,
         ThemeButton,
         ThreadComments,
         ThreadReactions,
         RatingsBadge,
+        VisibilityIcon,
+        UserAvatar,
     },
     template: `
     <div class="min-h-screen transition-colors duration-300 bg-fixed relative" :class="$styles.app">
@@ -240,12 +245,17 @@ const App = {
                 <span class="font-medium" :class="$styles.heading">Gallery</span>
             </a>
         </div>
+
+        <SignInModal v-if="$ctx.state.showSignIn" />
+      
         <!-- Top Right Control Panel -->
         <div class="absolute top-1 right-20 flex items-center gap-3.5 z-[100] select-none">
             <span v-if="parsedMedia && parsedMedia.created" class="text-xs font-semibold" :class="[$styles.muted]" :title="formatDate(parsedMedia.created)">
                 {{ formatRelative(parsedMedia.created) }}
             </span>
+            <VisibilityIcon />
             <ThemeSelector />
+            <UserAvatar />
         </div>
         <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8" :class="$styles.appInner">
             
@@ -297,7 +307,26 @@ const App = {
 
                             <!-- Image Showcase -->
                             <div v-if="parsedMedia.type.toLowerCase() === 'image'" class="w-full flex justify-center">
-                                <img :src="resolveUrl(parsedMedia.url)" :alt="parsedMedia.caption || parsedMedia.name || 'Image'" class="max-w-full max-h-[75vh] object-contain rounded-xl shadow-lg border border-gray-200 dark:border-gray-800" />
+                                <img v-if="$ctx.isRatingViewable(parsedMedia)" :src="resolveUrl(parsedMedia.url)" :alt="parsedMedia.caption || parsedMedia.name || 'Image'" class="max-w-full max-h-[75vh] object-contain rounded-xl shadow-lg border border-gray-200 dark:border-gray-800" />
+
+                              <div v-else
+                                   class="h-full w-full bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white p-8">
+                                <!-- Ratings Guard Overlay -->
+                                <div class="text-center max-w-lg">
+                                  <!-- Large Rating Tag -->
+                                  <div class="flex justify-center mb-6">
+                                    <RatingsBadge :media="parsedMedia" size="lg" />
+                                  </div>
+                                  <h3 class="text-xl font-semibold mb-3">Restricted Content</h3>
+                                  <p class="text-sm text-gray-300 mb-4">
+                                    This image is not within your current viewable ratings.
+                                  </p>
+                                  <div class="flex justify-center items-center">
+                                    <VisibilityIcon>Adjust Visibility Ratings</VisibilityIcon>
+                                  </div>
+                                </div>
+                              </div>
+                            
                             </div>
                             
                             <!-- Audio Showcase -->

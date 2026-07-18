@@ -1,10 +1,70 @@
 @import "tailwindcss";
-@config "./tailwind.config.js";
+@source "./**/*.{mjs,js,ts,html,json}";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
     :root {
+        --background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3Crect width='1' height='1' fill='%2300000000'/%3E%3C/svg%3E%0A");
+        /*gray-900*/
+        --heading: #111827;
+        /*white*/
+        --background: #ffffff;
+        /*gray-200*/
+        --border: #e5e7eb;
+        /*gray-200*/
+        --input: #e5e7eb;
+        /*blue-600*/
+        --ring: #2563eb;
+        /*gray-50*/
+        --scrollbar-track-bg: #f9fafb;
+        /*gray-300*/
+        --scrollbar-thumb-bg: #d1d5db;
+        /*gray-50*/
+        --primary-bg: #030712;
+        /*gray-50*/
+        --secondary-bg: #f9fafb;
+        /*gray-200*/
+        --secondary-border: #e5e7eb;
+        /*blue-100*/
+        --user-bg: #dbeafe;
+        /*gray-900*/
+        --user-text: #111827;
+        /*blue-200*/
+        --user-border: #bfdbfe;
+        /*gray-100*/
+        --assistant-bg: #f3f4f6;
+        /*gray-900*/
+        --assistant-text: #111827;
+        /*gray-200*/
+        --assistant-border: #e5e7eb;
+
+        --tw-prose-body: #374151;
+        --tw-prose-headings: #111827;
+        --tw-prose-lead: #4b5563;
+        --tw-prose-links: #111827;
+        --tw-prose-bold: #111827;
+        --tw-prose-counters: #6b7280;
+        --tw-prose-bullets: #d1d5db;
+        --tw-prose-hr: #e5e7eb;
+        --tw-prose-quotes: #111827;
+        --tw-prose-quote-borders: #e5e7eb;
+        --tw-prose-captions: #6b7280;
+        --tw-prose-pre-code: #e5e7eb;
+        --tw-prose-pre-bg: #282c34;
+
+        /*gray-700*/
+        --tw-prose-code: #334155;
+        /*blue-50*/
+        --tw-prose-code-bg: #eff6ff;
+        /*gray-50*/
+        --tw-prose-table-bg: #f9fafb;
+        /*blue-200*/
+        --tw-prose-code-border: #bfdbfe;
+        --tw-prose-th-bg: #eff6ff;
+        --tw-prose-th-borders: #bfdbfe;
+        --tw-prose-td-borders: #d1d5db;
+
         color-scheme: var(--color-scheme, light);
         --background: 0 0% 100%;
         --foreground: 222.2 84% 4.9%;
@@ -29,10 +89,129 @@
     ::file-selector-button {
         border-color: hsl(var(--border));
     }
+
+    
+    :root.dark {
+        --background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3Crect width='1' height='1' fill='%2300000000'/%3E%3C/svg%3E%0A");
+        /*gray-200*/
+        --heading: #e2e8f0;
+        /*gray-950*/
+        --background: #030712;
+        /*gray-800*/
+        --border: #1f2937;
+        /*gray-800*/
+        --input: #1f2937;
+        /*gray-300*/
+        --ring: #d1d5db;
+        /*gray-800*/
+        --scrollbar-track-bg: #1f2937;
+        /*gray-600*/
+        --scrollbar-thumb-bg: #4b5563;
+        /*gray-800*/
+        --primary-bg: #1f2937;
+        /*gray-800*/
+        --secondary-bg: #1f2937;
+        /*gray-700*/
+        --secondary-border: #374151;
+        /*blue-900*/
+        --user-bg: #1e3a8a;
+        /*gray-100*/
+        --user-text: #f3f4f6;
+        /*gray-700*/
+        --user-border: #374151;
+        /*gray-800*/
+        --assistant-bg: #1e293b;
+        /*gray-100*/
+        --assistant-text: #f1f5f9;
+        /*gray-700*/
+        --assistant-border: #334155;
+
+        --tw-prose-body: #d1d5db;
+        --tw-prose-headings: #fff;
+        --tw-prose-lead: #9ca3af;
+        --tw-prose-links: #fff;
+        --tw-prose-bold: #fff;
+        --tw-prose-counters: #9ca3af;
+        --tw-prose-bullets: #4b5563;
+        --tw-prose-hr: #374151;
+        --tw-prose-quotes: #f3f4f6;
+        --tw-prose-quote-borders: #374151;
+        --tw-prose-captions: #9ca3af;
+        --tw-prose-pre-code: #d1d5db;
+        --tw-prose-pre-bg: rgb(0 0 0 / 50%);
+
+        /*blue-300*/
+        --tw-prose-code: #93c5fd;
+        /*blue-800/60*/
+        --tw-prose-code-bg: #1e40af99;
+        --tw-prose-table-bg: #11182780;
+
+        /*blue-600/60*/
+        --tw-prose-code-border: #2563eb99;
+        --tw-prose-th-bg: #1e40af99;
+        --tw-prose-th-borders: #4b5563;
+        --tw-prose-td-borders: #374151;
+    }
+
+    .bg-table {
+        background-color: var(--tw-prose-table-bg);
+    }
+
+    .bg-th {
+        background-color: var(--tw-prose-th-bg);
+    }
+
+    .border-th {
+        border-color: var(--tw-prose-th-borders);
+    }
+
+    .border-td {
+        border-color: var(--tw-prose-td-borders);
+    }
+
+    .prose {
+        font-size: 1rem;
+        line-height: 1.75;
+    }
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: hsl(var(--border));
+    }
+
+    .reasoning .prose-xs p,
+    .reasoning .prose-xs li {
+        font-size: 13px;
+    }
 }
 
 @theme {
     --default-ring-color: hsl(var(--ring));
+
+    --color-nord-100: #eceff4;
+    --color-nord-200: #e5e9f0;
+    --color-nord-300: #d8dee9;
+
+    --color-nord-600: #4c566a;
+    --color-nord-700: #434c5e;
+    --color-nord-800: #3b4252;
+    --color-nord-900: #2e3440;
+
+    --color-frost-400: #8fbcbb;
+    --color-frost-500: #88c0d0;
+    --color-frost-600: #81a1c1;
+    --color-frost-700: #5e81ac;
+
+    --color-nord-red: #bf616a;
+    --color-nord-orange: #d08770;
+    --color-nord-yellow: #ebcb8b;
+    --color-nord-green: #a3be8c;
+    --color-nord-purple: #b48ead;
+
+    
     --breakpoint-3xl: 110rem;
     --breakpoint-4xl: 140rem;
 }

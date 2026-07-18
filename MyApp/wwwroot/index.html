@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="/" />
+    <link rel="icon" href="/img/llmspy-logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/app.css" />
+    <title>llms.py — Self-Host 530+ AI Models · Text, Image &amp; Audio</title>
+    <meta name="description" content="llms.py is a lightweight, self-hosted, OpenAI-compatible gateway and Open WebUI alternative giving you 530+ text, image and audio models from 24 providers — publish your creations to the public media gallery.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="llms.py — Self-Host 530+ AI Models">
+    <meta property="og:description" content="A lightweight, self-hosted AI gateway for 530+ text, image & audio models. Generate, publish, and showcase in the public gallery.">
+    <meta property="og:image" content="https://llmspy.org/img/screenshots/screenshot-01.webp">
+    <meta property="og:url" content="https://ai.llmspy.org/">
+    <link rel="canonical" href="https://ai.llmspy.org/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="llms.py — Self-Host 530+ AI Models">
+    <meta name="twitter:description" content="A lightweight, self-hosted AI gateway for 530+ text, image & audio models. Generate, publish, and showcase in the public gallery.">
+    <meta name="twitter:image" content="https://llmspy.org/img/screenshots/screenshot-01.webp">
+    <meta name="theme-color" content="#0a0a12">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "llms.py",
+      "description": "Lightweight OpenAI compatible CLI, server gateway and OSS Open WebUI alternative for Local and Cloud LLMs — 530+ models across 24 providers for text, image and audio generation.",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Windows, macOS, Linux",
+      "url": "https://llmspy.org",
+      "sameAs": ["https://github.com/ServiceStack/llms", "https://ai.llmspy.org"],
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
+    <link rel="preconnect" href="https://llmspy.org">
+    <link rel="preload" as="image" href="https://llmspy.org/img/screenshots/screenshot-01.webp" fetchpriority="high">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root { color-scheme: dark; }
+        html, body { background:#07070c; }
+        body {
+            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+            color: #e6e7ee;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+        /* Aurora / gradient helpers */
+        .grad-text {
+            background: linear-gradient(100deg,#a5b4fc,#c4b5fd 30%,#f0abfc 55%,#67e8f9 78%,#a5b4fc);
+            background-size: 200% auto;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            animation: shine 9s linear infinite;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+        .aurora {
+            position: absolute; border-radius: 9999px; filter: blur(80px);
+            opacity: .55; pointer-events: none; will-change: transform;
+        }
+        .grid-mask {
+            background-image:
+                linear-gradient(to right, rgba(148,163,184,.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148,163,184,.08) 1px, transparent 1px);
+            background-size: 44px 44px;
+            -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
+            mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
+        }
+        .glass {
+            background: rgba(255,255,255,.035);
+            border: 1px solid rgba(255,255,255,.08);
+            backdrop-filter: blur(12px);
+        }
+        .glass-strong {
+            background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+            border: 1px solid rgba(255,255,255,.1);
+        }
+        .ring-glow { box-shadow: 0 0 0 1px rgba(139,92,246,.25), 0 30px 80px -20px rgba(79,70,229,.5); }
+
+        /* Reveal on scroll */
+        .reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+        .reveal.in { opacity: 1; transform: none; }
+
+        /* Marquee */
+        .marquee { display:flex; gap: 2.5rem; width: max-content; animation: marquee 38s linear infinite; }
+        .marquee:hover { animation-play-state: paused; }
+        @keyframes marquee { to { transform: translateX(-50%); } }
+
+        @keyframes float { 0%,100%{ transform: translateY(0)} 50%{ transform: translateY(-14px)} }
+        .float { animation: float 7s ease-in-out infinite; }
+
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.25} }
+        .live-dot { animation: pulse-dot 1.4s ease-in-out infinite; }
+
+        .card-hover { transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s, border-color .35s; }
+        .card-hover:hover { transform: translateY(-6px); border-color: rgba(165,180,252,.4); box-shadow: 0 24px 60px -24px rgba(99,102,241,.55); }
+
+        .browser-dot { width:11px;height:11px;border-radius:9999px; }
+
+        .shot { transition: transform .5s cubic-bezier(.2,.7,.2,1), opacity .5s; }
+        .shot:hover { transform: scale(1.03); }
+
+        a { text-underline-offset: 3px; }
+        ::selection { background: rgba(139,92,246,.35); }
+
+        /* Anchored sections clear the fixed nav */
+        section[id] { scroll-margin-top: 5.5rem; }
+        h1, h2 { text-wrap: balance; }
+
+        /* Film grain overlay: adds texture, hides gradient banding */
+        body::after {
+            content: ""; position: fixed; inset: 0; z-index: 80; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: .035;
+        }
+
+        /* Cursor-following spotlight on cards */
+        .card-hover { position: relative; }
+        .card-hover::after {
+            content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 50%), rgba(165,180,252,.13), transparent 65%);
+            opacity: 0; transition: opacity .35s;
+        }
+        .card-hover:hover::after { opacity: 1; }
+
+        /* Nav states */
+        .nav-scrolled { background: rgba(9,9,16,.82); border-color: rgba(255,255,255,.12); box-shadow: 0 12px 40px -18px rgba(0,0,0,.85); }
+        header a.nav-active { color: #fff; background: rgba(255,255,255,.07); }
+
+        /* Hero screenshot settles flat as it scrolls into view */
+        #heroFrame { transition: transform .2s ease-out; will-change: transform; }
+
+        a:focus-visible, button:focus-visible { outline: 2px solid rgba(165,180,252,.7); outline-offset: 2px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { opacity:1; transform:none; transition:none; }
+            .marquee, .float, .live-dot, .grad-text { animation: none; }
+            #heroFrame { transform: none !important; }
+        }
+    </style>
+    <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+</head>
+<body class="antialiased">
+
+    <!-- ===================== NAV ===================== -->
+    <header class="fixed top-0 inset-x-0 z-50">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6">
+            <nav class="mt-3 flex items-center justify-between rounded-2xl glass px-4 py-2.5">
+                <a href="/" class="flex items-center gap-2.5 group">
+                    <span class="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-indigo-500/30">
+                        <svg class="size-5" viewBox="0 0 16 16"><path fill="currentColor" d="M8 2.19c3.13 0 5.68 2.25 5.68 5s-2.55 5-5.68 5a5.7 5.7 0 0 1-1.89-.29l-.75-.26l-.56.56a14 14 0 0 1-2 1.55a.13.13 0 0 1-.07 0v-.06a6.58 6.58 0 0 0 .15-4.29a5.25 5.25 0 0 1-.55-2.16c0-2.77 2.55-5 5.68-5M8 .94c-3.83 0-6.93 2.81-6.93 6.27a6.4 6.4 0 0 0 .64 2.64a5.53 5.53 0 0 1-.18 3.48a1.32 1.32 0 0 0 2 1.5a15 15 0 0 0 2.16-1.71a6.8 6.8 0 0 0 2.31.36c3.83 0 6.93-2.81 6.93-6.27S11.83.94 8 .94"/><ellipse cx="5.2" cy="7.7" fill="currentColor" rx=".8" ry=".75"/><ellipse cx="8" cy="7.7" fill="currentColor" rx=".8" ry=".75"/><ellipse cx="10.8" cy="7.7" fill="currentColor" rx=".8" ry=".75"/></svg>
+                    </span>
+                    <span class="font-extrabold tracking-tight text-white text-lg">llms<span class="text-indigo-400">.py</span></span>
+                    <span class="hidden sm:inline text-[11px] font-semibold uppercase tracking-widest text-slate-500 border-l border-white/10 pl-2.5 ml-1">ai.llmspy.org</span>
+                </a>
+                <div class="hidden md:flex items-center gap-1 text-sm font-medium text-slate-300">
+                    <a href="#generate" class="px-3 py-1.5 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Generate</a>
+                    <a href="#gallery" class="px-3 py-1.5 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Gallery</a>
+                    <a href="#projects" class="px-3 py-1.5 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Projects</a>
+                    <a href="#features" class="px-3 py-1.5 rounded-lg hover:text-white hover:bg-white/5 transition-colors">Features</a>
+                    <a href="https://github.com/ServiceStack/llms" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg hover:text-white hover:bg-white/5 transition-colors">GitHub</a>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/m" class="hidden sm:inline-flex text-sm font-semibold text-slate-200 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors">Gallery</a>
+                    <a href="https://llmspy.org" target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-1.5 rounded-xl bg-white text-slate-900 px-3.5 py-1.5 text-sm font-bold hover:bg-indigo-50 transition-colors shadow-lg shadow-black/20">
+                        Get llms.py
+                        <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===================== HERO ===================== -->
+    <section class="relative isolate overflow-hidden pt-36 pb-24 sm:pt-44 sm:pb-28">
+        <div class="absolute inset-0 grid-mask"></div>
+        <div class="aurora float -top-24 -left-24 size-[38rem] bg-indigo-600/40"></div>
+        <div class="aurora float -top-10 right-0 size-[34rem] bg-fuchsia-600/30" style="animation-delay:-3s"></div>
+        <div class="aurora top-40 left-1/2 -translate-x-1/2 size-[30rem] bg-cyan-500/20" style="animation-delay:-5s"></div>
+
+        <div class="relative mx-auto max-w-7xl px-4 sm:px-6 text-center">
+            <a href="https://llmspy.org" target="_blank" rel="noopener"
+               class="reveal inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                <span class="flex items-center gap-1.5">
+                    <span class="relative flex size-2"><span class="live-dot absolute inline-flex size-2 rounded-full bg-emerald-400"></span></span>
+                    Open source &amp; self-hosted
+                </span>
+                <span class="text-slate-600">·</span>
+                <span>Powered by <span class="font-semibold text-indigo-300">llms.py</span></span>
+                <svg class="size-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+            </a>
+
+            <h1 class="reveal mt-7 text-5xl sm:text-7xl lg:text-[5.5rem] font-black tracking-tight leading-[0.95] text-white" style="transition-delay:.05s">
+                Self-host <span class="grad-text">530+ AI models</span><br class="hidden sm:block">
+                for text, image &amp; audio
+            </h1>
+
+            <p class="reveal mx-auto mt-6 max-w-2xl text-lg sm:text-xl text-slate-300/90 leading-relaxed" style="transition-delay:.1s">
+                A lightweight, OpenAI-compatible CLI &amp; server gateway — the open Open&nbsp;WebUI alternative.
+                Generate anything across <span class="text-white font-semibold">24 providers</span>, then
+                <span class="text-white font-semibold">publish it to the public gallery</span>.
+            </p>
+
+            <div class="reveal mt-9 flex flex-col sm:flex-row items-center justify-center gap-3" style="transition-delay:.15s">
+                <a href="/m" class="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-6 py-3.5 text-base font-bold text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all">
+                    Explore the Gallery
+                    <svg class="size-5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                </a>
+                <a href="https://llmspy.org" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-2xl glass-strong px-6 py-3.5 text-base font-bold text-white hover:bg-white/10 transition-colors">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.339-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.582.688.482A10.02 10.02 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                    Get llms.py
+                </a>
+            </div>
+
+            <!-- install command -->
+            <div class="reveal mt-7 flex justify-center" style="transition-delay:.2s">
+                <button id="copyCmd" type="button"
+                        class="group inline-flex items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-sm text-slate-200 hover:border-indigo-400/40 transition-colors">
+                    <span class="text-fuchsia-400 select-none">$</span>
+                    <span>pip install llms-py</span>
+                    <span class="ml-1 text-slate-500 group-hover:text-indigo-300 transition-colors">
+                        <svg id="copyIcon" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75h-6a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Hero screenshot -->
+            <div class="reveal mt-16 mx-auto max-w-5xl" style="transition-delay:.25s">
+                <div class="rounded-2xl glass-strong ring-glow p-2">
+                    <div class="flex items-center gap-1.5 px-3 py-2">
+                        <span class="browser-dot bg-red-400/80"></span>
+                        <span class="browser-dot bg-amber-400/80"></span>
+                        <span class="browser-dot bg-emerald-400/80"></span>
+                        <span class="ml-3 hidden sm:block text-xs text-slate-500 font-mono">llms --serve 8000</span>
+                    </div>
+                    <img src="https://llmspy.org/img/screenshots/screenshot-01.webp" alt="llms.py web UI"
+                         loading="eager" class="w-full rounded-xl border border-white/10"
+                         onerror="this.closest('.reveal').style.display='none'">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== STATS ===================== -->
+    <section class="relative border-y border-white/5 bg-white/[.015]">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="reveal text-center">
+                <div class="text-4xl sm:text-5xl font-black grad-text">530+</div>
+                <div class="mt-1 text-sm font-medium text-slate-400">Models</div>
+            </div>
+            <div class="reveal text-center" style="transition-delay:.05s">
+                <div class="text-4xl sm:text-5xl font-black grad-text">24</div>
+                <div class="mt-1 text-sm font-medium text-slate-400">Providers</div>
+            </div>
+            <div class="reveal text-center" style="transition-delay:.1s">
+                <div class="text-4xl sm:text-5xl font-black grad-text">3</div>
+                <div class="mt-1 text-sm font-medium text-slate-400">Modalities · Text · Image · Audio</div>
+            </div>
+            <div class="reveal text-center" style="transition-delay:.15s">
+                <div class="text-4xl sm:text-5xl font-black grad-text">100%</div>
+                <div class="mt-1 text-sm font-medium text-slate-400">Open source &amp; self-hosted</div>
+            </div>
+        </div>
+
+        <!-- provider marquee -->
+        <div class="relative overflow-hidden py-5 border-t border-white/5"
+             style="-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)">
+            <div class="marquee text-slate-500 font-semibold text-sm uppercase tracking-wider">
+                <span class="flex gap-10">
+                    <span>OpenAI</span><span>Anthropic</span><span>Google Gemini</span><span>Groq</span><span>Mistral</span><span>OpenRouter</span><span>xAI Grok</span><span>DeepSeek</span><span>Qwen</span><span>Z.ai</span><span>Chutes</span><span>Nvidia</span><span>Ollama</span><span>Together</span>
+                </span>
+                <span class="flex gap-10" aria-hidden="true">
+                    <span>OpenAI</span><span>Anthropic</span><span>Google Gemini</span><span>Groq</span><span>Mistral</span><span>OpenRouter</span><span>xAI Grok</span><span>DeepSeek</span><span>Qwen</span><span>Z.ai</span><span>Chutes</span><span>Nvidia</span><span>Ollama</span><span>Together</span>
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== GENERATE (modalities) ===================== -->
+    <section id="generate" class="relative py-24 sm:py-28">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6">
+            <div class="reveal max-w-2xl">
+                <p class="text-sm font-bold uppercase tracking-widest text-indigo-400">One tool, every modality</p>
+                <h2 class="mt-3 text-4xl sm:text-5xl font-black tracking-tight text-white">Generate anything</h2>
+                <p class="mt-4 text-lg text-slate-400">From a single self-hosted gateway — chat, create images, and synthesize speech through one clean, OpenAI-compatible API and UI.</p>
+            </div>
+
+            <div class="mt-12 grid gap-6 lg:grid-cols-3">
+                <!-- Text -->
+                <div class="reveal card-hover glass rounded-3xl p-6 flex flex-col">
+                    <div class="flex size-12 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/20">
+                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5m7-2a9 9 0 11-3.6-7.2L21 3l-.8 4.2A8.96 8.96 0 0121 12z"/></svg>
+                    </div>
+                    <h3 class="mt-5 text-xl font-bold text-white">Text &amp; Chat</h3>
+                    <p class="mt-2 text-sm text-slate-400 leading-relaxed flex-1">A fast, private, ChatGPT-like web UI over every local &amp; cloud LLM — with tools, MCP, skills, agents and 200+ system prompts.</p>
+                    <div class="mt-5 rounded-xl bg-black/50 border border-white/10 p-3 font-mono text-xs text-slate-300">
+                        <span class="text-fuchsia-400">$</span> llms <span class="text-emerald-300">"Explain quantum tunneling"</span>
+                    </div>
+                </div>
+                <!-- Image -->
+                <div class="reveal card-hover glass rounded-3xl overflow-hidden flex flex-col" style="transition-delay:.07s">
+                    <div class="p-6 pb-4">
+                        <div class="flex size-12 items-center justify-center rounded-2xl bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-400/20">
+                            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.16-5.16a2.25 2.25 0 013.18 0l5.16 5.16m-1.5-1.5l1.41-1.41a2.25 2.25 0 013.18 0l2.91 2.91M3 19.5h18a1.5 1.5 0 001.5-1.5V6A1.5 1.5 0 0021 4.5H3A1.5 1.5 0 001.5 6v12A1.5 1.5 0 003 19.5zm10.5-11.25h.008v.008h-.008V8.25z"/></svg>
+                        </div>
+                        <h3 class="mt-5 text-xl font-bold text-white">Image Generation</h3>
+                        <p class="mt-2 text-sm text-slate-400 leading-relaxed">Create images via Gemini, OpenAI, OpenRouter, Chutes, Z.ai &amp; Nvidia — right inside the gallery workflow.</p>
+                    </div>
+                    <img src="https://llmspy.org/img/generate-image.webp" alt="Image generation" loading="lazy"
+                         class="mt-auto w-full border-t border-white/10" onerror="this.style.display='none'">
+                </div>
+                <!-- Audio -->
+                <div class="reveal card-hover glass rounded-3xl overflow-hidden flex flex-col" style="transition-delay:.14s">
+                    <div class="p-6 pb-4">
+                        <div class="flex size-12 items-center justify-center rounded-2xl bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/20">
+                            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 9l10.5-3m0 6.55v3.75a2.25 2.25 0 01-1.63 2.16l-1.32.38a1.8 1.8 0 11-.99-3.47l2.31-.66A2.25 2.25 0 0019.5 12.3zm0 0V2.25L9 5.25v10.3m0 0v3.75a2.25 2.25 0 01-1.63 2.16l-1.32.38a1.8 1.8 0 01-.99-3.47l2.31-.66A2.25 2.25 0 009 15.55z"/></svg>
+                        </div>
+                        <h3 class="mt-5 text-xl font-bold text-white">Audio &amp; Speech</h3>
+                        <p class="mt-2 text-sm text-slate-400 leading-relaxed">High-quality text-to-speech with Gemini 2.5 Flash/Pro — plus voice-to-text input via the microphone.</p>
+                    </div>
+                    <img src="https://llmspy.org/img/generate-audio.webp" alt="Audio generation" loading="lazy"
+                         class="mt-auto w-full border-t border-white/10" onerror="this.style.display='none'">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== PUBLISH -> GALLERY ===================== -->
+    <section id="gallery" class="relative py-24 sm:py-28 overflow-hidden">
+        <div class="aurora top-1/3 -right-20 size-[32rem] bg-fuchsia-600/20"></div>
+        <div class="aurora bottom-0 -left-24 size-[30rem] bg-indigo-600/20"></div>
+
+        <div class="relative mx-auto max-w-7xl px-4 sm:px-6">
+            <div class="grid lg:grid-cols-2 gap-10 items-center">
+                <div class="reveal">
+                    <p class="text-sm font-bold uppercase tracking-widest text-fuchsia-400">Create → Publish → Showcase</p>
+                    <h2 class="mt-3 text-4xl sm:text-5xl font-black tracking-tight text-white">Your creations, in a public gallery</h2>
+                    <p class="mt-4 text-lg text-slate-400 leading-relaxed">
+                        Anything you generate in llms.py can be <span class="text-white font-semibold">published with one click</span> —
+                        and it lands in the live media gallery hosted right here, browsable by everyone with
+                        categories, tags, ratings and infinite scroll.
+                    </p>
+                    <ul class="mt-6 space-y-3 text-slate-300">
+                        <li class="flex items-start gap-3"><svg class="size-5 mt-0.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> Browse images &amp; audio by category and tag</li>
+                        <li class="flex items-start gap-3"><svg class="size-5 mt-0.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> Content ratings &amp; personalized visibility</li>
+                        <li class="flex items-start gap-3"><svg class="size-5 mt-0.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> Publish full projects with poster art</li>
+                    </ul>
+                    <div class="mt-8 flex flex-wrap gap-3">
+                        <a href="/m" class="group inline-flex items-center gap-2 rounded-2xl bg-white text-slate-900 px-6 py-3 font-bold hover:bg-indigo-50 transition-colors shadow-lg shadow-black/30">
+                            Open the Gallery
+                            <svg class="size-5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                        </a>
+                        <a href="/m#audio" class="inline-flex items-center gap-2 rounded-2xl glass-strong px-6 py-3 font-bold text-white hover:bg-white/10 transition-colors">Listen to Audio</a>
+                    </div>
+                </div>
+
+                <!-- Live gallery preview -->
+                <div class="reveal" style="transition-delay:.1s">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                            <span class="relative flex size-2"><span class="live-dot absolute inline-flex size-2 rounded-full bg-fuchsia-400"></span></span>
+                            Live from the gallery
+                        </span>
+                        <a href="/m" class="text-xs font-semibold text-indigo-300 hover:text-white transition-colors">View all →</a>
+                    </div>
+                    <div id="galleryPreview" class="grid grid-cols-3 gap-2.5">
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.1s"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.2s"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.3s"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.4s"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.5s"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.6s"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.7s"></div>
+                        <div class="aspect-square rounded-xl bg-white/5 animate-pulse" style="animation-delay:.8s"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== PROJECTS ===================== -->
+    <section id="projects" class="relative py-24 sm:py-28 border-t border-white/5" style="display:none">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6">
+            <div class="reveal flex flex-wrap items-end justify-between gap-4">
+                <div class="max-w-2xl">
+                    <p class="text-sm font-bold uppercase tracking-widest text-cyan-400">Playable &amp; self-contained</p>
+                    <h2 class="mt-3 text-4xl sm:text-5xl font-black tracking-tight text-white">Projects built by AI</h2>
+                    <p class="mt-4 text-lg text-slate-400">Complete, self-contained apps &amp; games — generated with llms.py and published for anyone to open and play.</p>
+                </div>
+                <a href="/m#projects" class="hidden sm:inline-flex items-center gap-2 rounded-xl glass-strong px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors">
+                    Browse all
+                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                </a>
+            </div>
+
+            <div id="projectsGrid" class="reveal mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="rounded-3xl bg-white/5 animate-pulse" style="aspect-ratio:16/10"></div>
+                <div class="rounded-3xl bg-white/5 animate-pulse" style="aspect-ratio:16/10;animation-delay:.15s"></div>
+                <div class="rounded-3xl bg-white/5 animate-pulse" style="aspect-ratio:16/10;animation-delay:.3s"></div>
+            </div>
+
+            <div class="reveal mt-8 sm:hidden">
+                <a href="/m#projects" class="inline-flex items-center gap-2 rounded-xl glass-strong px-5 py-3 text-sm font-bold text-white hover:bg-white/10 transition-colors">
+                    Browse all projects
+                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section id="features" class="relative py-24 sm:py-28 border-t border-white/5">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6">
+            <div class="reveal max-w-2xl">
+                <p class="text-sm font-bold uppercase tracking-widest text-indigo-400">Everything, self-hosted</p>
+                <h2 class="mt-3 text-4xl sm:text-5xl font-black tracking-tight text-white">A complete AI workstation</h2>
+                <p class="mt-4 text-lg text-slate-400">No vendor lock-in. Run it on your own machine and keep your data yours.</p>
+            </div>
+
+            <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Model selector (with screenshot) -->
+                <div class="reveal card-hover glass rounded-3xl overflow-hidden sm:col-span-2 lg:col-span-2 flex flex-col md:flex-row">
+                    <div class="p-7 md:w-72 md:shrink-0 flex flex-col justify-center">
+                        <div class="flex size-11 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/20">
+                            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+                        </div>
+                        <h3 class="mt-4 text-xl font-bold text-white">Smart Model Selector</h3>
+                        <p class="mt-2 text-sm text-slate-400 leading-relaxed">Search, filter, sort and favorite across 530+ models from 24 providers — find the perfect model in seconds.</p>
+                    </div>
+                    <img src="https://llmspy.org/img/model-selector.webp" alt="Model selector" loading="lazy"
+                         class="w-full md:flex-1 md:min-w-0 md:max-h-96 object-cover object-top border-t md:border-t-0 md:border-l border-white/10" onerror="this.style.display='none'">
+                </div>
+
+                <div class="reveal card-hover glass rounded-3xl p-7" style="transition-delay:.05s">
+                    <div class="flex size-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300 ring-1 ring-violet-400/20">
+                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/></svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-white">Agents &amp; Projects</h3>
+                    <p class="mt-2 text-sm text-slate-400 leading-relaxed">Specialized agent profiles with custom prompts, tools &amp; themes, plus secure project workspace isolation.</p>
+                </div>
+
+                <div class="reveal card-hover glass rounded-3xl p-7" style="transition-delay:.1s">
+                    <div class="flex size-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
+                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-white">Tools · MCP · Skills</h3>
+                    <p class="mt-2 text-sm text-slate-400 leading-relaxed">First-class Python function calling, Model Context Protocol servers, and extensible skills for any workflow.</p>
+                </div>
+
+                <div class="reveal card-hover glass rounded-3xl p-7" style="transition-delay:.05s">
+                    <div class="flex size-11 items-center justify-center rounded-xl bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/20">
+                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 8.65m5.96 5.72a14.926 14.926 0 01-5.96-5.72m0 0a6 6 0 00-7.38 5.84h4.8m2.58-5.84a14.98 14.98 0 00-12.12 6.16"/></svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-white">Code &amp; Math UIs</h3>
+                    <p class="mt-2 text-sm text-slate-400 leading-relaxed">Run Python, JavaScript, TypeScript &amp; C#, with beautiful KaTeX math typesetting and a live calculator.</p>
+                </div>
+
+                <div class="reveal card-hover glass rounded-3xl p-7" style="transition-delay:.1s">
+                    <div class="flex size-11 items-center justify-center rounded-xl bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/20">
+                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-white">RAG &amp; File Search</h3>
+                    <p class="mt-2 text-sm text-slate-400 leading-relaxed">Build knowledge bases with document stores and contextual AI chat via Gemini File Search.</p>
+                </div>
+
+                <div class="reveal card-hover glass rounded-3xl p-7" style="transition-delay:.15s">
+                    <div class="flex size-11 items-center justify-center rounded-xl bg-sky-500/15 text-sky-300 ring-1 ring-sky-400/20">
+                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42"/></svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-white">8 Handcrafted Themes</h3>
+                    <p class="mt-2 text-sm text-slate-400 leading-relaxed">Nord, Matrix, Blue Smoke, Dark, Light Slate, Soft Pink, Light Sky &amp; Light — plus voice input &amp; shortcuts.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== SELF-HOST CTA ===================== -->
+    <section class="relative py-20">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6">
+            <div class="reveal relative overflow-hidden rounded-[2rem] glass-strong ring-glow p-10 sm:p-14 text-center">
+                <div class="aurora -top-20 left-1/2 -translate-x-1/2 size-[26rem] bg-indigo-600/40"></div>
+                <div class="relative">
+                    <h2 class="text-4xl sm:text-5xl font-black tracking-tight text-white">Up and running in seconds</h2>
+                    <p class="mx-auto mt-4 max-w-xl text-lg text-slate-300">Install the package, start the server, and open your own private AI gateway.</p>
+                    <div class="mx-auto mt-8 max-w-md space-y-2.5 text-left">
+                        <div class="rounded-xl border border-white/10 bg-black/50 px-4 py-3 font-mono text-sm text-slate-200"><span class="text-fuchsia-400">$</span> pip install llms-py</div>
+                        <div class="rounded-xl border border-white/10 bg-black/50 px-4 py-3 font-mono text-sm text-slate-200"><span class="text-fuchsia-400">$</span> llms --serve 8000</div>
+                    </div>
+                    <div class="mt-9 flex flex-col sm:flex-row justify-center gap-3">
+                        <a href="https://llmspy.org" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-7 py-3.5 font-bold text-white shadow-xl shadow-indigo-600/30 hover:-translate-y-0.5 transition-all">
+                            Get Started at llmspy.org
+                            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                        </a>
+                        <a href="https://github.com/ServiceStack/llms" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-2xl glass px-7 py-3.5 font-bold text-white hover:bg-white/10 transition-colors">
+                            <svg class="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.339-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.582.688.482A10.02 10.02 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                            Star on GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="border-t border-white/5 py-12">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-2.5">
+                <span class="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white">
+                    <svg class="size-4" viewBox="0 0 16 16"><path fill="currentColor" d="M8 2.19c3.13 0 5.68 2.25 5.68 5s-2.55 5-5.68 5a5.7 5.7 0 0 1-1.89-.29l-.75-.26l-.56.56a14 14 0 0 1-2 1.55a.13.13 0 0 1-.07 0v-.06a6.58 6.58 0 0 0 .15-4.29a5.25 5.25 0 0 1-.55-2.16c0-2.77 2.55-5 5.68-5M8 .94c-3.83 0-6.93 2.81-6.93 6.27a6.4 6.4 0 0 0 .64 2.64a5.53 5.53 0 0 1-.18 3.48a1.32 1.32 0 0 0 2 1.5a15 15 0 0 0 2.16-1.71a6.8 6.8 0 0 0 2.31.36c3.83 0 6.93-2.81 6.93-6.27S11.83.94 8 .94"/><ellipse cx="5.2" cy="7.7" fill="currentColor" rx=".8" ry=".75"/><ellipse cx="8" cy="7.7" fill="currentColor" rx=".8" ry=".75"/><ellipse cx="10.8" cy="7.7" fill="currentColor" rx=".8" ry=".75"/></svg>
+                </span>
+                <div class="text-sm">
+                    <div class="font-bold text-white">llms.py</div>
+                    <div class="text-slate-500">Self-hosted AI gateway · ai.llmspy.org</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-6 text-sm font-medium text-slate-400">
+                <a href="/m" class="hover:text-white transition-colors">Gallery</a>
+                <a href="https://llmspy.org" target="_blank" rel="noopener" class="hover:text-white transition-colors">llmspy.org</a>
+                <a href="https://llmspy.org/docs" target="_blank" rel="noopener" class="hover:text-white transition-colors">Docs</a>
+                <a href="https://github.com/ServiceStack/llms" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+            </div>
+        </div>
+        <p class="mt-8 text-center text-xs text-slate-600">Built with <a href="https://llmspy.org" target="_blank" rel="noopener" class="text-slate-400 hover:text-white">llms.py</a> — the open, self-hosted alternative to commercial AI WebUIs.</p>
+    </footer>
+
+    <script>
+        // ---- Reveal on scroll ----
+        const io = new IntersectionObserver((entries) => {
+            for (const e of entries) {
+                if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+            }
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+        // ---- Copy install command ----
+        const copyBtn = document.getElementById('copyCmd');
+        copyBtn?.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText('pip install llms-py');
+                const icon = document.getElementById('copyIcon');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>';
+                copyBtn.classList.add('border-emerald-400/50');
+                setTimeout(() => {
+                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75h-6a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/>';
+                    copyBtn.classList.remove('border-emerald-400/50');
+                }, 1600);
+            } catch (e) { /* clipboard unavailable */ }
+        });
+
+        // ---- Live gallery preview (fetches recent published images) ----
+        function mediaUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http') || url.startsWith('/v1')) return url;
+            if (url.startsWith('~')) url = url.slice(1);
+            return url.startsWith('/') ? url : '/' + url;
+        }
+        function publishedUrl(pub, fallback) {
+            if (pub) { const i = pub.indexOf('/m/'); if (i >= 0) return pub.slice(i); }
+            return fallback || '/m';
+        }
+        // Resolve a published project URL to its local /p/{user}/{project} path (ignoring the absolute host)
+        function publishedUrl2(pub) {
+            if (pub) { const i = pub.indexOf('/p/'); if (i >= 0) return pub.slice(i); }
+            return pub || '/m#projects';
+        }
+        function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+        (async () => {
+            const host = document.getElementById('galleryPreview');
+            if (!host) return;
+            try {
+                const q = new URLSearchParams({
+                    take: '9', type: 'Image', orderByDesc: 'Id',
+                    fields: 'Id,Name,Url,PublishedUrl,Width,Height'
+                });
+                const res = await fetch('/api/QueryPublishedMedia?' + q.toString(), { headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                const items = (data.results || []).filter(x => x && x.url);
+                if (!items.length) throw new Error('empty');
+
+                host.innerHTML = items.map(x => {
+                    const href = esc(publishedUrl(x.publishedUrl, mediaUrl(x.url)));
+                    const src = esc(mediaUrl(x.url));
+                    const name = esc(x.name || 'Generated media');
+                    return `<a href="${href}" class="group relative block aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/5" title="${name}">
+                              <img src="${src}" alt="${name}" loading="lazy" class="shot h-full w-full object-cover" onerror="this.parentElement.style.display='none'">
+                              <span class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                            </a>`;
+                }).join('');
+            } catch (e) {
+                // Graceful fallback: showcase screenshots and point to the gallery
+                host.className = 'grid grid-cols-2 gap-2.5';
+                host.innerHTML = `
+                    <a href="/m" class="block aspect-square overflow-hidden rounded-xl border border-white/10"><img src="https://llmspy.org/img/generate-image.webp" class="h-full w-full object-cover" alt="Generated image" onerror="this.parentElement.remove()"></a>
+                    <a href="/m" class="block aspect-square overflow-hidden rounded-xl border border-white/10"><img src="https://llmspy.org/img/screenshots/screenshot-02.webp" class="h-full w-full object-cover" alt="llms.py" onerror="this.parentElement.remove()"></a>
+                    <a href="/m" class="block aspect-square overflow-hidden rounded-xl border border-white/10"><img src="https://llmspy.org/img/screenshots/screenshot-03.webp" class="h-full w-full object-cover" alt="llms.py" onerror="this.parentElement.remove()"></a>
+                    <a href="/m" class="block aspect-square overflow-hidden rounded-xl border border-white/10"><img src="https://llmspy.org/img/generate-audio.webp" class="h-full w-full object-cover" alt="Generated audio" onerror="this.parentElement.remove()"></a>`;
+            }
+        })();
+
+        // ---- AI-generated projects (shows a few published projects that have a poster image) ----
+        (async () => {
+            const section = document.getElementById('projects');
+            const grid = document.getElementById('projectsGrid');
+            if (!section || !grid) return;
+            try {
+                const q = new URLSearchParams({
+                    take: '24', orderByDesc: 'Id',
+                    fields: 'Id,Name,Description,PublishedUrl,PosterImage,FileCount'
+                });
+                const res = await fetch('/api/QueryPublishedProjects?' + q.toString(), { headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                // Only projects that have an uploaded poster image
+                const items = (data.results || []).filter(x => x && x.posterImage).slice(0, 6);
+                if (!items.length) return; // nothing to show — keep section hidden
+
+                grid.innerHTML = items.map(x => {
+                    const href = esc(publishedUrl2(x.publishedUrl));
+                    const poster = esc(mediaUrl(x.posterImage));
+                    const name = esc(x.name || 'AI Project');
+                    const desc = x.description ? `<p class="mt-1 text-xs text-slate-300/90 line-clamp-1 drop-shadow">${esc(x.description)}</p>` : '';
+                    const files = x.fileCount ? `${x.fileCount} file${x.fileCount === 1 ? '' : 's'}` : '';
+                    return `<a href="${href}" target="_blank" rel="noopener" class="group card-hover glass rounded-3xl overflow-hidden block" title="${name}">
+                              <div class="relative overflow-hidden bg-white/5" style="aspect-ratio:16/10">
+                                <img src="${poster}" alt="${name}" loading="lazy" class="shot h-full w-full object-cover" onerror="this.closest('a').style.display='none'">
+                                <span class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent"></span>
+                                <span class="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur px-2.5 py-1 text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Open <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </span>
+                                <div class="absolute inset-x-0 bottom-0 p-4">
+                                    <h3 class="text-lg font-bold text-white drop-shadow line-clamp-1 capitalize">${name}</h3>
+                                    ${desc}
+                                    ${files ? `<div class="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-300/80"><svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.63a3.38 3.38 0 00-3.38-3.37h-1.5a1.12 1.12 0 01-1.12-1.13v-1.5A3.38 3.38 0 0010.13 2.25H5.62c-.62 0-1.12.5-1.12 1.13v16.5c0 .62.5 1.12 1.12 1.12h12.75c.62 0 1.13-.5 1.13-1.12v-5.63a9 9 0 00-9-9z"/></svg>${files}</div>` : ''}
+                                </div>
+                              </div>
+                            </a>`;
+                }).join('');
+
+                section.style.display = '';
+                section.querySelectorAll('.reveal').forEach(el => io.observe(el));
+            } catch (e) {
+                // On failure keep the section hidden — projects are optional
+            }
+        })();
+    </script>
+</body>
+</html>

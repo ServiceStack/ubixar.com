@@ -145,6 +145,7 @@ public class PublishedProject
     /// </summary>
     public int? PublicThreadId { get; set; }
     public int? GalleryScore { get; set; }
+    public string? PosterImage { get; set; }
 }
 
 [Tag(Tags.Publish)]
@@ -296,15 +297,43 @@ public class ViewPublishedMedias : QueryBase, IGet, IReturn<string>
     public AssetType Type { get; set; }
 }
 
+[SystemJson(UseSystemJson.Never)]
 [Tag(Tags.Publish)]
 public class QueryPublishedMedia : QueryDb<PublishedMedia>
 {
     public AssetType? Type { get; set; }
+    public string? Category { get; set; }
+    public string? Tag { get; set; }
+    public string? User { get; set; }
+    public string? UserId { get; set; }
 }
 
 [ValidateIsAdmin]
 [Tag(Tags.Publish)]
 public class DeletePublishedMedia : IPost, IReturn<StringsResponse>
+{
+    [ValidateNotEmpty]
+    public string ExternalRef { get; set; }
+}
+
+[ValidateIsAdmin]
+[Tag(Tags.Publish)]
+public class UpdatePublishedMedia : IPost, IReturn<EmptyResponse>
+{
+    [ValidateNotEmpty]
+    public string ExternalRef { get; set; }
+    public Rating? Rating { get; set; }
+}
+
+[ValidateIsAuthenticated]
+[Tag(Tags.Publish)]
+public class UpdatePublishedProject : IPost, IReturn<EmptyResponse>
+{
+    [ValidateNotEmpty]
+    public string ExternalRef { get; set; }
+}
+
+public class GetPublishProjectPosterImage : IGet, IReturn<byte[]>
 {
     [ValidateNotEmpty]
     public string ExternalRef { get; set; }

@@ -119,13 +119,13 @@ public class PublishServices(
         return viewerHtml;
     }
     
-    AuthenticateResponse? GetAuthUser()
+    UserInfo? GetAuthUser()
     {
         var user = Request.GetClaimsPrincipal();
         if (!user.IsAuthenticated())
             return null;
 
-        return new AuthenticateResponse
+        return new UserInfo
         {
             UserId = user.GetUserId(),
             UserName = user.GetUserName(),
@@ -133,6 +133,16 @@ public class PublishServices(
             ProfileUrl = user.GetPicture(),
             Roles = user.GetRoles().ToList(),
         };
+    }
+    
+    public class UserInfo
+    {
+        public string UserId { get; set; }
+        public string UserName { get; set; }
+        public string? DisplayName { get; set; }
+        public string? ProfileUrl { get; set; }
+        public List<string> Roles { get; set; } 
+        public List<Rating> Ratings { get; set; }
     }
     
     public async Task<object> Get(ViewPublishedThread request)
@@ -229,11 +239,9 @@ public class PublishServices(
             var query = request.ConvertTo<QueryPublishedMedia>();
             query.Type = AssetType.Image;
             query.Take ??= 50;
-            query.Fields ??= "Id,Name,Type,Width,Height,Tags,Categories,Rating,Url,PublishedUrl,Model,Created";
+            query.Fields ??= "Id,Name,Type,Width,Height,Tags,Categories,Rating,Url,PublishedUrl,ExternalRef,Model,Created";
             query.OrderByDesc ??= "Id";
-            using var db = autoQuery.GetDb(query, base.Request);
-            var q = autoQuery.CreateQuery(query, base.Request, db);
-            var queryResponse = await autoQuery.ExecuteAsync(query, q, base.Request, db);
+            var queryResponse = await Get(query);
             
             viewerHtml = viewerHtml.Replace(
                 "<script id=\"data\"></script>",
@@ -259,31 +267,81 @@ public class PublishServices(
         
         return viewerHtml;
     }
-
-    public async Task<object> Post(DeletePublishedMedia request)
+    
+    public async Task<QueryResponse<PublishedMedia>> Get(QueryPublishedMedia request)
     {
-        var media = await Db.SingleAsync<PublishedMedia>(x => x.ExternalRef == request.ExternalRef);
-        if (media == null)
-            throw HttpError.NotFound("Media not found");
+        using var db = autoQuery.GetDb(request, base.Request);
+        var q = autoQuery.CreateQuery(request, base.Request, db);
 
-        var ret = new StringsResponse { Results = [media.PublishedUrl] };
-        await Db.DeleteAsync<PublishedMedia>(x => x.Id == media.Id);
-        if (media.PublicThreadId != null)
+        var userId = Request.GetUserId();
+        var userCache = userId != null 
+            ? appData.GetUserCacheById(Db, userId) 
+            : null;
+        var ratings = userCache?.Ratings ?? [];
+        if (ratings.Count == 0)
         {
-            await Db.DeleteAsync<Thread>(x => x.Id == media.PublicThreadId);
+            ratings.Add(Rating.PG);
+            ratings.Add(Rating.PG13);
+            ratings.Add(Rating.M);
         }
-
-        if (media.Url.StartsWith("/cache/"))
+        q.Where(x => ratings.Contains(x.Rating!.Value) || x.Type != AssetType.Image);
+        
+        if (request.Category != null)
         {
-            var filePath = appData.GetCachePath(media.Url.LastRightPart('/'));
-            if (File.Exists(filePath))
+            var category = appData.GetCategory(request.Category);
+            if (category != null)
             {
-                File.Delete(filePath);
-                ret.Results.Add(media.Url);
+                var catColumn = q.Column<PublishedMedia>(x => x.Categories);
+                q.And(catColumn + " ? {0}", category.Name);
+            }
+            else
+            {
+                log.LogWarning("Unknown category {Category}", request.Category);
             }
         }
+        if (request.Tag != null)
+        {
+            var tag = appData.GetTag(request.Tag);
+            if (tag != null)
+            {
+                var tagColumn = q.Column<PublishedMedia>(x => x.Tags);
+                q.And(tagColumn + " ? {0}", tag.Name);
+            }
+            else
+            {
+                log.LogWarning("Unknown tag {Tag}", request.Tag);
+            }
+        }
+
+        if (request.User != null)
+        {
+            request.UserId = request.User == "me"
+                ? Request.GetRequiredUserId()
+                : request.User.Length == 36 && Guid.TryParse(request.User, out _)
+                    ? request.User
+                    : null;
+
+            if (request.UserId != null)
+            {
+                q.Where(x => x.PublishedBy == request.UserId);
+            }
+            else
+            {
+                var cachedUser = appData.GetUserCacheByName(Db, request.User);
+                if (cachedUser == null)
+                {
+                    log.LogWarning("Unknown user {User}", request.User);
+                    return new QueryResponse<PublishedMedia> { Results = [] };
+                }
+                q.Where(x => x.PublishedBy == cachedUser.Id);
+            }
+        }
+        else if (request.UserId != null)
+        {
+            q.Where(x => x.PublishedBy == request.UserId);
+        }
         
-        return ret;
+        return await autoQuery.ExecuteAsync(request, q, base.Request, db);
     }
     
     public async Task<PublishAvatarResponse> Post(PublishAvatar request)
@@ -873,5 +931,282 @@ public class PublishServices(
             where: x => x.Id == publishedProject.Id);
         return thread;
     }
+
+    private async Task<PublishedMedia> AssertPublishedMedia(string externalRef)
+    {
+        var media = await Db.SingleAsync<PublishedMedia>(x => x.ExternalRef == externalRef);
+        if (media == null)
+            throw HttpError.NotFound("Media not found");
+        return media;
+    }
+
+    public async Task<object> Post(DeletePublishedMedia request)
+    {
+        var media = await AssertPublishedMedia(request.ExternalRef);
+
+        var ret = new StringsResponse { Results = [media.PublishedUrl] };
+        await Db.DeleteAsync<PublishedMedia>(x => x.Id == media.Id);
+        if (media.PublicThreadId != null)
+        {
+            await Db.DeleteAsync<Thread>(x => x.Id == media.PublicThreadId);
+        }
+
+        if (media.Url.StartsWith("/cache/"))
+        {
+            var filePath = appData.GetCachePath(media.Url.LastRightPart('/'));
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                ret.Results.Add(media.Url);
+            }
+        }
+        
+        return ret;
+    }
+
+    public async Task<object> Post(UpdatePublishedMedia request)
+    {
+        var media = await AssertPublishedMedia(request.ExternalRef);
+        
+        await Db.UpdateOnlyAsync(() => new PublishedMedia { Rating = request.Rating },
+            where: x => x.Id == media.Id);
+
+        return new EmptyResponse();
+    }
     
+    public async Task<object> Post(UpdatePublishedProject request)
+    {
+        var project = await Db.SingleAsync<PublishedProject>(x => x.ExternalRef == request.ExternalRef);
+        if (project == null)
+            throw HttpError.NotFound("Project not found");
+
+        // Only the project's publisher or an Admin can change its poster image
+        if (project.PublishedBy != Request.GetUserId() && !Request.GetClaimsPrincipal().IsAdmin())
+            throw HttpError.Forbidden("Only the project owner or an Admin can update this project");
+
+        var file = Request.Files.FirstOrDefault();
+        if (file == null)
+            throw HttpError.BadRequest("No file uploaded");
+        appData.AssertMaxUpload(file.ContentLength, log);
+
+        string fileName;
+        var tmpFile = Path.GetTempFileName();
+        try
+        {
+            await file.SaveToAsync(tmpFile);
+            await using var fileStream = File.OpenRead(tmpFile);
+
+            using var bitmap = SKBitmap.Decode(fileStream);
+            if (bitmap == null)
+                throw HttpError.BadRequest("Could not decode image");
+
+            using var webpImage = bitmap.Encode(SKEncodedImageFormat.Webp, 90);
+            if (webpImage == null)
+                throw HttpError.BadRequest("Could not encode image as WebP");
+
+            // Save to the shared content-addressed cache so re-publishing the project doesn't remove it
+            fileName = webpImage.ToSha256Hash() + ".webp";
+            var filePath = appData.GetCachePath(fileName);
+            if (!File.Exists(filePath))
+                await webpImage.SaveToAsync(filePath);
+
+            log.LogInformation("Saved project poster image ({FileSize}) to {FilePath}",
+                new FileInfo(filePath).Length.HumanifyNumber(), filePath);
+        }
+        finally
+        {
+            try { File.Delete(tmpFile); } catch { }
+        }
+
+        // Content-addressed cache URL served by GetCacheFile (/cache/{**Path})
+        var posterImage = Request.ResolveAbsoluteUrl($"~/cache/{fileName}");
+
+        await Db.UpdateOnlyAsync(() => new PublishedProject { PosterImage = posterImage },
+            where: x => x.Id == project.Id);
+
+        return new EmptyResponse();
+    }
+
+    public async Task<object> Get(GetPublishProjectPosterImage request)
+    {
+        var project = await Db.SingleAsync<PublishedProject>(x => x.ExternalRef == request.ExternalRef);
+        if (project == null)
+            throw HttpError.NotFound("Project not found");
+
+        if (!string.IsNullOrEmpty(project.PosterImage))
+        {
+            var posterPath = appData.GetCachePath(project.PosterImage.LastRightPart('/'));
+            if (File.Exists(posterPath))
+                return new HttpResult(new FileInfo(posterPath), "image/webp");
+        }
+
+        // No stored poster: return a generated 1024x1024 SVG poster featuring the project name
+        return new HttpResult(BuildProjectPosterSvg(project.Name), "image/svg+xml");
+    }
+
+    // Generates a stylish, deterministic 1024x1024 SVG poster incorporating the project name
+    private static string BuildProjectPosterSvg(string? name)
+    {
+        var title = string.IsNullOrWhiteSpace(name) ? "Untitled Project" : name.Trim();
+
+        // Deterministic hue from the name so each project gets a stable, distinct palette
+        var hash = 0;
+        foreach (var c in title)
+            hash = (hash * 31 + c) & 0x7fffffff;
+        var hue = hash % 360;
+        var hue2 = (hue + 40) % 360;
+        var accentHue = (hue + 190) % 360;
+
+        var lines = WrapText(title, maxChars: 16, maxLines: 4);
+        var maxLen = 1;
+        foreach (var l in lines)
+            maxLen = Math.Max(maxLen, l.Length);
+
+        double fontSize = Math.Clamp(980.0 / (maxLen * 0.62), 64, 150);
+        var lineHeight = fontSize * 1.12;
+        var blockHeight = lines.Count * lineHeight;
+
+        const double centerY = 540;
+        var firstBaseline = centerY - blockHeight / 2 + fontSize * 0.72;
+        var lastBaseline = firstBaseline + (lines.Count - 1) * lineHeight;
+        var eyebrowY = firstBaseline - fontSize * 0.72 - 46;
+        var barY = lastBaseline + 48;
+        var initialY = centerY + 300;
+        var initial = char.ToUpper(title[0]).ToString();
+
+        var tspans = new List<string>();
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var y = firstBaseline + i * lineHeight;
+            tspans.Add($"<tspan x=\"512\" y=\"{y:0}\">{EscapeXml(lines[i])}</tspan>");
+        }
+        var titleTspans = string.Join("\n            ", tspans);
+
+        const string fontFamily = "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
+        return $"""
+            <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="{EscapeXml(title)}">
+              <defs>
+                <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="hsl({hue},68%,46%)"/>
+                  <stop offset="1" stop-color="hsl({hue2},72%,22%)"/>
+                </linearGradient>
+                <radialGradient id="glow" cx="50%" cy="30%" r="72%">
+                  <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+                  <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+                </radialGradient>
+                <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur stdDeviation="60"/>
+                </filter>
+              </defs>
+
+              <rect width="1024" height="1024" fill="url(#bg)"/>
+
+              <g filter="url(#soft)">
+                <circle cx="815" cy="210" r="210" fill="hsl({accentHue},85%,62%)" opacity="0.35"/>
+                <circle cx="165" cy="885" r="260" fill="#000000" opacity="0.18"/>
+                <circle cx="250" cy="170" r="120" fill="#ffffff" opacity="0.12"/>
+              </g>
+
+              <text x="512" y="{initialY:0}" text-anchor="middle" font-family="{fontFamily}" font-weight="800" font-size="820" fill="#ffffff" opacity="0.06">{EscapeXml(initial)}</text>
+
+              <rect width="1024" height="1024" fill="url(#glow)"/>
+
+              <text x="512" y="{eyebrowY:0}" text-anchor="middle" font-family="{fontFamily}" font-weight="700" font-size="34" letter-spacing="10" fill="#ffffff" opacity="0.72">PROJECT</text>
+
+              <text text-anchor="middle" font-family="{fontFamily}" font-weight="800" font-size="{fontSize:0}" fill="#ffffff">
+                {titleTspans}
+              </text>
+
+              <rect x="452" y="{barY:0}" width="120" height="8" rx="4" fill="#ffffff" opacity="0.85"/>
+            </svg>
+            """;
+    }
+
+    // Greedily word-wraps text to maxChars-wide lines, preferring breaks after '-'/'_'
+    // (common in project slugs), hard-breaking overlong runs, and truncating with an
+    // ellipsis once maxLines is reached.
+    private static List<string> WrapText(string text, int maxChars, int maxLines)
+    {
+        // A token is a wrap-unit; SpaceBefore marks the start of a new space-separated word
+        var tokens = new List<(string Text, bool SpaceBefore)>();
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        for (var wi = 0; wi < words.Length; wi++)
+        {
+            var pieces = SplitWord(words[wi], maxChars);
+            for (var pi = 0; pi < pieces.Count; pi++)
+                tokens.Add((pieces[pi], pi == 0 && wi > 0));
+        }
+
+        var lines = new List<string>();
+        var current = "";
+        foreach (var (t, spaceBefore) in tokens)
+        {
+            var candidate = current.Length == 0 ? t : current + (spaceBefore ? " " : "") + t;
+            if (candidate.Length > maxChars && current.Length > 0)
+            {
+                lines.Add(current);
+                current = t;
+            }
+            else
+            {
+                current = candidate;
+            }
+        }
+        if (current.Length > 0)
+            lines.Add(current);
+        if (lines.Count == 0)
+            lines.Add(text);
+
+        if (lines.Count > maxLines)
+        {
+            lines = lines.Take(maxLines).ToList();
+            var last = lines[maxLines - 1];
+            if (last.Length > maxChars - 1)
+                last = last[..(maxChars - 1)];
+            lines[maxLines - 1] = last.TrimEnd() + "…";
+        }
+        return lines;
+    }
+
+    // Splits a word into wrap-pieces, breaking after each '-'/'_' (separator kept with the
+    // left piece) and hard-breaking any remaining run longer than maxChars.
+    private static List<string> SplitWord(string word, int maxChars)
+    {
+        var chunks = new List<string>();
+        var start = 0;
+        for (var i = 0; i < word.Length; i++)
+        {
+            if (word[i] is '-' or '_')
+            {
+                chunks.Add(word.Substring(start, i - start + 1));
+                start = i + 1;
+            }
+        }
+        if (start < word.Length)
+            chunks.Add(word[start..]);
+        if (chunks.Count == 0)
+            chunks.Add(word);
+
+        var result = new List<string>();
+        foreach (var c in chunks)
+        {
+            var chunk = c;
+            while (chunk.Length > maxChars)
+            {
+                result.Add(chunk[..maxChars]);
+                chunk = chunk[maxChars..];
+            }
+            if (chunk.Length > 0)
+                result.Add(chunk);
+        }
+        return result;
+    }
+
+    private static string EscapeXml(string s) => s
+        .Replace("&", "&amp;")
+        .Replace("<", "&lt;")
+        .Replace(">", "&gt;")
+        .Replace("\"", "&quot;")
+        .Replace("'", "&apos;");
 }

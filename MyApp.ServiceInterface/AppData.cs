@@ -218,6 +218,7 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
             Id = user.Id,
             UserName = user.UserName,
             Karma = user.Karma,
+            Ratings = user.Ratings ?? [],
         };
     }
 
@@ -257,6 +258,17 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
             return null;
         }
         return cachedUser;
+    }
+    
+    public UserCache? GetUserCacheById(IDbConnection db, string userId)
+    {
+        if (UserCache.TryGetValue(userId, out var cachedUser))
+            return cachedUser;
+        var user = db.SingleById<User>(userId);
+        if (user != null) 
+            return UpdateUserCache(user);
+        log.LogWarning("Unknown user {UserId}", userId);
+        return null;
     }
     
     public List<WorkflowGeneration> SortGenerationQueue(IDbConnection db, IEnumerable<WorkflowGeneration> generations)

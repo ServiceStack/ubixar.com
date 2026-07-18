@@ -45,6 +45,7 @@ public class UserCache
     public string UserName { get; set; }
     public int Karma { get; set; }
     public int Credits { get; set; }
+    public List<Rating> Ratings { get; set; }
 }
 
 public class CreditLog

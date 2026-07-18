@@ -122,7 +122,9 @@ public class UserServices(
 
     public async Task<object> Any(UpdatePreferences request)
     {
-        var userId = Request.GetClaimsPrincipal().GetUserId();
+        var userId = Request.GetRequiredUserId();
+        var userCache = appData.GetUserCacheById(Db, userId)
+                ?? throw HttpError.NotFound("User not found");
         if (request.Ratings != null)
         {
             await Db.UpdateOnlyAsync(() => new User
@@ -130,12 +132,14 @@ public class UserServices(
                 Ratings = request.Ratings,
                 ModifiedDate = DateTime.UtcNow,
             }, x => x.Id == userId);
+            
+            userCache.Ratings = request.Ratings;
         }
 
         if (request.LastReadNotificationId != null || request.LastReadAchievementId != null)
         {
             var user = await Db.SingleByIdAsync<User>(userId)
-                       ?? throw HttpError.NotFound("User not found");
+                ?? throw HttpError.NotFound("User not found");
 
             if (request.LastReadNotificationId != null)
                 user.Prefs.LastReadNotificationId = request.LastReadNotificationId.Value;

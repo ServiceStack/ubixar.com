@@ -1,5 +1,5 @@
 /* Options:
-Date: 2026-07-18 02:42:32
+Date: 2026-07-18 21:29:08
 Version: 10.09
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: http://localhost:5000
@@ -437,6 +437,86 @@ export class AiImageContent extends AiContent {
      * @type {AiImageUrl}
      * @description The image for this content. */
     image_url;
+}
+export class PublishedMedia {
+    /** @param {{id?:number,name?:string,type?:AssetType,prompt?:string,model?:string,created?:string,cost?:number,seed?:number,url?:string,hash?:string,aspectRatio?:string,width?:number,height?:number,size?:number,duration?:number,user?:string,reactions?:{ [index:string]: Object; },caption?:string,description?:string,phash?:string,color?:string,categories?:{ [index:string]: number; },tags?:{ [index:string]: number; },rating?:Rating,ratings?:Ratings,objects?:ObjectDetection[],published?:string,metadata?:{ [index:string]: Object; },variantId?:string,variantName?:string,deviceId?:string,error?:ResponseStatus,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {number} */
+    id;
+    /** @type {string} */
+    name;
+    /** @type {AssetType} */
+    type;
+    /** @type {?string} */
+    prompt;
+    /** @type {?string} */
+    model;
+    /** @type {string} */
+    created;
+    /** @type {number} */
+    cost;
+    /** @type {?number} */
+    seed;
+    /** @type {string} */
+    url;
+    /** @type {string} */
+    hash;
+    /** @type {?string} */
+    aspectRatio;
+    /** @type {?number} */
+    width;
+    /** @type {?number} */
+    height;
+    /** @type {?number} */
+    size;
+    /** @type {?number} */
+    duration;
+    /** @type {?string} */
+    user;
+    /** @type {?{ [index:string]: Object; }} */
+    reactions;
+    /** @type {?string} */
+    caption;
+    /** @type {?string} */
+    description;
+    /** @type {?string} */
+    phash;
+    /** @type {?string} */
+    color;
+    /** @type {?{ [index:string]: number; }} */
+    categories;
+    /** @type {?{ [index:string]: number; }} */
+    tags;
+    /** @type {?Rating} */
+    rating;
+    /** @type {?Ratings} */
+    ratings;
+    /** @type {?ObjectDetection[]} */
+    objects;
+    /** @type {?string} */
+    published;
+    /** @type {?{ [index:string]: Object; }} */
+    metadata;
+    /** @type {?string} */
+    variantId;
+    /** @type {?string} */
+    variantName;
+    /** @type {?string} */
+    deviceId;
+    /** @type {?ResponseStatus} */
+    error;
+    /** @type {string} */
+    externalRef;
+    /** @type {string} */
+    publishedBy;
+    /** @type {string} */
+    publishedAt;
+    /** @type {string} */
+    publishedUrl;
+    /** @type {?number} */
+    publicThreadId;
+    /** @type {?number} */
+    galleryScore;
 }
 export class Poco {
     /** @param {{name?:string}} [init] */
@@ -1186,88 +1266,8 @@ export class Asset {
     /** @type {?string} */
     modifiedBy;
 }
-export class PublishedMedia {
-    /** @param {{id?:number,name?:string,type?:AssetType,prompt?:string,model?:string,created?:string,cost?:number,seed?:number,url?:string,hash?:string,aspectRatio?:string,width?:number,height?:number,size?:number,duration?:number,user?:string,reactions?:{ [index:string]: Object; },caption?:string,description?:string,phash?:string,color?:string,categories?:{ [index:string]: number; },tags?:{ [index:string]: number; },rating?:Rating,ratings?:Ratings,objects?:ObjectDetection[],published?:string,metadata?:{ [index:string]: Object; },variantId?:string,variantName?:string,deviceId?:string,error?:ResponseStatus,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number}} [init] */
-    constructor(init) { Object.assign(this, init) }
-    /** @type {number} */
-    id;
-    /** @type {string} */
-    name;
-    /** @type {AssetType} */
-    type;
-    /** @type {?string} */
-    prompt;
-    /** @type {?string} */
-    model;
-    /** @type {string} */
-    created;
-    /** @type {number} */
-    cost;
-    /** @type {?number} */
-    seed;
-    /** @type {string} */
-    url;
-    /** @type {string} */
-    hash;
-    /** @type {?string} */
-    aspectRatio;
-    /** @type {?number} */
-    width;
-    /** @type {?number} */
-    height;
-    /** @type {?number} */
-    size;
-    /** @type {?number} */
-    duration;
-    /** @type {?string} */
-    user;
-    /** @type {?{ [index:string]: Object; }} */
-    reactions;
-    /** @type {?string} */
-    caption;
-    /** @type {?string} */
-    description;
-    /** @type {?string} */
-    phash;
-    /** @type {?string} */
-    color;
-    /** @type {?{ [index:string]: number; }} */
-    categories;
-    /** @type {?{ [index:string]: number; }} */
-    tags;
-    /** @type {?Rating} */
-    rating;
-    /** @type {?Ratings} */
-    ratings;
-    /** @type {?ObjectDetection[]} */
-    objects;
-    /** @type {?string} */
-    published;
-    /** @type {?{ [index:string]: Object; }} */
-    metadata;
-    /** @type {?string} */
-    variantId;
-    /** @type {?string} */
-    variantName;
-    /** @type {?string} */
-    deviceId;
-    /** @type {?ResponseStatus} */
-    error;
-    /** @type {string} */
-    externalRef;
-    /** @type {string} */
-    publishedBy;
-    /** @type {string} */
-    publishedAt;
-    /** @type {string} */
-    publishedUrl;
-    /** @type {?number} */
-    publicThreadId;
-    /** @type {?number} */
-    galleryScore;
-}
 export class PublishedProject {
-    /** @param {{id?:number,name?:string,description?:string,paths?:string[],size?:number,fileCount?:number,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number}} [init] */
+    /** @param {{id?:number,name?:string,description?:string,paths?:string[],size?:number,fileCount?:number,externalRef?:string,publishedBy?:string,publishedAt?:string,publishedUrl?:string,publicThreadId?:number,galleryScore?:number,posterImage?:string}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {number} */
     id;
@@ -1293,6 +1293,8 @@ export class PublishedProject {
     publicThreadId;
     /** @type {?number} */
     galleryScore;
+    /** @type {?string} */
+    posterImage;
 }
 export class CommentResult {
     /** @param {{id?:number,threadId?:number,replyId?:number,content?:string,upVotes?:number,downVotes?:number,votes?:number,flagReason?:string,notes?:string,userName?:string,handle?:string,profileUrl?:string,avatar?:string,createdDate?:string,modifiedDate?:string}} [init] */
@@ -3898,14 +3900,22 @@ export class ViewPublishedMedias extends QueryBase {
     getMethod() { return 'GET' }
     createResponse() { return '' }
 }
-export class DeletePublishedMedia {
-    /** @param {{externalRef?:string}} [init] */
-    constructor(init) { Object.assign(this, init) }
-    /** @type {string} */
-    externalRef;
-    getTypeName() { return 'DeletePublishedMedia' }
-    getMethod() { return 'POST' }
-    createResponse() { return new StringsResponse() }
+export class QueryPublishedMedia extends QueryDb_1 {
+    /** @param {{type?:AssetType,category?:string,tag?:string,user?:string,userId?:string,skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
+    /** @type {?AssetType} */
+    type;
+    /** @type {?string} */
+    category;
+    /** @type {?string} */
+    tag;
+    /** @type {?string} */
+    user;
+    /** @type {?string} */
+    userId;
+    getTypeName() { return 'QueryPublishedMedia' }
+    getMethod() { return 'GET' }
+    createResponse() { return new QueryResponse() }
 }
 export class PublishAvatar {
     /** @param {{profile?:string}} [init] */
@@ -3979,6 +3989,44 @@ export class GetPublishedProjectFile {
     /** @type {?boolean} */
     original;
     getTypeName() { return 'GetPublishedProjectFile' }
+    getMethod() { return 'GET' }
+    createResponse() { return new Blob() }
+}
+export class DeletePublishedMedia {
+    /** @param {{externalRef?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    getTypeName() { return 'DeletePublishedMedia' }
+    getMethod() { return 'POST' }
+    createResponse() { return new StringsResponse() }
+}
+export class UpdatePublishedMedia {
+    /** @param {{externalRef?:string,rating?:Rating}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    /** @type {?Rating} */
+    rating;
+    getTypeName() { return 'UpdatePublishedMedia' }
+    getMethod() { return 'POST' }
+    createResponse() { return new EmptyResponse() }
+}
+export class UpdatePublishedProject {
+    /** @param {{externalRef?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    getTypeName() { return 'UpdatePublishedProject' }
+    getMethod() { return 'POST' }
+    createResponse() { return new EmptyResponse() }
+}
+export class GetPublishProjectPosterImage {
+    /** @param {{externalRef?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    getTypeName() { return 'GetPublishProjectPosterImage' }
     getMethod() { return 'GET' }
     createResponse() { return new Blob() }
 }
@@ -4363,15 +4411,6 @@ export class QueryAssets extends QueryDb_1 {
     /** @type {?string} */
     afterModifiedDate;
     getTypeName() { return 'QueryAssets' }
-    getMethod() { return 'GET' }
-    createResponse() { return new QueryResponse() }
-}
-export class QueryPublishedMedia extends QueryDb_1 {
-    /** @param {{type?:AssetType,skip?:number,take?:number,orderBy?:string,orderByDesc?:string,include?:string,fields?:string,meta?:{ [index:string]: string; }}} [init] */
-    constructor(init) { super(init); Object.assign(this, init) }
-    /** @type {?AssetType} */
-    type;
-    getTypeName() { return 'QueryPublishedMedia' }
     getMethod() { return 'GET' }
     createResponse() { return new QueryResponse() }
 }
