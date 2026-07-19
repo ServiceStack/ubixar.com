@@ -324,11 +324,31 @@ public class ComfyWorkflowParseTests : TestBase
         var workflowObj = workflowJson.ParseAsObjectDictionary();
         var workflow = ComfyWorkflowParser.Parse(workflowObj, "krea2_turbo.json", NodeDefs) ?? throw new Exception($"Could not parse {workflowPath}");
         workflow.PrintDump();
-        ComfyWorkflowParser.ExtractAssetPaths(workflowObj).PrintDump();
+        var assetPaths = ComfyWorkflowParser.ExtractAssetPaths(workflowObj);
+        assetPaths.PrintDump();
         var inputNames = workflow.Inputs.Map(x => x.Name);
         Assert.That(workflow.Type, Is.EqualTo(ComfyWorkflowType.TextToImage));
         inputNames.PrintDump();
         Assert.That(inputNames,Is.EquivalentTo("positivePrompt,width,height,batch_size,seed,steps,cfg,sampler_name,scheduler,denoise".Split(',')));
+
+        // Newer workflows embed model definitions (name/url/directory) in each loader node's properties.models[].
+        // These should be extracted as asset paths, honoring the embedded `directory` (e.g. text_encoders, not clip).
+        Assert.That(assetPaths, Does.Contain("diffusion_models/krea2_turbo_fp8_scaled.safetensors"));
+        Assert.That(assetPaths, Does.Contain("text_encoders/qwen3vl_4b_fp8_scaled.safetensors"));
+        Assert.That(assetPaths, Does.Contain("vae/qwen_image_vae.safetensors"));
+        Assert.That(assetPaths, Does.Contain("loras/krea2_darkbrush.safetensors"));
+
+        // ...and captured as downloadable Assets carrying their source Url
+        workflow.Assets.PrintDump();
+        var unet = workflow.Assets.FirstOrDefault(x => x.Asset == "diffusion_models/krea2_turbo_fp8_scaled.safetensors");
+        Assert.That(unet, Is.Not.Null);
+        Assert.That(unet.Url, Is.EqualTo("https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_fp8_scaled.safetensors"));
+        Assert.That(workflow.Assets.Select(x => x.Asset), Is.SupersetOf(new[] {
+            "diffusion_models/krea2_turbo_fp8_scaled.safetensors",
+            "text_encoders/qwen3vl_4b_fp8_scaled.safetensors",
+            "vae/qwen_image_vae.safetensors",
+            "loras/krea2_darkbrush.safetensors",
+        }));
     }
 
     [Test]

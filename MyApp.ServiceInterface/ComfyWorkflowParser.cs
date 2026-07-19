@@ -39,6 +39,29 @@ public class ComfyWorkflowParser
         return allNodes;
     }
 
+    // Newer ComfyUI workflows embed model definitions directly in a node's `properties.models[]`,
+    // each with an explicit { name, url, directory } (e.g. UNETLoader / CLIPLoader / VAELoader).
+    // The embedded `directory` is authoritative (e.g. CLIPLoader models live under `text_encoders`,
+    // not `clip`), so prefer it over the node-type heuristics.
+    private static IEnumerable<(string asset, string? url)> GetEmbeddedModels(Dictionary<string, object?> node)
+    {
+        if (node.GetValueOrDefault("properties") is Dictionary<string, object?> properties
+            && properties.GetValueOrDefault("models") is List<object> models)
+        {
+            foreach (var model in models.OfType<Dictionary<string, object?>>())
+            {
+                if (model.GetValueOrDefault("name") is not string name || string.IsNullOrEmpty(name))
+                    continue;
+                var directory = model.GetValueOrDefault("directory") as string;
+                var url = model.GetValueOrDefault("url") as string;
+                var asset = !string.IsNullOrEmpty(directory)
+                    ? directory.CombineWith(name)
+                    : name;
+                yield return (asset, url);
+            }
+        }
+    }
+
     // Subgraph internal links use object format; convert to the top-level array format
     // [id, origin_id, origin_slot, target_id, target_slot, type] so link traversal works uniformly.
     private static List<object> GetWorkflowLinks(Dictionary<string, object?> workflow)
@@ -184,11 +207,23 @@ public class ComfyWorkflowParser
         var nodes = GetWorkflowNodes(workflow, log);
         foreach (var node in nodes)
         {
-            if (node.GetValueOrDefault("type") is not string nodeType) 
+            if (node.GetValueOrDefault("type") is not string nodeType)
+                continue;
+
+            // Prefer embedded model definitions (properties.models[]) when present - they carry
+            // the exact asset path via their `directory`, so skip the node-type heuristics below
+            // (which would e.g. mis-file a CLIPLoader's text encoder under `clip/` instead of `text_encoders/`).
+            var hasEmbeddedModels = false;
+            foreach (var (asset, _) in GetEmbeddedModels(node))
+            {
+                ret.Add(asset);
+                hasEmbeddedModels = true;
+            }
+            if (hasEmbeddedModels)
                 continue;
 
             //https://github.com/comfyanonymous/ComfyUI/blob/master/folder_paths.py
-            if (nodeType is "CheckpointLoaderSimple" 
+            if (nodeType is "CheckpointLoaderSimple"
                 or "CheckpointLoader" 
                 or "unCLIPCheckpointLoader" 
                 or "ImageOnlyCheckpointLoader" 
@@ -716,6 +751,20 @@ public class ComfyWorkflowParser
 
             var nodeId = Convert.ToInt32(node["id"]);
             nodeDefs.TryGetValue(nodeType, out var nodeDef);
+
+            // Newer ComfyUI workflows embed downloadable model definitions in properties.models[]
+            // with an explicit { name, url, directory }; capture them as Assets with their source Url.
+            foreach (var (asset, url) in GetEmbeddedModels(node))
+            {
+                if (!string.IsNullOrEmpty(url) && workflowInfo.Assets.All(x => x.Asset != asset))
+                {
+                    workflowInfo.Assets.Add(new AssetInfo
+                    {
+                        Asset = asset,
+                        Url = url,
+                    });
+                }
+            }
 
             if (nodeType is "EmptyLatentImage" or "EmptySD3LatentImage")
             {
