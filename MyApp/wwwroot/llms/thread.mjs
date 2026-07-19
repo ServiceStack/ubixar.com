@@ -72,9 +72,6 @@ const AgentAvatar = {
     setup(props) {
         const ctx = inject('ctx')
         const avatarUrl = computed(() => {
-            if (props.profile && props.profile !== 'default') {
-                return '/ext/agents/' + props.profile + '/avatar'
-            }
             return ctx.state.agentAvatar + '?theme=' + (props.isDark ? 'dark' : 'light')
         })
         return { avatarUrl }

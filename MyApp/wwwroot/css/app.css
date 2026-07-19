@@ -1293,8 +1293,8 @@
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
   }
-  .min-h-\[3rem\] {
-    min-height: 3rem;
+  .min-h-\[4rem\] {
+    min-height: 4rem;
   }
   .min-h-\[350px\] {
     min-height: 350px;

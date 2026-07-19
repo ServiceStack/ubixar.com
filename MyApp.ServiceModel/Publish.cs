@@ -310,6 +310,7 @@ public class MediaInfo
 {
     public int Id { get; set; }
     public string Name { get; set; }
+    public string? Caption { get; set; }
     public AssetType Type { get; set; }
     public int Width { get; set; }
     public int Height { get; set; }

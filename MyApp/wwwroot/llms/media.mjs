@@ -488,13 +488,14 @@ const App = {
                                             </div>
                                         </div>
                                         <!-- Categories Section -->
-                                        <div v-for="(score, category) in parsedMedia.categories ?? {}"
+                                        <a v-for="(score, category) in parsedMedia.categories ?? {}"
                                             :key="'cat-' + category"
+                                            :href="categoryHref(category)"
                                             class="group cursor-pointer relative inline-flex items-center rounded-full overflow-hidden px-3 py-1 text-xs font-medium ring-1 ring-inset hover:dark:bg-blue-900 hover:dark:ring-blue-500/80"
-                                            :class="score 
-                                                ? 'text-blue-800 dark:text-blue-200 ring-blue-600/20 dark:ring-blue-400/30' 
+                                            :class="score
+                                                ? 'text-blue-800 dark:text-blue-200 ring-blue-600/20 dark:ring-blue-400/30'
                                                 : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 ring-blue-600/20 dark:ring-blue-400/30'"
-                                            :title="'Score: ' + (score ? Math.round(score * 100) + '%' : 'No score')">
+                                            :title="'Search category: ' + category + (score ? ' · Score: ' + Math.round(score * 100) + '%' : '')">
                                             <!-- Background fill based on score -->
                                             <div v-if="score"
                                                 class="group-hover:hidden absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-400 dark:from-blue-700 dark:to-blue-800"
@@ -504,20 +505,21 @@ const App = {
                                                 class="group-hover:hidden absolute inset-0 bg-blue-100 dark:bg-blue-900/30"></div>
                                             <!-- Text content -->
                                             <span class="relative z-10">{{ category }}</span>
-                                        </div>
+                                        </a>
                                     </div>
                                 </div>
 
-                                <!-- Tags Section -->
-                                <div v-if="Object.keys(parsedMedia.tags ?? {}).length">
+                                <!-- Tags Section (ordered by strength) -->
+                                <div v-if="sortedTags.length">
                                     <div class="flex flex-wrap gap-2">
-                                        <div v-for="(score, tag) in parsedMedia.tags ?? {}"
+                                        <a v-for="[tag, score] in sortedTags"
                                             :key="'tag-' + tag"
+                                            :href="tagHref(tag)"
                                             class="group cursor-pointer relative inline-flex items-center rounded-full overflow-hidden px-3 py-1 text-xs font-medium ring-1 ring-inset hover:dark:bg-green-900 hover:dark:ring-green-600/80"
-                                            :class="score 
-                                                ? 'text-emerald-800 dark:text-emerald-200 ring-emerald-600/20 dark:ring-emerald-400/30' 
+                                            :class="score
+                                                ? 'text-emerald-800 dark:text-emerald-200 ring-emerald-600/20 dark:ring-emerald-400/30'
                                                 : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 ring-emerald-600/20 dark:ring-emerald-400/30'"
-                                            :title="'Score: ' + (score ? Math.round(score * 100) + '%' : 'No score')">
+                                            :title="'Search tag: ' + tag + (score ? ' · Score: ' + Math.round(score * 100) + '%' : '')">
                                             <!-- Background fill based on score -->
                                             <div v-if="score"
                                                 class="group-hover:hidden absolute inset-0 bg-gradient-to-r from-emerald-300 to-emerald-400 dark:from-emerald-700 dark:to-emerald-800"
@@ -527,7 +529,7 @@ const App = {
                                                 class="group-hover:hidden absolute inset-0 bg-emerald-100 dark:bg-emerald-900/30"></div>
                                             <!-- Text content -->
                                             <span class="relative z-10">{{ tag }}</span>
-                                        </div>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -670,6 +672,20 @@ const App = {
             } catch (e) { }
             return item
         })
+
+        // Tags as [tag, score] entries ordered by strength (highest score first)
+        const sortedTags = computed(() =>
+            Object.entries(parsedMedia.value?.tags ?? {})
+                .sort((a, b) => (b[1] || 0) - (a[1] || 0)))
+
+        // Clicking a tag/category links to the gallery filtered by it (read by medias.mjs).
+        // Audio media opens the Audio tab (#audio) so the filter lands on the matching grid.
+        const galleryHref = (kind, value) => {
+            const hash = (parsedMedia.value?.type || '').toLowerCase() === 'audio' ? '#audio' : ''
+            return `/m?${kind}=${encodeURIComponent(value)}${hash}`
+        }
+        const tagHref = (tag) => galleryHref('tag', tag)
+        const categoryHref = (category) => galleryHref('category', category)
 
         const aspectRatio = computed(() => {
             const media = parsedMedia.value
@@ -1029,6 +1045,9 @@ const App = {
             media,
             error,
             parsedMedia,
+            sortedTags,
+            tagHref,
+            categoryHref,
             aspectRatio,
             resolveUrl,
             formatDate,

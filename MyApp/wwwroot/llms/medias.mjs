@@ -398,7 +398,7 @@ const AudioCard = {
     <div class="group relative rounded-2xl overflow-hidden border shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
         :class="[$styles.card]"
         @contextmenu="onContextMenu">
-        <AdminMenu ref="adminMenu" :item="item" @deleted="$emit('deleted', item)" />
+        <AdminMenu ref="adminMenu" :item="item" btn-class="top-2 right-2" @deleted="$emit('deleted', item)" />
         <div class="p-4 flex items-start gap-3">
             <div class="size-11 flex-shrink-0 rounded-xl flex items-center justify-center"
                 style="background:rgba(127,127,127,0.12)">
@@ -407,8 +407,8 @@ const AudioCard = {
                 </svg>
             </div>
             <div class="min-w-0 flex-1">
-                <a :href="itemUrl" class="block truncate text-sm font-bold capitalize hover:underline" :class="$styles.heading" :title="item.name">
-                    {{ item.name || 'Audio' }}
+                <a :href="itemUrl" class="block truncate text-sm font-bold capitalize hover:underline" :class="$styles.heading" :title="item.caption || item.name">
+                    {{ item.caption || item.name || 'Audio' }}
                 </a>
                 <div class="mt-0.5 flex items-center flex-wrap gap-x-2 gap-y-0.5 text-2xs font-medium" :class="$styles.muted">
                     <span v-if="item.model" class="truncate max-w-[10rem]">{{ item.model }}</span>
@@ -420,7 +420,7 @@ const AudioCard = {
         </div>
 
         <!-- Prompt (clipped to keep cards a consistent height) -->
-        <p class="px-4 pb-3 text-xs leading-relaxed line-clamp-2 min-h-[3rem]" :class="$styles.muted" :title="item.prompt">
+        <p class="px-4 pb-3 text-xs leading-relaxed line-clamp-2 min-h-[4rem]" :class="$styles.muted" :title="item.prompt">
             {{ item.prompt }}
         </p>
 
@@ -770,8 +770,13 @@ const MediaGrid = {
         initialItems: { type: Array, default: () => [] },
         emptyText: { type: String, default: 'No media yet' },
         orderBy: { type: String, default: '-publishedAt' },
+        // Initial filter from the URL (?tag= / ?category=) and whether to keep the URL in sync
+        initialTag: { type: String, default: '' },
+        initialCategory: { type: String, default: '' },
+        syncUrl: { type: Boolean, default: false },
     },
-    setup(props) {
+    emits: ['filter-changed'],
+    setup(props, { emit }) {
         const client = inject('client')
 
         const items = ref(props.initialItems ? [...props.initialItems] : [])
@@ -782,10 +787,18 @@ const MediaGrid = {
         const sentinel = ref(null)
         const rootEl = ref(null)
 
-        // Category/tag filters (the category bar is only shown for the images grid)
-        const activeCategory = ref('')
-        const activeTag = ref('')
+        // Category/tag filters (the category bar is only shown for the images grid),
+        // seeded from the URL so links like /m?tag=fox open pre-filtered
+        const activeCategory = ref(props.initialCategory || '')
+        const activeTag = ref(props.initialTag || '')
         const showAllCategories = ref(false)
+
+        // Notify parent (App) so it can reflect the active filter in the URL
+        function emitFilter() {
+            if (props.syncUrl) {
+                emit('filter-changed', { tag: activeTag.value, category: activeCategory.value })
+            }
+        }
 
         // Sort order changed (owned by the App tabs row): re-query from the start
         watch(() => props.orderBy, () => {
@@ -846,6 +859,7 @@ const MediaGrid = {
             if (activeCategory.value === category && !activeTag.value) return
             activeCategory.value = category
             activeTag.value = ''
+            emitFilter()
             scrollToTop()
             reload()
         }
@@ -855,6 +869,7 @@ const MediaGrid = {
             if (activeTag.value === tag && !activeCategory.value) return
             activeTag.value = tag
             activeCategory.value = ''
+            emitFilter()
             scrollToTop()
             reload()
         }
@@ -863,6 +878,7 @@ const MediaGrid = {
             if (!activeCategory.value && !activeTag.value) return
             activeCategory.value = ''
             activeTag.value = ''
+            emitFilter()
             scrollToTop()
             reload()
         }
@@ -1126,10 +1142,13 @@ const App = {
 
                 <!-- Panels (lazy-mounted, kept alive via v-show) -->
                 <div v-show="activeTab === 'media'">
-                    <MediaGrid v-if="visited.media" ref="mediaGrid" type="Image" :initial-items="seedResults" :order-by="orderBy" empty-text="No images yet" />
+                    <MediaGrid v-if="visited.media" ref="mediaGrid" type="Image" :initial-items="seedResults"
+                        :order-by="orderBy" :initial-tag="mediaInitialTag" :initial-category="mediaInitialCategory"
+                        sync-url @filter-changed="onFilterChanged" empty-text="No images yet" />
                 </div>
                 <div v-show="activeTab === 'audio'">
-                    <MediaGrid v-if="visited.audio" ref="audioGrid" type="Audio" audio :order-by="orderBy" empty-text="No audio yet" />
+                    <MediaGrid v-if="visited.audio" ref="audioGrid" type="Audio" audio :order-by="orderBy"
+                        :initial-tag="audioInitialTag" sync-url @filter-changed="onFilterChanged" empty-text="No audio yet" />
                 </div>
                 <div v-show="activeTab === 'projects'">
                     <ProjectGrid v-if="visited.projects" ref="projectGrid" :order-by="orderBy" />
@@ -1146,8 +1165,22 @@ const App = {
         const tabs = Tabs
         const tabIds = tabs.map(t => t.id)
 
+        // Initial tag/category filter from the URL (e.g. /m?tag=fox or /m?category=woman),
+        // set when navigating from a tag/category link on the media detail page
+        const searchParams = new URLSearchParams(location.search)
+        const initialTag = searchParams.get('tag') || ''
+        const initialCategory = searchParams.get('category') || ''
+
         const initialHash = (location.hash || '').replace('#', '')
+        // The tag/category filter applies to the initially-active tab (e.g. #audio from an
+        // audio detail page opens the Audio tab), defaulting to the Images grid
         const activeTab = ref(tabIds.includes(initialHash) ? initialHash : 'media')
+
+        // Route the initial filter to the grid matching the active tab so an audio tag opens
+        // the Audio grid filtered, not the Images grid (categories only apply to images)
+        const mediaInitialTag = activeTab.value === 'media' ? initialTag : ''
+        const mediaInitialCategory = activeTab.value === 'media' ? initialCategory : ''
+        const audioInitialTag = activeTab.value === 'audio' ? initialTag : ''
 
         const visited = reactive({
             media: true,
@@ -1186,9 +1219,25 @@ const App = {
             ctx.savePrefs()
         })
 
-        // Server-rendered results are newest-first; only seed the grid with them when the
-        // restored order matches, otherwise let MediaGrid re-query in the restored order
-        const seedResults = computed(() => orderBy.value === '-publishedAt' ? results : [])
+        // Server-rendered results are newest-first and unfiltered; only seed the grid with them
+        // when the restored order matches and no tag/category filter is active - otherwise let
+        // MediaGrid re-query in the restored order / with the filter
+        const seedResults = computed(() =>
+            orderBy.value === '-publishedAt' && !mediaInitialTag && !mediaInitialCategory ? results : [])
+
+        // Keep the URL in sync with the Images grid's active tag/category filter (shareable/bookmarkable)
+        function onFilterChanged({ tag, category }) {
+            const params = new URLSearchParams(location.search)
+            params.delete('tag')
+            params.delete('category')
+            if (tag) params.set('tag', tag)
+            else if (category) params.set('category', category)
+            const qs = params.toString()
+            const url = location.pathname + (qs ? '?' + qs : '') + location.hash
+            if (location.pathname + location.search + location.hash !== url) {
+                history.replaceState(null, '', url)
+            }
+        }
 
         // Ratings prefs changed: re-query the media/audio grids so results reflect the new prefs
         function onRatingsChanged() {
@@ -1302,6 +1351,10 @@ const App = {
             onRatingsChanged,
             orderBy,
             orderOptions,
+            mediaInitialTag,
+            mediaInitialCategory,
+            audioInitialTag,
+            onFilterChanged,
         }
     }
 }

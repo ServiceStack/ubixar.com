@@ -164,12 +164,12 @@ public class CaptionArtifactCommand(
     }
 }
 
-
 public class CaptionMediaCommand(
     ILogger<CaptionMediaCommand> logger, IBackgroundJobs jobs, IDbConnectionFactory dbFactory) 
     : AsyncCommand<ChatResponse>
 {
-    public const string Prompt = "Caption this picture in 1 short sentence";
+    public const string ImagePrompt = "Caption this picture in 1 short sentence";
+    public const string AudioPrompt = "Generate a short title for this audio generation prompt. The title should be suitable for use as a filename or a short description of the audio content. The title should be less than 8 words and describe the audio content in a concise way. Don't generate multiple options, just a single title. This is the prompt:\n\n";
     
     protected override async Task RunAsync(ChatResponse request, CancellationToken token)
     {

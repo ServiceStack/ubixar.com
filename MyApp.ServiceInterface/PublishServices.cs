@@ -320,16 +320,9 @@ public class PublishServices(
         }
         if (request.Tag != null)
         {
-            var tag = appData.GetTag(request.Tag);
-            if (tag != null)
-            {
-                var tagColumn = q.Column<PublishedMedia>(x => x.Tags);
-                q.And(tagColumn + " ? {0}", tag.Name);
-            }
-            else
-            {
-                log.LogWarning("Unknown tag {Tag}", request.Tag);
-            }
+            //var tag = appData.GetTag(request.Tag);
+            var tagColumn = q.Column<PublishedMedia>(x => x.Tags);
+            q.And(tagColumn + " ? {0}", request.Tag);
         }
 
         if (request.User != null)

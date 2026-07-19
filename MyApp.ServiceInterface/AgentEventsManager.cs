@@ -19,15 +19,25 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
 
     public void QueuePublishedMedia(PublishedMedia media, string userId)
     {
-        if (media.Caption == null)
+        if (media.Type == AssetType.Image)
         {
-            EnqueueMediaChat(media, CaptionMediaCommand.Prompt,  callback:nameof(CaptionMediaCommand),  userId:userId);
+            if (media.Caption == null)
+            {
+                EnqueueMediaImageChat(media, CaptionMediaCommand.ImagePrompt,  callback:nameof(CaptionMediaCommand),  userId:userId);
+            }
+            if (media.Description == null)
+            {
+                EnqueueMediaImageChat(media, DescribeMediaCommand.Prompt, callback:nameof(DescribeMediaCommand), userId:userId);
+            }
         }
-        if (media.Description == null)
+        else if (media.Type == AssetType.Audio)
         {
-            EnqueueMediaChat(media, DescribeMediaCommand.Prompt, callback:nameof(DescribeMediaCommand), userId:userId);
+            if (media.Caption == null)
+            {
+                EnqueueMediaAudioChat(media, CaptionMediaCommand.AudioPrompt + media.Prompt, callback:nameof(CaptionMediaCommand), userId:userId);
+            }
         }
-        
+            
         var artifactRefId = media.Id * -1;
         QueuedArtifactRefs[artifactRefId] = new ArtifactRef
         {
@@ -276,7 +286,7 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
         return jobRef;
     }
     
-    public BackgroundJobRef EnqueueMediaChat(PublishedMedia media, string prompt, string? callback = null, string? userId = null, string? model = null)
+    public BackgroundJobRef EnqueueMediaImageChat(PublishedMedia media, string prompt, string? callback = null, string? userId = null, string? model = null)
     {
         model ??= appData.Config.VisualLanguageModel;
         var taskId = PreciseTimestamp.UniqueUtcNowTicks;
@@ -290,6 +300,35 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
                     Role = "user", 
                     Content = [
                         AiContent.Image(media.Url),
+                        AiContent.Text(prompt)
+                    ]
+                },
+            ]
+        }, new() {
+            RefId = refId,
+            ReplyTo = replyTo,
+            Callback = callback,
+            UserId = userId,
+            Args = new() {
+                ["mediaId"] = $"{media.Id}",
+            },
+        });
+        return jobRef;
+    }
+    
+    public BackgroundJobRef EnqueueMediaAudioChat(PublishedMedia media, string prompt, string? callback = null, string? userId = null, string? model = null)
+    {
+        model ??= appData.Config.VisualLanguageModel;
+        var taskId = PreciseTimestamp.UniqueUtcNowTicks;
+        var refId = $"{taskId}";
+        var replyTo = $"/api/{nameof(CompleteChatCompletion)}".AddQueryParam(nameof(refId), refId);
+        var jobRef = jobs.EnqueueCommand<ChatCompletionCommand>(new ChatCompletion {
+            Model = model,
+            Messages = [
+                new()
+                {
+                    Role = "user", 
+                    Content = [
                         AiContent.Text(prompt)
                     ]
                 },
