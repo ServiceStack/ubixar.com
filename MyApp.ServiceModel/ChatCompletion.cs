@@ -539,7 +539,7 @@ public class ChoiceAudio
 
     [Description("The Unix timestamp (in seconds) for when this audio response will no longer be accessible on the server for use in multi-turn conversations.")]
     [DataMember(Name = "expires_at")]
-    public int ExpiresAt { get; set; }
+    public long ExpiresAt { get; set; }
     
     [Description("Unique identifier for this audio response.")]
     [DataMember(Name = "id")]

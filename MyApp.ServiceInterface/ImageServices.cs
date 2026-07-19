@@ -17,7 +17,7 @@ public class ImageServices(ILogger<ImageServices> log, AppData appData, AgentEve
             request.AspectRatio ??= "9:16";
             GenerateImageResponse? dto = null;
 
-            if (request.Model.Contains('/'))
+            if (request.Model.Contains('/') && !request.Model.StartsWith("llmspy/"))
             {
                 dto = await GenerateImageWithOpenRouter(request);
             }
@@ -117,7 +117,7 @@ public class ImageServices(ILogger<ImageServices> log, AppData appData, AgentEve
 
     private async Task<GenerateImageResponse> GenerateImageWithComfyUI(GenerateImage request)
     {
-        var workflow = appData.Workflows.FirstOrDefault(x => x.Slug == request.Model);
+        var workflow = appData.GetWorkflowBySlug(request.Model);
         var workflowVersion = workflow != null
             ? appData.WorkflowVersions.FirstOrDefault(x => x.ParentId == workflow.Id)
             : null;

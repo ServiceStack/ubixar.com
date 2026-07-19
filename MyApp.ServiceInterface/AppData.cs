@@ -70,6 +70,15 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
                 && x.Gpus?.Count > 0);
         return agents;
     }
+    
+    public Workflow? GetWorkflowBySlug(string slug)
+    {
+        if (slug.StartsWith("llmspy/"))
+        {
+            slug = slug.LastRightPart('/');
+        }
+        return Workflows.FirstOrDefault(x => x.Slug == slug);
+    }
 
     public string? ReadTextFile(string path)
     {
