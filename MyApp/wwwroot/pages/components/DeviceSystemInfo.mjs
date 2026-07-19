@@ -162,7 +162,7 @@ export const DeviceStats = {
                         :title="'Executions: ' + stat.count">
                     {{ humanifyNumber(stat.count) }}
                   </span>
-                <div v-if="stat.credits" class="lg:px-1 p-0.5 shadow-sm rounded border bg-gray-200 dark:bg-gray-700"
+                <div v-if="stat.credits" class="lg:px-1 p-0.5 shadow-sm rounded border border-transparent bg-gray-200 dark:bg-gray-700"
                      :title="'Credits: ' + stat.credits">
                     <span class="flex gap-1 text-sm font-medium text-yellow-600 dark:text-yellow-400">
                         <svg class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">

@@ -138,7 +138,7 @@ export default {
                             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                                 <div class="space-y-2">
                                     <div v-for="asset in workflow.info?.assets || []" :key="asset.asset" 
-                                         class="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-800 rounded border">
+                                         class="flex items-center justify-between py-2 px-3 bg-white dark:bg-gray-800 rounded border border-transparent">
                                         <div class="flex items-center">
                                             <div class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-sm" :title="asset.asset">{{ asset.asset }}</div>
                                             <div v-if="asset.url" class="ml-2 text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs" :title="rightPart(asset.url, '@')">
