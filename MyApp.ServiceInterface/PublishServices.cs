@@ -266,6 +266,36 @@ public class PublishServices(
         
         return viewerHtml;
     }
+
+    public string Get(ViewPublishedThreads request)
+    {
+        Response.Redirect(Request.ResolveAbsoluteUrl("~/m"));
+        return """
+               <html>
+                <head>
+                     <meta http-equiv="refresh" content="0; url=/m" />
+                </head>
+                <body>
+                    <p>Redirecting to <a href="/m">/m</a>...</p>
+                </body>
+                </html>
+               """;
+    }
+
+    public string Get(ViewPublishedProjects request)
+    {
+        Response.Redirect(Request.ResolveAbsoluteUrl("~/m#projects"));
+        return """
+               <html>
+                <head>
+                     <meta http-equiv="refresh" content="0; url=/m#projects" />
+                </head>
+                <body>
+                    <p>Redirecting to <a href="/m#projects">/m#projects</a>...</p>
+                </body>
+                </html>
+               """;
+    }
     
     public async Task<QueryResponse<MediaInfo>> Get(QueryPublishedMedia request)
     {

@@ -295,6 +295,14 @@ public class ViewPublishedMedias : QueryBase, IGet, IReturn<string>
     public AssetType Type { get; set; }
 }
 
+[Tag(Tags.Publish)]
+[Route("/t", "GET")]
+public class ViewPublishedThreads : QueryBase, IGet, IReturn<string> { }
+
+[Tag(Tags.Publish)]
+[Route("/p", "GET")]
+public class ViewPublishedProjects : QueryBase, IGet, IReturn<string> { }
+
 [SystemJson(UseSystemJson.Never)]
 [Tag(Tags.Publish)]
 public class QueryPublishedMedia : QueryDb<PublishedMedia, MediaInfo>
