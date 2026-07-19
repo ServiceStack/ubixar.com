@@ -726,8 +726,10 @@
             if (!host) return;
             try {
                 const q = new URLSearchParams({
-                    take: '9', type: 'Image', orderByDesc: 'Id',
-                    fields: 'Id,Name,Url,PublishedUrl,Width,Height'
+                    take: '9', 
+                    type: 'Image',
+                    fields: 'Id,Name,Url,PublishedUrl,Width,Height',
+                    orderBy: '-reactionsCount',
                 });
                 const res = await fetch('/api/QueryPublishedMedia?' + q.toString(), { headers: { Accept: 'application/json' } });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -762,7 +764,8 @@
             if (!section || !grid) return;
             try {
                 const q = new URLSearchParams({
-                    take: '24', orderByDesc: 'Id',
+                    take: '24',
+                    orderBy: '-reactionsCount',
                     fields: 'Id,Name,Description,PublishedUrl,PosterImage,FileCount'
                 });
                 const res = await fetch('/api/QueryPublishedProjects?' + q.toString(), { headers: { Accept: 'application/json' } });
