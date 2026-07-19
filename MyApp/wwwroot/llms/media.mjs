@@ -236,7 +236,7 @@ const App = {
     <div class="min-h-screen transition-colors duration-300 bg-fixed relative" :class="$styles.app">
         <!-- Top Left Back Link -->
         <div class="absolute top-1 left-4 z-[100] select-none">
-            <a href="/m" title="Back to Media Gallery"
+            <a :href="galleryUrl" title="Back to Media Gallery"
                 class="flex items-center gap-1.5 rounded-full px-2.5 py-1 border shadow-sm transition-colors text-xs"
                 :class="[$styles.dropdownButton, $styles.chromeBorder]">
                 <svg class="h-3.5 w-3.5 flex-shrink-0" :class="$styles.icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -678,12 +678,15 @@ const App = {
             Object.entries(parsedMedia.value?.tags ?? {})
                 .sort((a, b) => (b[1] || 0) - (a[1] || 0)))
 
-        // Clicking a tag/category links to the gallery filtered by it (read by medias.mjs).
-        // Audio media opens the Audio tab (#audio) so the filter lands on the matching grid.
-        const galleryHref = (kind, value) => {
-            const hash = (parsedMedia.value?.type || '').toLowerCase() === 'audio' ? '#audio' : ''
-            return `/m?${kind}=${encodeURIComponent(value)}${hash}`
-        }
+        // Audio media lives on the gallery's Audio tab (#audio); images use the default tab
+        const isAudio = computed(() => (parsedMedia.value?.type || '').toLowerCase() === 'audio')
+        // Back link to the gallery, landing on the tab this media belongs to
+        const galleryUrl = computed(() => isAudio.value ? '/m#audio' : '/m')
+
+        // Clicking a tag/category links to the gallery filtered by it (read by medias.mjs),
+        // opening the matching tab so the filter lands on the right grid.
+        const galleryHref = (kind, value) =>
+            `/m?${kind}=${encodeURIComponent(value)}${isAudio.value ? '#audio' : ''}`
         const tagHref = (tag) => galleryHref('tag', tag)
         const categoryHref = (category) => galleryHref('category', category)
 
@@ -1046,6 +1049,7 @@ const App = {
             error,
             parsedMedia,
             sortedTags,
+            galleryUrl,
             tagHref,
             categoryHref,
             aspectRatio,
