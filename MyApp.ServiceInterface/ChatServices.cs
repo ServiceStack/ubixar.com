@@ -28,12 +28,10 @@ public class ChatServices(ILogger<ChatServices> log, AppData appData, AgentEvent
                 if (string.IsNullOrWhiteSpace(prompt))
                     throw HttpError.BadRequest("Prompt cannot be empty");
                 
-                var workflow = appData.GetWorkflowBySlug(request.Model);
-                var workflowVersion = workflow != null
-                    ? appData.WorkflowVersions.FirstOrDefault(x => x.ParentId == workflow.Id)
-                    : null;
-                if (workflowVersion == null)
-                    throw HttpError.NotFound($"'{request.Model}' not found");
+                var workflow = appData.GetWorkflowBySlug(request.Model)
+                    ?? throw HttpError.NotFound($"Workflow '{request.Model}' not found");
+                var workflowVersion = appData.WorkflowVersions.FirstOrDefault(x => x.ParentId == workflow.Id)
+                    ?? throw HttpError.NotFound($"'{request.Model}' version not found");
                 
                 var args = new Dictionary<string, object?>
                 {
