@@ -1092,7 +1092,12 @@ public class PublishServices(
     {
         var media = await AssertPublishedMedia(request.ExternalRef);
         
-        await Db.UpdateOnlyAsync(() => new PublishedMedia { Rating = request.Rating },
+        await Db.UpdateOnlyAsync(() => new PublishedMedia
+            {
+                Rating = request.Rating ?? media.Rating,
+                Caption = request.Caption ?? media.Caption,
+                Description = request.Description ?? media.Description
+            },
             where: x => x.Id == media.Id);
 
         return new EmptyResponse();

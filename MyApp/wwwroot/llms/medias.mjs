@@ -115,7 +115,7 @@ function formatBytes(bytes) {
     return `${val >= 10 || i === 0 ? Math.round(val) : val.toFixed(1)} ${units[i]}`
 }
 
-// Admin-only context menu for a PublishedMedia: quickly change its Rating or delete it.
+// Admin-only context menu for a PublishedMedia: quickly change its Rating, edit its Caption, or delete it.
 // Only rendered for users with the "Admin" role. Opens on right-click (contextmenu) or the
 // hover shield button; the menu is teleported to <body> so it's never clipped by card overflow.
 const AdminMenu = {
@@ -147,6 +147,14 @@ const AdminMenu = {
                     <svg v-if="item.rating === r" class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
+                </button>
+                <button type="button" :disabled="busy" @click="editCaption"
+                    class="w-full flex items-center gap-2 px-3 py-2 text-left font-semibold border-t hover:bg-gray-200/60 dark:hover:bg-gray-700/40 disabled:opacity-50"
+                    :class="[$styles.heading, $styles.chromeBorder]">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                    Edit Caption
                 </button>
                 <button type="button" :disabled="busy" @click="del"
                     class="w-full flex items-center gap-2 px-3 py-2 text-left font-semibold border-t text-red-600 dark:text-red-400 hover:bg-red-500/10 disabled:opacity-50"
@@ -223,6 +231,30 @@ const AdminMenu = {
             }
         }
 
+        async function editCaption() {
+            if (busy.value) return
+            const caption = window.prompt('Caption', props.item.caption || '')
+            if (caption == null) return // cancelled
+            busy.value = true
+            menuError.value = ''
+            try {
+                const api = await client.api(new UpdatePublishedMedia({
+                    externalRef: props.item.externalRef,
+                    caption,
+                }))
+                if (api.succeeded) {
+                    props.item.caption = caption
+                    close()
+                } else {
+                    menuError.value = api.error?.message || 'Failed to update caption'
+                }
+            } catch (e) {
+                menuError.value = e.message || 'Failed to update caption'
+            } finally {
+                busy.value = false
+            }
+        }
+
         async function del() {
             if (busy.value) return
             if (!window.confirm(`Delete "${props.item.name || 'this media'}"? This cannot be undone.`)) return
@@ -254,7 +286,7 @@ const AdminMenu = {
         return {
             isAdmin, open, busy, menuError,
             ratings: RatingOptions,
-            menuStyle, openFromButton, close, setRating, del,
+            menuStyle, openFromButton, close, setRating, editCaption, del,
         }
     }
 }
@@ -268,7 +300,6 @@ const MediaCard = {
     template: `
     <a :href="itemUrl" class="media-card group relative block mb-4 rounded-2xl overflow-hidden border shadow-sm hover:shadow-2xl transition-all duration-300"
         :class="[$styles.card]"
-        :title="item.name"
         @contextmenu="onContextMenu"
         @mouseenter="hovered = true">
 
@@ -277,7 +308,7 @@ const MediaCard = {
         <!-- Image -->
         <div v-if="isImage" class="w-full bg-gray-100 dark:bg-gray-900/60" :style="aspectStyle">
             <img :src="mediaUrl"
-                :alt="item.name || 'Media'"
+                :alt="item.caption || item.name || ''"
                 loading="lazy"
                 class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                 :class="{ 'opacity-0': broken }"
@@ -318,8 +349,8 @@ const MediaCard = {
         <!-- Hover overlay -->
         <div class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
             <div class="p-3 space-y-1.5">
-                <h3 v-if="item.name" class="text-sm font-bold text-white leading-snug line-clamp-2 capitalize drop-shadow">
-                    {{ item.name }}
+                <h3 v-if="item.caption" class="text-sm font-bold text-white leading-snug line-clamp-1 capitalize drop-shadow" :title="item.caption">
+                    {{ item.caption }}
                 </h3>
                 <div class="flex items-center flex-wrap gap-1.5">
                     <span v-if="item.model" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-white/20 text-white backdrop-blur-sm">

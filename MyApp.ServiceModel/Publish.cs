@@ -343,6 +343,8 @@ public class UpdatePublishedMedia : IPost, IReturn<EmptyResponse>
     [ValidateNotEmpty]
     public string ExternalRef { get; set; }
     public Rating? Rating { get; set; }
+    public string? Caption { get; set; }
+    public string? Description { get; set; }
 }
 
 [ValidateIsAdmin]
