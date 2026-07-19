@@ -15,10 +15,10 @@ const WorkflowReactions = {
         <button v-for="(count,emoji) of reactionCounts(version.reactions,['👍','❤','😂'])" type="button" 
                 @click.prevent.stop="toggleReaction(version, emoji)"
                 :title="'React with ' + emoji"
-                class="px-1 py-0.5 lg:px-2 border" 
+                class="px-1 py-0.5 lg:px-2 border border-transparent" 
                 :class="[ store.hasWorkflowVersionReaction(version.id, emoji) 
                     ? 'shadow-sm bg-gray-200 dark:bg-gray-700' 
-                    : 'border-transparent hover:bg-gray-200 dark:hover:bg-gray-700' ]">
+                    : 'hover:bg-gray-200 dark:hover:bg-gray-700' ]">
             <div>
                 <span class="flex gap-1">
                     <div :class="{ 'text-red-500': emoji === '❤' }">{{emoji}}</div> {{count}}
