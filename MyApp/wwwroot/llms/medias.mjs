@@ -1133,6 +1133,14 @@ const App = {
         </div>
         <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8" :class="$styles.appInner">
 
+          <!-- Top Left Back Link -->
+          <div class="absolute top-1 left-1 z-[100] select-none">
+            <a href="/" title="Back to Home" class="flex items-center gap-1.5 rounded-full px-2.5 py-1 border shadow-sm transition-colors text-xs border border-nord-600 bg-nord-900 hover:bg-nord-800 text-nord-300 transition-colors ring-frost-600 focus:outline-none border-frost-700/80">
+                <svg class="h-3.5 w-3.5 flex-shrink-0 text-nord-300/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"></path></svg>
+                <span class="font-medium text-nord-200">Home</span>
+            </a>
+          </div>
+          
             <!-- Error Screen -->
             <div v-if="error" class="mx-auto max-w-md mt-16 text-center">
                 <div class="p-6 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-2xl shadow-sm">

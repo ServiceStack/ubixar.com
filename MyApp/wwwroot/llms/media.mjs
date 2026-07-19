@@ -235,7 +235,7 @@ const App = {
     template: `
     <div class="min-h-screen transition-colors duration-300 bg-fixed relative" :class="$styles.app">
         <!-- Top Left Back Link -->
-        <div class="absolute top-1 left-4 z-[100] select-none">
+        <div class="absolute top-1 left-1 z-[100] select-none">
             <a :href="galleryUrl" title="Back to Media Gallery"
                 class="flex items-center gap-1.5 rounded-full px-2.5 py-1 border shadow-sm transition-colors text-xs"
                 :class="[$styles.dropdownButton, $styles.chromeBorder]">
