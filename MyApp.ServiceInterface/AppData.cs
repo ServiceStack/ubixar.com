@@ -642,6 +642,43 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
                    ?? ReadTextFile("wwwroot/data/categories-list.json")
                    ?? throw new Exception("categories-list.json not found");
         CategoryNames = json.FromJson<List<string>>();
+        if (CategoryNames.Count == 0)
+        {
+            log.LogWarning("No categories found in categories-list.json");
+            CategoryNames = [
+                "woman",
+                "clothing",
+                "anime",
+                "outdoors",
+                "comics",
+                "photography",
+                "costume",
+                "man",
+                "animal",
+                "armor",
+                "transportation",
+                "architecture",
+                "city",
+                "cartoon",
+                "car",
+                "food",
+                "astronomy",
+                "modern art",
+                "cat",
+                "robot",
+                "landscape",
+                "dog",
+                "latex clothing",
+                "dragon",
+                "fantasy",
+                "sports car",
+                "post apocalyptic",
+                "photorealistic",
+                "game character",
+                "sci-fi"
+            ];
+        }
+        
         Categories = db.Select<Category>();
         CategoriesMap = Categories.ToDictionary(x => x.Name);
         
