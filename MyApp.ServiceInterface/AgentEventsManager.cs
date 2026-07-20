@@ -52,7 +52,7 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
     public int QueuePendingPublishedMedia(IDbConnection db)
     {
         var mediaMissingClassification = db.Select<PublishedMedia>(p =>
-            (p.Tags == null || p.Caption == null || p.Description == null) && (p.Error == null));
+            (p.Tags == null || p.Caption == null) && (p.Error == null));
 
         var count = mediaMissingClassification.Count;
         foreach (var media in mediaMissingClassification)
