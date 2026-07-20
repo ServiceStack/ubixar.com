@@ -834,11 +834,11 @@ public class AgentServices(ILogger<AgentServices> log,
             var media = db.SingleById<PublishedMedia>(mediaId);
             if (media == null)
                 throw HttpError.NotFound("PublishedMedia could not be found");
-            if (media.DeviceId != request.DeviceId && media.DeviceId != null)
-            {
-                if (!Request.GetClaimsPrincipal().IsAdmin())
-                    throw HttpError.Conflict("This Device does not own this PublishedMedia");
-            }
+            // if (media.DeviceId != request.DeviceId && media.DeviceId != null)
+            // {
+            //     if (!Request.GetClaimsPrincipal().IsAdmin())
+            //         throw HttpError.Conflict("This Device does not own this PublishedMedia");
+            // }
             media.Tags = request.Tags ?? media.Tags;
             media.Categories = request.Categories ?? media.Categories;
             media.Objects = request.Objects ?? media.Objects;
