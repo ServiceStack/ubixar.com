@@ -781,17 +781,10 @@ public class PublishServices(
 
     public async Task<object> Post(QueueMissingPublishedMedia request)
     {
-        var mediaMissingClassification = await Db.SelectAsync<PublishedMedia>(p =>
-            (p.Tags == null || p.Caption == null || p.Description == null) && (p.Error == null));
-
-        var count = mediaMissingClassification.Count;
-        foreach (var media in mediaMissingClassification)
-        {
-            agentManager.QueuePublishedMedia(media, Request.GetRequiredUserId());
-        }
+        var count = agentManager.QueuePendingPublishedMedia(Db);
         return new StringResponse { Result = $"Queued {count} missing published media." };
     }
-    
+
     public async Task<object> Post(PublishProject request)
     {
         var user = await AssertUser();

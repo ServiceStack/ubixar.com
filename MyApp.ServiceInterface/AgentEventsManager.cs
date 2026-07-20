@@ -49,6 +49,21 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
         };
     }
 
+    public int QueuePendingPublishedMedia(IDbConnection db)
+    {
+        var mediaMissingClassification = db.Select<PublishedMedia>(p =>
+            (p.Tags == null || p.Caption == null || p.Description == null) && (p.Error == null));
+
+        var count = mediaMissingClassification.Count;
+        foreach (var media in mediaMissingClassification)
+        {
+            QueuePublishedMedia(media, appData.Config.SystemUserId);
+        }
+
+        log.LogInformation("Reloaded {Count} pending published media", count);
+        return count;
+    }
+
     public List<ComfyAgent> GetComfyAgents(ComfyAgentQuery options = default)
     {
         if (options.DeviceId != null)
@@ -355,6 +370,7 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
             QueuedGenerations[generation.Id] = generation;
         }
         log.LogInformation("Reloaded {Count} pending generations", QueuedGenerations.Count);
+        QueuePendingPublishedMedia(db);
     }
 
     public void RemoveAgent(string deviceId)
