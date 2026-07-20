@@ -370,7 +370,7 @@ public class AgentEventsManager(ILogger<AgentEventsManager> log, AppData appData
             QueuedGenerations[generation.Id] = generation;
         }
         log.LogInformation("Reloaded {Count} pending generations", QueuedGenerations.Count);
-        QueuePendingPublishedMedia(db);
+        // QueuePendingPublishedMedia(db);
     }
 
     public void RemoveAgent(string deviceId)

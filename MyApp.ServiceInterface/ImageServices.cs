@@ -118,9 +118,9 @@ public class ImageServices(ILogger<ImageServices> log, AppData appData, AgentEve
     private async Task<GenerateImageResponse> GenerateImageWithComfyUI(GenerateImage request)
     {
         var workflow = appData.GetWorkflowBySlug(request.Model)
-            ?? throw HttpError.NotFound($"'{request.Model}' not found");
+            ?? throw HttpError.NotFound($"'{request.Model}' workflow not found");
         var workflowVersion = appData.WorkflowVersions.FirstOrDefault(x => x.ParentId == workflow.Id)
-            ?? throw HttpError.NotFound($"'{request.Model}' version not found");
+            ?? throw HttpError.NotFound($"'{request.Model}' workflow version not found");
         
         var width = request.AspectRatio.LeftPart(':').ToInt();
         var height = request.AspectRatio.RightPart(':').ToInt();

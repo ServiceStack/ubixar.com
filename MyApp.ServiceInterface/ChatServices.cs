@@ -29,9 +29,9 @@ public class ChatServices(ILogger<ChatServices> log, AppData appData, AgentEvent
                     throw HttpError.BadRequest("Prompt cannot be empty");
                 
                 var workflow = appData.GetWorkflowBySlug(request.Model)
-                    ?? throw HttpError.NotFound($"Workflow '{request.Model}' not found");
+                    ?? throw HttpError.NotFound($"'{request.Model}' workflow not found");
                 var workflowVersion = appData.WorkflowVersions.FirstOrDefault(x => x.ParentId == workflow.Id)
-                    ?? throw HttpError.NotFound($"'{request.Model}' version not found");
+                    ?? throw HttpError.NotFound($"'{request.Model}' workflow version not found");
                 
                 var args = new Dictionary<string, object?>
                 {
