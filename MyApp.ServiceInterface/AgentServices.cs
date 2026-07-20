@@ -396,7 +396,7 @@ public class AgentServices(ILogger<AgentServices> log,
             DeviceId = request.DeviceId,
             ApiKey = Request.GetBearerToken(),
             // Nodes = nodeDefs.Keys.ToList(),
-            Categories = appData.CategoryNames,
+            Categories = appData.GetCategoryNames(),
             RequirePip = appData.RequirePip,
             RequireNodes = appData.RequireNodes,
             RequireModels = appData.RequireModels,
@@ -734,7 +734,7 @@ public class AgentServices(ILogger<AgentServices> log,
 
         return new AgentDataResponse
         {
-            Categories = appData.CategoryNames,
+            Categories = appData.GetCategoryNames(),
         };
     }
 

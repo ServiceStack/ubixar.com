@@ -636,6 +636,40 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
         return tag;
     }
 
+    private List<string> DefaultCategoryNames =
+    [
+        "woman",
+        "clothing",
+        "anime",
+        "outdoors",
+        "comics",
+        "photography",
+        "costume",
+        "man",
+        "animal",
+        "armor",
+        "transportation",
+        "architecture",
+        "city",
+        "cartoon",
+        "car",
+        "food",
+        "astronomy",
+        "modern art",
+        "cat",
+        "robot",
+        "landscape",
+        "dog",
+        "latex clothing",
+        "dragon",
+        "fantasy",
+        "sports car",
+        "post apocalyptic",
+        "photorealistic",
+        "game character",
+        "sci-fi"
+    ];
+
     public void LoadCategories(IDbConnection db)
     {
         var json = ReadTextFile(Path.Combine(OverridesPath, "categories-list.json"))
@@ -645,38 +679,7 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
         if (CategoryNames.Count == 0)
         {
             log.LogWarning("No categories found in categories-list.json");
-            CategoryNames = [
-                "woman",
-                "clothing",
-                "anime",
-                "outdoors",
-                "comics",
-                "photography",
-                "costume",
-                "man",
-                "animal",
-                "armor",
-                "transportation",
-                "architecture",
-                "city",
-                "cartoon",
-                "car",
-                "food",
-                "astronomy",
-                "modern art",
-                "cat",
-                "robot",
-                "landscape",
-                "dog",
-                "latex clothing",
-                "dragon",
-                "fantasy",
-                "sports car",
-                "post apocalyptic",
-                "photorealistic",
-                "game character",
-                "sci-fi"
-            ];
+            CategoryNames = DefaultCategoryNames;
         }
         
         Categories = db.Select<Category>();
@@ -686,6 +689,16 @@ public class AppData(ILogger<AppData> log, IHostEnvironment env,
         {
             GetOrCreateCategory(db, name);
         }
+    }
+
+    public List<string> GetCategoryNames()
+    {
+        if (CategoryNames.Count == 0)
+        {
+            log.LogWarning("No categories found, using default categories");
+            return DefaultCategoryNames;
+        }
+        return CategoryNames;
     }
 
     public Category GetOrCreateCategory(IDbConnection db, string name)
