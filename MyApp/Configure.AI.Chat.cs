@@ -26,7 +26,7 @@ public class ConfigureAiChat : IHostingStartup
 
             services.AddPlugin(new ChatFeature {
                 // RequireAuth = false, // open access, runs as the "default" user
-                // RequireAuth = true,
+                RequireAuth = true,
                 RequiredRole = RoleNames.Admin,
                 Extensions = {
                     new BookingToolsExtension(),
