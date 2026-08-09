@@ -3,7 +3,7 @@ WORKDIR /app
 EXPOSE 8080
 
 # Install bun and Typst
-RUN apt-get update && apt-get install -y curl unzip ca-certificates \
+RUN apt-get update && apt-get install -y curl unzip ca-certificates xz-utils \
     && curl -fsSL https://bun.sh/install | bash \
     && mv /root/.bun/bin/bun /usr/local/bin/ \
     && curl -fsSL https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz -o /tmp/typst.tar.xz \
