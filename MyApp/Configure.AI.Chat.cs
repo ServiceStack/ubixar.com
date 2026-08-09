@@ -15,7 +15,7 @@ namespace MyApp;
 /// AI Chat using this host's ASP.NET Identity users, signed in with the Chat UI's own
 /// username/password form (AuthType=Credentials installs the 'credentials' extension, which
 /// authenticates with the Authenticate API). Set RequireAuth = false for open access, where all
-/// chat data is stored under the "default" user, matching llms-py's behaviour with no auth
+/// chat data is stored under the "default" user, matching llms-py's behavior with no auth
 /// extension installed.
 /// </summary>
 public class ConfigureAiChat : IHostingStartup
