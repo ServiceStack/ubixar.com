@@ -16,7 +16,7 @@ namespace MyApp;
 /// username/password form (AuthType=Credentials installs the 'credentials' extension, which
 /// authenticates with the Authenticate API). Set RequireAuth = false for open access, where all
 /// chat data is stored under the "default" user, matching llms-py's behavior with no auth
-/// extension installed.
+/// extension installed. 
 /// </summary>
 public class ConfigureAiChat : IHostingStartup
 {
