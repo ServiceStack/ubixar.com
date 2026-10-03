@@ -7,7 +7,7 @@ export const RecipeCard = {
     template: `<article class="recipe-card">
       <div class="recipe-card-body"><div class="recipe-card-top"><span class="recipe-eyebrow">Decision recipe</span><span v-if="item.publisherStarred" class="recipe-favourite">★ Publisher favourite</span></div>
       <h3><a :href="'/d/'+item.externalRef">{{item.name}}</a></h3><p class="recipe-card-description">{{item.description}}</p>
-      <div class="recipe-tags"><a v-for="tag in item.tags" :key="tag" :href="'/m?tag='+encodeURIComponent(tag)+'#recipes'">{{tag}}</a></div>
+      <div class="recipe-tags"><a v-if="item.content" :href="'/m?tag='+encodeURIComponent(item.content)+'#recipes'" :aria-label="'Content: '+item.content">{{item.content}}</a><a v-for="tag in item.tags" :key="tag" :href="'/m?tag='+encodeURIComponent(tag)+'#recipes'">{{tag}}</a></div>
       <p class="recipe-card-meta">{{item.author.displayName || item.author.userName}} · {{count(item.questionCount,'question')}}</p>
       <p class="recipe-card-meta">{{item.publisherRunCount||0}} recorded publisher runs · Updated {{formatDate(item.updatedAt)}}</p></div>
       <div class="recipe-card-actions"><a class="recipe-card-open" :href="'/d/'+item.externalRef">View recipe →</a><button type="button" @click="copy">Copy link</button><button v-if="mine" type="button" class="recipe-danger" @click="$emit('remove',item)">Stop sharing</button></div>

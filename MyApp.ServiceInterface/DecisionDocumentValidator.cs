@@ -138,11 +138,14 @@ public static class DecisionDocumentValidator
     }
     public static void Document(JsonNode? d)
     {
-        Allowed(d, "recipe", "schemaVersion", "name", "description", "tags", "decisionModel", "inputSchema", "state", "questions", "presentation", "examples");
+        Allowed(d, "recipe", "schemaVersion", "name", "description", "tags", "content", "decisionModel", "inputSchema", "state", "questions", "presentation", "examples");
         Need(Encoding.UTF8.GetByteCount(Serialize(d)) + JsonSpaceBytes(d) <= DocumentLimit, "document", "Keep the document under 512 KiB.");
         Need(Int(d!["schemaVersion"], out var version) && version == 1, "schemaVersion", "Only recipe version 1 is supported.");
         Text(d["name"], "name", 120); Text(Default(d, "description", JsonValue.Create("")!), "description", 2000, true);
-        var tags = Default(d, "tags", new JsonArray()); Need(tags is JsonArray && tags.AsArray().Count <= 12, "tags", "Use up to 12 tags."); foreach (var tag in tags.AsArray()) Text(tag, "tags", 40);
+        if (d!.AsObject().ContainsKey("content")) Text(d["content"], "content", 40, true);
+        // Legacy recipes used one mixed list; preserve their files and publication journals.
+        var tagLimit = d.AsObject().ContainsKey("content") ? 3 : 12;
+        var tags = Default(d, "tags", new JsonArray()); Need(tags is JsonArray && tags.AsArray().Count <= tagLimit, "tags", $"Use up to {tagLimit} tags."); foreach (var tag in tags.AsArray()) Text(tag, "tags", 40);
         Need(Models.Contains(Str(d["decisionModel"])), "decisionModel", "Choose a supported Jev model.");
         Schema(d["inputSchema"]); Need(Str(d["inputSchema"]!["type"]) == "object", "inputSchema", "Root must be object.");
         var state = Default(d, "state", new JsonObject { ["mode"] = "object" }); Allowed(state, "state", "mode", "field");
@@ -171,11 +174,16 @@ public static class DecisionDocumentValidator
         var examples = Default(d, "examples", new JsonArray()); Need(examples is JsonArray && examples.AsArray().Count <= 30, "examples", "Use up to 30 examples."); var ids = new HashSet<string>();
         foreach (var e in examples.AsArray())
         {
-            Allowed(e, "examples", "id", "label", "input", "expected", "provenance", "notes"); Text(e!["id"], "examples.id", 80); Need(ids.Add(Str(e["id"])), "examples.id", "Use unique IDs."); Text(e["label"], "examples.label", 120);
+            Allowed(e, "examples", "id", "label", "input", "expected", "provenance", "notes", "execution"); Text(e!["id"], "examples.id", 80); Need(ids.Add(Str(e["id"])), "examples.id", "Use unique IDs."); Text(e["label"], "examples.label", 120);
             Input(d["inputSchema"], e["input"], "examples.input"); var expected = Default(e, "expected", new JsonObject()); Object(expected, "examples.expected"); Need(Keys(expected).All(Keys(qs).Contains), "examples.expected", "Unknown question.");
             foreach (var pair in expected.AsObject()) { var q = qs[pair.Key]!; var kind = Str(q["type"]); Need(kind == "choice" ? IsString(pair.Value) && Keys(q["criteria"]).Contains(Str(pair.Value)) : kind == "noul" ? Boolean(pair.Value) : Number(pair.Value, out var num) && num >= 0 && num <= q["criteria"]!.AsArray().Count - 1, "examples.expected", "Invalid expected answer."); }
             Need(new[] { "authored", "ai-suggested", "user-reviewed" }.Contains(Str(Default(e, "provenance", JsonValue.Create("authored")!))), "examples.provenance", "Invalid provenance.");
             if (e.AsObject().ContainsKey("notes")) Text(e["notes"], "examples.notes", 2000, true);
+            if (e.AsObject().ContainsKey("execution"))
+            {
+                Execution(d, e["execution"]);
+                Need(Same(e["input"], e["execution"]!["input"]), "examples.execution.input", "Recorded input must match the example.");
+            }
         }
     }
     public static void Execution(JsonNode d, JsonNode? e)

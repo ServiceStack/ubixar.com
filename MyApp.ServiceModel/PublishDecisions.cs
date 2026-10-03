@@ -124,6 +124,7 @@ public class DecisionPublication
     public DecisionAuthor Author { get; set; } = new();
     public string Name { get; set; } = "";
     [StringLength(StringLengthAttribute.MaxText)] public string Description { get; set; } = "";
+    public string Content { get; set; } = "";
     public List<string> Tags { get; set; } = [];
     public int SchemaVersion { get; set; }
     public int QuestionCount { get; set; }

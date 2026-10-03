@@ -4023,5 +4023,1348 @@
       "completedAt": "2026-10-02T00:00:00Z",
       "durationMs": 0
     }
+  },
+  {
+    "name": "recorded-usage-example",
+    "valid": true,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "email"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "recorded",
+          "label": "Real run",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored",
+          "execution": {
+            "status": "succeeded",
+            "input": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "prompt": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "answers": {
+              "sentiment": {
+                "type": "choice",
+                "probabilities": {
+                  "negative": 0.78,
+                  "neutral": 0.22,
+                  "positive": 0,
+                  "mixed": 0
+                },
+                "confidence": 0.67,
+                "choice": "negative"
+              },
+              "is_urgent": {
+                "type": "noul",
+                "noul": 0.96
+              }
+            },
+            "model": "~typesafe/jev-latest",
+            "completedAt": "2026-10-02T00:00:00Z",
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "example-private-raw-response",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "email"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "recorded",
+          "label": "Real run",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored",
+          "execution": {
+            "status": "succeeded",
+            "input": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "prompt": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "answers": {
+              "sentiment": {
+                "type": "choice",
+                "probabilities": {
+                  "negative": 0.78,
+                  "neutral": 0.22,
+                  "positive": 0,
+                  "mixed": 0
+                },
+                "confidence": 0.67,
+                "choice": "negative"
+              },
+              "is_urgent": {
+                "type": "noul",
+                "noul": 0.96
+              }
+            },
+            "model": "~typesafe/jev-latest",
+            "completedAt": "2026-10-02T00:00:00Z",
+            "durationMs": 0,
+            "response": {
+              "apiKey": "private"
+            }
+          }
+        }
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "example-input-mismatch",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "email"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "recorded",
+          "label": "Real run",
+          "input": {
+            "message": "Another message"
+          },
+          "provenance": "authored",
+          "execution": {
+            "status": "succeeded",
+            "input": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "prompt": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "answers": {
+              "sentiment": {
+                "type": "choice",
+                "probabilities": {
+                  "negative": 0.78,
+                  "neutral": 0.22,
+                  "positive": 0,
+                  "mixed": 0
+                },
+                "confidence": 0.67,
+                "choice": "negative"
+              },
+              "is_urgent": {
+                "type": "noul",
+                "noul": 0.96
+              }
+            },
+            "model": "~typesafe/jev-latest",
+            "completedAt": "2026-10-02T00:00:00Z",
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "example-failed-run",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "email"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "recorded",
+          "label": "Real run",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored",
+          "execution": {
+            "status": "failed",
+            "input": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "prompt": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "answers": {
+              "sentiment": {
+                "type": "choice",
+                "probabilities": {
+                  "negative": 0.78,
+                  "neutral": 0.22,
+                  "positive": 0,
+                  "mixed": 0
+                },
+                "confidence": 0.67,
+                "choice": "negative"
+              },
+              "is_urgent": {
+                "type": "noul",
+                "noul": 0.96
+              }
+            },
+            "model": "~typesafe/jev-latest",
+            "completedAt": "2026-10-02T00:00:00Z",
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "example-answer-missing",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "email"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "recorded",
+          "label": "Real run",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored",
+          "execution": {
+            "status": "succeeded",
+            "input": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "prompt": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "answers": {
+              "is_urgent": {
+                "type": "noul",
+                "noul": 0.96
+              }
+            },
+            "model": "~typesafe/jev-latest",
+            "completedAt": "2026-10-02T00:00:00Z",
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "example-question-options-changed",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "email"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes.",
+            "new_option": "An unfavorable attitude."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "recorded",
+          "label": "Real run",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored",
+          "execution": {
+            "status": "succeeded",
+            "input": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "prompt": {
+              "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+            },
+            "answers": {
+              "sentiment": {
+                "type": "choice",
+                "probabilities": {
+                  "negative": 0.78,
+                  "neutral": 0.22,
+                  "positive": 0,
+                  "mixed": 0
+                },
+                "confidence": 0.67,
+                "choice": "negative"
+              },
+              "is_urgent": {
+                "type": "noul",
+                "noul": 0.96
+              }
+            },
+            "model": "~typesafe/jev-latest",
+            "completedAt": "2026-10-02T00:00:00Z",
+            "durationMs": 0
+          }
+        }
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "single-content-three-tags",
+    "valid": true,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "urgency",
+        "custom"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "1",
+          "label": "A delayed delivery",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored"
+        },
+        {
+          "id": "2",
+          "label": "Mixed feedback",
+          "input": {
+            "message": "I love the new design, but the search is frustrating and takes forever."
+          },
+          "provenance": "authored"
+        }
+      ],
+      "content": "email"
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "content-multiple-values",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "urgency",
+        "custom"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "1",
+          "label": "A delayed delivery",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored"
+        },
+        {
+          "id": "2",
+          "label": "Mixed feedback",
+          "input": {
+            "message": "I love the new design, but the search is frustrating and takes forever."
+          },
+          "provenance": "authored"
+        }
+      ],
+      "content": [
+        "email",
+        "news"
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "content-too-long",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "urgency",
+        "custom"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "1",
+          "label": "A delayed delivery",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored"
+        },
+        {
+          "id": "2",
+          "label": "Mixed feedback",
+          "input": {
+            "message": "I love the new design, but the search is frustrating and takes forever."
+          },
+          "provenance": "authored"
+        }
+      ],
+      "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "four-tags",
+    "valid": false,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "sentiment",
+        "urgency",
+        "custom",
+        "fourth"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "1",
+          "label": "A delayed delivery",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored"
+        },
+        {
+          "id": "2",
+          "label": "Mixed feedback",
+          "input": {
+            "message": "I love the new design, but the search is frustrating and takes forever."
+          },
+          "provenance": "authored"
+        }
+      ],
+      "content": "email"
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
+  },
+  {
+    "name": "legacy-mixed-four-tags",
+    "valid": true,
+    "filename": "sentiment.json",
+    "document": {
+      "schemaVersion": 1,
+      "name": "Message sentiment",
+      "description": "Understand the tone of an email, tweet or comment, and whether it asks for urgent action.",
+      "tags": [
+        "email",
+        "news",
+        "sentiment",
+        "classification"
+      ],
+      "decisionModel": "~typesafe/jev-latest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Email, tweet or comment",
+            "default": "",
+            "format": "textarea",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "state": {
+        "mode": "object"
+      },
+      "questions": {
+        "sentiment": {
+          "type": "choice",
+          "instructions": "What overall sentiment does `message` express?",
+          "criteria": {
+            "negative": "An unfavorable attitude.",
+            "neutral": "No favorable or unfavorable attitude.",
+            "positive": "A favorable attitude.",
+            "mixed": "Both favorable and unfavorable attitudes."
+          }
+        },
+        "is_urgent": {
+          "type": "noul",
+          "instructions": "Does `message` express a time-sensitive request?",
+          "criteria": {
+            "true": "An explicit deadline or request for immediate action.",
+            "false": "No time-sensitive request."
+          }
+        }
+      },
+      "presentation": {
+        "questions": {
+          "sentiment": {
+            "label": "Sentiment"
+          },
+          "is_urgent": {
+            "label": "Urgent request"
+          }
+        }
+      },
+      "examples": [
+        {
+          "id": "1",
+          "label": "A delayed delivery",
+          "input": {
+            "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+          },
+          "provenance": "authored"
+        },
+        {
+          "id": "2",
+          "label": "Mixed feedback",
+          "input": {
+            "message": "I love the new design, but the search is frustrating and takes forever."
+          },
+          "provenance": "authored"
+        }
+      ]
+    },
+    "execution": {
+      "status": "succeeded",
+      "input": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "prompt": {
+        "message": "My package is late again. Nobody has answered my emails. Please fix this today."
+      },
+      "answers": {
+        "sentiment": {
+          "type": "choice",
+          "probabilities": {
+            "negative": 0.78,
+            "neutral": 0.22,
+            "positive": 0,
+            "mixed": 0
+          },
+          "confidence": 0.67,
+          "choice": "negative"
+        },
+        "is_urgent": {
+          "type": "noul",
+          "noul": 0.96
+        }
+      },
+      "model": "~typesafe/jev-latest",
+      "completedAt": "2026-10-02T00:00:00Z",
+      "durationMs": 0
+    }
   }
 ]

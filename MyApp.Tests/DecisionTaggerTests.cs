@@ -14,8 +14,8 @@ namespace MyApp.Tests;
 public class DecisionTaggerTests
 {
     static DecisionPublishingOptions Options() => new() { Tags = [
-        new() { Name = "topic-a", Label = "Topic A", Group = "context", Description = "The recipe evaluates A." },
-        new() { Name = "topic-b", Group = "context" },
+        new() { Name = "topic-a", Label = "Topic A", Group = "content", Description = "The recipe evaluates A." },
+        new() { Name = "topic-b", Group = "content" },
         new() { Name = "task-c" }, new() { Name = "task-d" }, new() { Name = "task-e" }
     ] };
     static JsonObject Answers(params double[] scores) => new() { ["answers"] = new JsonObject(
@@ -63,7 +63,7 @@ public class DecisionTaggerTests
     {
         var options = Options();
         Assert.That(JevDecisionTagger.SelectTags(Answers(.5, .49, 0, 1, .50001), options), Is.EqualTo(new[] { "task-d", "task-e" }));
-        Assert.That(JevDecisionTagger.SelectTags(Answers(.9, .9, .9, .9, .9), options), Is.EqualTo(new[] { "topic-a", "topic-b", "task-c" }));
+        Assert.That(JevDecisionTagger.SelectTags(Answers(.9, .9, .9, .9, .9), options), Is.EqualTo(new[] { "topic-a", "task-c", "task-d", "task-e" }));
         Assert.That(JevDecisionTagger.SelectTags(Answers(.5, .2, 0, .49, .5), options), Is.Empty);
     }
     [TestCase("-0.1")]

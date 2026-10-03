@@ -17,18 +17,20 @@ public class DecisionPublishingOptions
         if (Tags == null || Tags.Count > 100 || Tags.Any(tag => tag == null ||
             string.IsNullOrEmpty(tag.Name) || tag.Name.Length > 40 || !Regex.IsMatch(tag.Name, @"^[a-z0-9]+(?:-[a-z0-9]+)*$") ||
             tag.Label == null || tag.Label.Length > 80 || tag.Description == null || tag.Description.Length > 1000 ||
-            tag.Group is not ("context" or "task")) || Tags.Select(tag => tag.Name).Distinct().Count() != Tags.Count)
-            throw new InvalidOperationException("DecisionPublishing: provide up to 100 unique lowercase/hyphenated tags with context or task groups.");
+            tag.Group is not ("content" or "tag" or "context" or "task")) || Tags.Select(tag => tag.Name).Distinct().Count() != Tags.Count)
+            throw new InvalidOperationException("DecisionPublishing: provide up to 100 unique lowercase/hyphenated tags with content or tag groups.");
     }
 
-    public DecisionTagCatalog Catalog() => new() { Tags = Tags.Select(tag => new DecisionTag {
-        Name = tag.Name, Label = string.IsNullOrWhiteSpace(tag.Label) ? tag.Name : tag.Label, Group = tag.Group
+    public static bool IsContent(DecisionTagDefinition tag) => tag.Group is "content" or "context";
+
+    public DecisionTagCatalog Catalog() => new() { Version = 2, Tags = Tags.Select(tag => new DecisionTag {
+        Name = tag.Name, Label = string.IsNullOrWhiteSpace(tag.Label) ? tag.Name : tag.Label, Group = IsContent(tag) ? "content" : "tag"
     }).ToList() };
 }
 public class DecisionTagDefinition
 {
     public string Name { get; set; } = "";
     public string Label { get; set; } = "";
-    public string Group { get; set; } = "task";
+    public string Group { get; set; } = "tag";
     public string Description { get; set; } = "";
 }

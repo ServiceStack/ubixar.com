@@ -67,6 +67,9 @@ public class DecisionPublishServices : Service
             payload["publisherRunCount"] = runs;
         }
         var documentJson = DecisionDocumentValidator.Serialize(doc);
+        var content = doc["content"]?.GetValue<string>();
+        var metadata = (doc["tags"] as JsonArray ?? []).Select(t => t!.GetValue<string>()).ToList();
+        if (!string.IsNullOrEmpty(content)) metadata.Insert(0, content);
         return new PublishedDecision
         {
             PublisherStarred = starred,
@@ -79,7 +82,7 @@ public class DecisionPublishServices : Service
             ContentHash = Hash(DecisionDocumentValidator.Serialize(payload)),
             Name = doc["name"]!.GetValue<string>(),
             Description = doc["description"]?.GetValue<string>() ?? "",
-            Tags = DecisionDocumentValidator.Serialize(doc["tags"] ?? new JsonArray()),
+            Tags = JsonSerializer.Serialize(metadata.Distinct().ToList(), DecisionDocumentValidator.JsonOptions),
             QuestionCount = doc["questions"]!.AsObject().Count,
             FieldCount = (doc["inputSchema"]!["properties"] as JsonObject)?.Count ?? 0,
             ExampleCount = (doc["examples"] as JsonArray)?.Count ?? 0,
@@ -98,6 +101,14 @@ public class DecisionPublishServices : Service
     {
         var user = await Db.SingleByIdAsync<User>(row.PublishedBy);
         var url = Request.ResolveAbsoluteUrl("~/d/" + row.ExternalRef);
+        var discoveryTags = JsonSerializer.Deserialize<List<string>>(row.Tags) ?? [];
+        var document = JsonNode.Parse(row.DocumentJson)!.AsObject();
+        var content = document["content"]?.GetValue<string>();
+        var legacy = !document.ContainsKey("content");
+        var contentNames = new HashSet<string>(TagOptions.Tags.Where(DecisionPublishingOptions.IsContent).Select(tag => tag.Name));
+        if (string.IsNullOrEmpty(content) && (legacy || (document["tags"] as JsonArray)?.Count is null or 0))
+            content = discoveryTags.FirstOrDefault(contentNames.Contains);
+
         return new DecisionPublication
         {
             PublisherStarred = row.PublisherStarred,
@@ -114,7 +125,8 @@ public class DecisionPublishServices : Service
             Author = new DecisionAuthor { UserName = user?.UserName ?? "", DisplayName = user?.UserName ?? "" },
             Name = row.Name,
             Description = row.Description,
-            Tags = JsonSerializer.Deserialize<List<string>>(row.Tags) ?? [],
+            Content = content ?? "",
+            Tags = discoveryTags.Where(tag => tag != content && (!legacy || !contentNames.Contains(tag))).ToList(),
             SchemaVersion = row.SchemaVersion,
             QuestionCount = row.QuestionCount,
             FieldCount = row.FieldCount,
@@ -256,10 +268,18 @@ public class DecisionPublishServices : Service
     }
     async Task AssignTags(PublishedDecision row, PublishedDecision? previous = null)
     {
-        if (JsonNode.Parse(row.Tags)!.AsArray().Count != 0) return;
-        // Usage-only updates retain inferred tags without another paid request.
-        if (previous?.RecipeHash == row.RecipeHash && JsonNode.Parse(previous.Tags)!.AsArray().Count != 0) { row.Tags = previous.Tags; return; }
-        var tags = await Tagger.InferTags(JsonNode.Parse(row.DocumentJson)!.AsObject());
+        var document = JsonNode.Parse(row.DocumentJson)!.AsObject();
+        if ((document["tags"] as JsonArray)?.Count > 0) return;
+        var suppliedContent = document["content"]?.GetValue<string>();
+        var contentNames = new HashSet<string>(TagOptions.Tags.Where(DecisionPublishingOptions.IsContent).Select(tag => tag.Name));
+        // Usage-only updates retain successful inferred tags without another paid request.
+        // A content value alone must not prevent retrying a previously empty tag result.
+        if (previous?.RecipeHash == row.RecipeHash && JsonNode.Parse(previous.Tags)!.AsArray()
+            .Any(tag => tag!.GetValue<string>() != suppliedContent && !contentNames.Contains(tag.GetValue<string>())))
+        { row.Tags = previous.Tags; return; }
+        var inferred = await Tagger.InferTags(document);
+        var tags = string.IsNullOrEmpty(suppliedContent) ? inferred : new[] { suppliedContent }.Concat(
+            inferred.Where(name => !TagOptions.Tags.Any(tag => tag.Name == name && DecisionPublishingOptions.IsContent(tag)))).Distinct().ToList();
         // Discovery metadata is derived; retain the exact submitted portable snapshot and hashes.
         row.Tags = JsonSerializer.Serialize(tags, DecisionDocumentValidator.JsonOptions);
     }

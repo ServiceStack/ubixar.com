@@ -119,3 +119,20 @@ publication may try again; an unchanged retry does not incur a new call. Existin
 No additional database migration is needed for automatic tags.
 
 Protocol reference: https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request
+
+## Recorded usage examples
+
+Recipes may contain an optional `examples[].execution` with the same allowlisted successful
+execution format as the primary worked example. The execution input must match the example
+input. All question results and probabilities are validated; raw provider responses, usage,
+credentials and local run identifiers are rejected. These are recorded outputs, independent
+of any user-reviewed `expected` answers. The public page renders them under Usage examples.
+
+## Content and tags
+
+Portable recipes have one optional `content` string describing the type of content they act on,
+and up to three `tags`. Custom values are supported. Candidate groups in `DecisionPublishing:Tags`
+are `content` or `tag`; legacy `context`/`task` groups remain accepted. The version 2 catalogue emits
+the new names. Jev inference chooses the best single content type and up to three task tags over
+50%. An explicit content value is retained when inferring missing tags. Derived discovery metadata
+stays outside the submitted document and its hashes. The existing tag filter also matches content.

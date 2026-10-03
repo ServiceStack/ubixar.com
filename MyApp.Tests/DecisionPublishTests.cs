@@ -186,7 +186,7 @@ public class DecisionPublishTests : TestBase
     {
         var response = (HttpResult)Service("anonymous").Get(new GetDecisionTags());
         var catalog = Result(response);
-        Assert.That(catalog["version"]!.GetValue<int>(), Is.EqualTo(1));
+        Assert.That(catalog["version"]!.GetValue<int>(), Is.EqualTo(2));
         var tags = catalog["tags"]!.AsArray();
         Assert.That(tags.Count, Is.EqualTo(12));
         Assert.That(tags.Select(x => x!["name"]!.GetValue<string>()).Distinct().Count(), Is.EqualTo(12));
@@ -206,7 +206,8 @@ public class DecisionPublishTests : TestBase
         var expected = DecisionPublishServices.Snapshot(body);
         var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
         var reference = created["externalRef"]!.GetValue<string>();
-        Assert.That(created["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "content", "verification" }));
+        Assert.That(created["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "verification" }));
+        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("content"));
         Assert.That(created["recipeHash"]!.GetValue<string>(), Is.EqualTo(expected.RecipeHash));
         Assert.That(created["contentHash"]!.GetValue<string>(), Is.EqualTo(expected.ContentHash));
         await service.Post(new PublishDecision { RequestStream = Stream(body) });
@@ -226,6 +227,39 @@ public class DecisionPublishTests : TestBase
         Assert.That(updated["tags"]![0]!.GetValue<string>(), Is.EqualTo("user-custom"));
     }
     [Test]
+    public async Task Explicit_content_and_three_custom_tags_survive_discovery_and_download()
+    {
+        var service = Service("content-fields"); var body = Body();
+        body["document"]!["content"] = "policy-document";
+        body["document"]!["tags"] = new JsonArray("compliance", "routing", "custom-tag");
+        var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
+        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("policy-document"));
+        Assert.That(created["tags"]!.AsArray().Count, Is.EqualTo(3));
+        Assert.That(tagger.Calls, Is.Zero);
+        var reference = created["externalRef"]!.GetValue<string>();
+        var detail = Result(await service.Get(new GetPublishedDecision { ExternalRef = reference }));
+        Assert.That(JsonNode.DeepEquals(detail["document"], body["document"]), Is.True);
+        var catalog = Result(await service.Get(new QueryPublishedDecisions { Tag = "policy-document" }));
+        Assert.That(catalog["items"]!.AsArray().Count, Is.EqualTo(1));
+    }
+    [Test]
+    public async Task Supplied_content_is_kept_when_missing_tags_are_inferred_or_retried()
+    {
+        var service = Service("content-inference"); var body = Body();
+        body["document"]!["content"] = "email";
+        body["document"]!["tags"] = new JsonArray();
+        tagger.Result = [];
+        var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
+        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("email"));
+        Assert.That(created["tags"]!.AsArray(), Is.Empty);
+        tagger.Result = ["news", "sentiment", "verification", "routing"];
+        body["revision"] = 1; body["publisherRunCount"] = 2;
+        var updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = created["externalRef"]!.GetValue<string>(), RequestStream = Stream(body) }));
+        Assert.That(tagger.Calls, Is.EqualTo(2));
+        Assert.That(updated["content"]!.GetValue<string>(), Is.EqualTo("email"));
+        Assert.That(updated["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "sentiment", "verification", "routing" }));
+    }
+    [Test]
     public async Task Failed_inference_does_not_block_publication_and_a_later_update_can_try_again()
     {
         var service = Service("tag-fallback"); var body = Body(); body["document"]!["tags"] = new JsonArray();
@@ -236,7 +270,7 @@ public class DecisionPublishTests : TestBase
         body["revision"] = 1; body["publisherRunCount"] = 1;
         var updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = created["externalRef"]!.GetValue<string>(), RequestStream = Stream(body) }));
         Assert.That(tagger.Calls, Is.EqualTo(2));
-        Assert.That(updated["tags"]!.AsArray().Count, Is.EqualTo(2));
+        Assert.That(updated["tags"]!.AsArray().Count, Is.EqualTo(1));
     }
     [Test]
     public async Task Supplied_tags_bypass_inference()

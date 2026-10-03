@@ -4776,7 +4776,7 @@ export class DecisionTag {
     group;
 }
 export class DecisionPublication {
-    /** @param {{externalRef?:string,publishedUrl?:string,downloadUrl?:string,filename?:string,revision?:number,contentHash?:string,recipeHash?:string,publishedAt?:string,updatedAt?:string,author?:DecisionAuthor,name?:string,description?:string,tags?:string[],schemaVersion?:number,questionCount?:number,fieldCount?:number,exampleCount?:number,executedModel?:string,executedAt?:string,document?:any,execution?:any,publisherStarred?:boolean,publisherRunCount?:number}} [init] */
+    /** @param {{externalRef?:string,publishedUrl?:string,downloadUrl?:string,filename?:string,revision?:number,contentHash?:string,recipeHash?:string,publishedAt?:string,updatedAt?:string,author?:DecisionAuthor,name?:string,description?:string,content?:string,tags?:string[],schemaVersion?:number,questionCount?:number,fieldCount?:number,exampleCount?:number,executedModel?:string,executedAt?:string,document?:any,execution?:any,publisherStarred?:boolean,publisherRunCount?:number}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {string} */
     externalRef;
@@ -4802,6 +4802,8 @@ export class DecisionPublication {
     name;
     /** @type {string} */
     description;
+    /** @type {string} */
+    content;
     /** @type {string[]} */
     tags = [];
     /** @type {number} */
