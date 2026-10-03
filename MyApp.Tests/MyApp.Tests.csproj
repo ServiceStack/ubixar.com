@@ -22,6 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Update="fixtures\decision-publishing.json" CopyToOutputDirectory="PreserveNewest" />
         <None Update="fixtures\jev-sharing-contract.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 

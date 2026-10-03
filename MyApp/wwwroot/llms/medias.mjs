@@ -1126,7 +1126,7 @@ const App = {
         ProjectGrid,
     },
     template: `
-    <div class="min-h-screen transition-colors duration-300 bg-fixed relative" :class="$styles.app">
+    <div class="min-h-screen transition-colors duration-300 bg-fixed relative" :class="[$styles.app, { 'recipe-gallery-page': activeTab === 'recipes' }]">
         <SignInModal v-if="$ctx.state.showSignIn" />
         <!-- Top Right Control Panel -->
         <div class="absolute top-1 right-20 flex items-center gap-3.5 z-[100] select-none">
@@ -1134,7 +1134,7 @@ const App = {
             <ThemeSelector />
             <UserAvatar />
         </div>
-        <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8" :class="$styles.appInner">
+        <div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8" :class="[$styles.appInner, { 'recipe-gallery-content': activeTab === 'recipes' }]">
 
           <!-- Top Left Back Link -->
           <div class="absolute top-1 left-1 z-[100] select-none">
@@ -1157,7 +1157,7 @@ const App = {
 
             <div v-else class="mx-auto max-w-[110rem]">
                 <!-- Header -->
-                <div class="border-b pb-4 mb-6" :class="[$styles.chromeBorder]">
+                <div class="border-b pb-4 mb-6" :class="[$styles.chromeBorder, { 'recipe-gallery-heading': activeTab === 'recipes' }]">
                     <h1 class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
                         Media Gallery
                     </h1>

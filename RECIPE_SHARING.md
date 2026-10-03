@@ -63,3 +63,59 @@ the actual gallery component and registration grant page from the sibling ubixar
 Current verification includes SQLite plus desktop/mobile light/dark component and public-viewer
 checks; live PostgreSQL was unavailable on the implementation machine. These changes have not been
 deployed and no production migration has run.
+
+## Discovery tags and publisher usage
+
+`GET /publish/decisions/tags` is the authoritative, public versioned suggestion catalogue.
+Its context and task tags are suggestions; custom recipe tags remain valid. Both UIs cache
+the catalogue for 24 hours and use the last cached list offline.
+
+Publish/update envelopes accept `publisherStarred` (boolean) and `publisherRunCount`
+(non-negative integer). These are publisher-reported local usage, captured on publish/update,
+not community ratings or verified lifetime executions. llms counts retained local execution
+records excluding pending submissions; clearing local history lowers the next published count.
+The public projection exposes both fields. Updates change the content hash and revision,
+while the recipe hash and downloadable recipe stay unchanged. Legacy clients preserve
+previous usage when omitting the fields; legacy create idempotency hashes remain valid.
+
+Catalogue `orderBy=recommended` sorts publisher favourites, recorded runs, update time,
+then ID descending. `most-run` puts runs first, followed by favourites/time/ID. `newest`
+and `name` remain supported. Usage stays with the publisher and is not inherited as local
+usage when someone imports a recipe.
+
+Deploy the server and run **Migration1011** before clients publish usage metadata.
+It adds default false/zero columns without changing frozen Migration1010 or existing shares.
+
+## Configurable catalogue and automatic tagging
+
+Edit `DecisionPublishing.Tags` in `MyApp/appsettings.json`. Each entry has `Name`, an
+optional `Label`, `Group` (`context` or `task`, default `task`) and an optional
+`Description` explaining when that tag applies. This same list drives the public
+tag catalogue and the inference candidates; its public ETag changes with the catalogue.
+Configuration is validated at startup; restart the server after changing it. Existing client caches refresh within 24 hours.
+
+For a document with no tags (missing or empty array), the publisher sends one raw
+HTTP POST to `https://openrouter.ai/api/alpha/decisions`, using the configured
+`TaggingModel`. Each candidate is a Noul question about the submitted recipe. It
+keeps at most three tags with probabilities **strictly greater than 0.5**, ordered
+by probability; ties use configured order. If fewer qualify, it keeps fewer.
+Only configured tag names may be selected. Authored/custom tags bypass inference.
+
+The server uses `Providers:OPENROUTER_API_KEY`, falling back to the environment
+variable `OPENROUTER_API_KEY`. No API key belongs in the public tag configuration.
+`AutoTagUntaggedRecipes` enables/disables inference; `TaggingTimeoutSeconds` defaults
+to 10 (maximum 12 to fit the sharing client's response deadline). Calls use bounded
+responses, no redirects or automatic retries, and at most four concurrent requests.
+Missing credentials, saturation, provider errors, timeouts or invalid probabilities
+leave the share untagged without blocking publication. Failures log no recipe or
+provider body. Tests use a fake HTTP handler; no paid inference is required.
+
+Inferred tags are **discovery metadata** on the published row, exposed by the detail
+and catalogue APIs and used by tag filtering. The submitted document, download,
+execution, recipe hash and content hash remain exact, preserving journal recovery
+and create idempotency. Recovered publications and usage-only updates reuse existing tags;
+changed untagged documents are evaluated again. If inference previously failed, a later changed
+publication may try again; an unchanged retry does not incur a new call. Existing shares are not backfilled.
+No additional database migration is needed for automatic tags.
+
+Protocol reference: https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request

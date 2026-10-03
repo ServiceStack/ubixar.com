@@ -27,6 +27,8 @@ public class PublishedDecision
     public int QuestionCount { get; set; }
     public int FieldCount { get; set; }
     public int ExampleCount { get; set; }
+    public bool PublisherStarred { get; set; }
+    public int PublisherRunCount { get; set; }
     public int Revision { get; set; }
     public DateTime PublishedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -44,6 +46,8 @@ public class PublishDecision : IPost, IReturn<DecisionPublication>, IRequiresReq
     public JsonElement Execution { get; set; }
     public string IdempotencyKey { get; set; } = "";
     [IgnoreDataMember] public Stream RequestStream { get; set; } = Stream.Null;
+    public bool PublisherStarred { get; set; }
+    public int PublisherRunCount { get; set; }
 }
 [ValidateApiKey, Route("/publish/decision/{ExternalRef}", "PUT")]
 public class UpdatePublishedDecision : IPut, IReturn<DecisionPublication>, IRequiresRequestStream
@@ -54,6 +58,8 @@ public class UpdatePublishedDecision : IPut, IReturn<DecisionPublication>, IRequ
     public JsonElement Execution { get; set; }
     public int Revision { get; set; }
     [IgnoreDataMember] public Stream RequestStream { get; set; } = Stream.Null;
+    public bool PublisherStarred { get; set; }
+    public int PublisherRunCount { get; set; }
 }
 [ValidateApiKey, Route("/publish/decision/{ExternalRef}", "DELETE")]
 public class UnpublishDecision : IDelete, IReturn<EmptyResponse>
@@ -66,8 +72,7 @@ public class GetPublishedDecision : IGet, IReturn<DecisionPublication>
 {
     public string ExternalRef { get; set; } = "";
 }
-[Route("/publish/decisions", "GET")]
-public class QueryPublishedDecisions : IGet, IReturn<DecisionCatalog>
+public class DecisionCatalogQuery
 {
     public string? Q { get; set; }
     public string? Tag { get; set; }
@@ -76,8 +81,11 @@ public class QueryPublishedDecisions : IGet, IReturn<DecisionCatalog>
     public int Take { get; set; } = 20;
     public string? OrderBy { get; set; }
 }
+// Route-bearing DTOs must not inherit one another: ASP.NET maps inherited routes too.
+[Route("/publish/decisions", "GET")]
+public class QueryPublishedDecisions : DecisionCatalogQuery, IGet, IReturn<DecisionCatalog> { }
 [ValidateRequest("DecisionOwner()"), Route("/publish/decisions/mine", "GET")]
-public class MyPublishedDecisions : QueryPublishedDecisions { }
+public class MyPublishedDecisions : DecisionCatalogQuery, IGet, IReturn<DecisionCatalog> { }
 [ValidateIsAuthenticated, Route("/publish/decisions/mine/{ExternalRef}", "DELETE")]
 public class UnpublishMyDecision : IDelete, IReturn<EmptyResponse>
 {
@@ -125,6 +133,8 @@ public class DecisionPublication
     public DateTime ExecutedAt { get; set; }
     public JsonElement? Document { get; set; }
     public JsonElement? Execution { get; set; }
+    public bool PublisherStarred { get; set; }
+    public int PublisherRunCount { get; set; }
 }
 public class DecisionCatalog
 {
@@ -132,4 +142,18 @@ public class DecisionCatalog
     public int Skip { get; set; }
     public int Take { get; set; }
     public bool HasMore { get; set; }
+}
+
+[Route("/publish/decisions/tags", "GET")]
+public class GetDecisionTags : IGet, IReturn<DecisionTagCatalog> { }
+public class DecisionTagCatalog
+{
+    public int Version { get; set; } = 1;
+    public List<DecisionTag> Tags { get; set; } = [];
+}
+public class DecisionTag
+{
+    public string Name { get; set; } = "";
+    public string Label { get; set; } = "";
+    public string Group { get; set; } = "";
 }

@@ -1,0 +1,81 @@
+{
+  "DecisionPublishing": {
+    "AutoTagUntaggedRecipes": true,
+    "TaggingModel": "~typesafe/jev-latest",
+    "TaggingTimeoutSeconds": 10,
+    "Tags": [
+      {
+        "Name": "email",
+        "Label": "Email",
+        "Group": "context",
+        "Description": "The recipe evaluates or processes email messages, including their intent, sentiment or urgency."
+      },
+      {
+        "Name": "support",
+        "Label": "Support",
+        "Group": "context",
+        "Description": "The recipe handles customer support requests, issues or service tickets."
+      },
+      {
+        "Name": "feedback",
+        "Label": "Feedback",
+        "Group": "context",
+        "Description": "The recipe analyzes customer feedback, reviews or suggestions."
+      },
+      {
+        "Name": "content",
+        "Label": "Content",
+        "Group": "context",
+        "Description": "The recipe evaluates written content, documents, articles or claims."
+      },
+      {
+        "Name": "business",
+        "Label": "Business",
+        "Group": "context",
+        "Description": "The recipe assesses companies, commercial activity or business implications."
+      },
+      {
+        "Name": "news",
+        "Label": "News",
+        "Group": "context",
+        "Description": "The recipe evaluates news reports, announcements or current events."
+      },
+      {
+        "Name": "classification",
+        "Label": "Classification",
+        "Group": "task",
+        "Description": "The recipe assigns inputs to named categories or applies multiple categorical labels."
+      },
+      {
+        "Name": "sentiment",
+        "Label": "Sentiment",
+        "Group": "task",
+        "Description": "The recipe determines emotional tone, positive/negative attitude or expressed sentiment."
+      },
+      {
+        "Name": "relevance",
+        "Label": "Relevance",
+        "Group": "task",
+        "Description": "The recipe judges whether information is relevant to a specific subject, audience or goal."
+      },
+      {
+        "Name": "routing",
+        "Label": "Routing",
+        "Group": "task",
+        "Description": "The recipe decides which team, destination or workflow should receive an input."
+      },
+      {
+        "Name": "prioritization",
+        "Label": "Prioritization",
+        "Group": "task",
+        "Description": "The recipe assesses urgency, severity, importance or what should receive attention first."
+      },
+      {
+        "Name": "verification",
+        "Label": "Verification",
+        "Group": "task",
+        "Description": "The recipe assesses the truth, support or evidential validity of a claim."
+      }
+    ]
+  }
+}

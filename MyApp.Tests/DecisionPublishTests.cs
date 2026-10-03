@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json;
 using NUnit.Framework;
+using Microsoft.Extensions.Configuration;
 using ServiceStack;
 using ServiceStack.Testing;
 using ServiceStack.Data;
@@ -30,6 +31,15 @@ public class DecisionPublishTests : TestBase
         else Assert.Throws<HttpError>(() => DecisionPublishServices.Snapshot(c));
     }
     [Test]
+    public void Catalog_request_types_have_distinct_routes()
+    {
+        var publicRoutes = Attribute.GetCustomAttributes(typeof(QueryPublishedDecisions), typeof(RouteAttribute), true).Cast<RouteAttribute>().Select(x => x.Path).ToArray();
+        var ownerRoutes = Attribute.GetCustomAttributes(typeof(MyPublishedDecisions), typeof(RouteAttribute), true).Cast<RouteAttribute>().Select(x => x.Path).ToArray();
+        Assert.That(publicRoutes, Is.EqualTo(new[] { "/publish/decisions" }));
+        Assert.That(ownerRoutes, Is.EqualTo(new[] { "/publish/decisions/mine" }));
+    }
+
+    [Test]
     public void Filename_rejects_header_controls_reserved_names_and_utf8_overflow()
     {
         foreach (var name in new[] { "CON.json", "../file.json", "a\r\nb.json", new string('例', 81) + ".json", "_drafts.json", "a..json" })
@@ -45,16 +55,29 @@ public class DecisionPublishTests : TestBase
         var deep = "{\"a\":" + new string('[', 40) + "0" + new string(']', 40) + "}";
         Assert.Throws<HttpError>(() => DecisionDocumentValidator.Parse(deep, DecisionDocumentValidator.EnvelopeLimit));
     }
+    DecisionPublishingOptions TagOptions = null!;
+    sealed class StubTagger : IDecisionTagger
+    {
+        public int Calls;
+        public List<string> Result = ["content", "verification"];
+        public Task<List<string>> InferTags(JsonObject recipe) { Calls++; return Task.FromResult(Result.ToList()); }
+    }
+    StubTagger tagger = null!;
     ServiceStackHost host = null!; string dbPath = ""; IDbConnectionFactory factory = null!;
     [SetUp]
     public void Setup()
     {
         dbPath = Path.Combine(Path.GetTempPath(), "jev-recipes-" + Guid.NewGuid() + ".sqlite");
         factory = new OrmLiteConnectionFactory(dbPath, SqliteDialect.Provider);
-        host = new BasicAppHost { ConfigureContainer = container => { container.Register(factory); container.Register<IDbConnectionFactory>(factory); container.AddTransient<DecisionPublishServices>(); } }.Init();
+        TagOptions = new ConfigurationBuilder().AddJsonFile(Path.Combine(TestContext.CurrentContext.TestDirectory, "fixtures", "decision-publishing.json")).Build()
+            .GetSection("DecisionPublishing").Get<DecisionPublishingOptions>()!;
+        TagOptions.Validate(); tagger = new StubTagger();
+        host = new BasicAppHost { ConfigureContainer = container => { container.Register(factory); container.Register<IDbConnectionFactory>(factory); container.Register(TagOptions); container.Register<IDecisionTagger>(tagger); container.AddTransient<DecisionPublishServices>(); } }.Init();
         using var db = factory.Open();
         // Frozen migration creates a table compatible with the runtime projection.
-        db.CreateTable<MyApp.Migrations.Migration1010.PublishedDecision>(); db.CreateTable<User>();
+        db.CreateTable<MyApp.Migrations.Migration1010.PublishedDecision>();
+        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherStarred);
+        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherRunCount); db.CreateTable<User>();
     }
     [TearDown]
     public void Cleanup() { host.Dispose(); File.Delete(dbPath); }
@@ -109,6 +132,131 @@ public class DecisionPublishTests : TestBase
         Assert.That(detail.ContainsKey("publishedBy"), Is.False); Assert.That(detail.ContainsKey("createIdempotencyKey"), Is.False);
         Assert.That(detail["execution"], Is.Not.Null); Assert.That(detail["document"], Is.Not.Null);
     }
+    [TestCase("publisherStarred", "\"yes\"")]
+    [TestCase("publisherStarred", "null")]
+    [TestCase("publisherRunCount", "-1")]
+    [TestCase("publisherRunCount", "1.5")]
+    [TestCase("publisherRunCount", "2147483648")]
+    public void Usage_metadata_is_validated(string field, string value)
+    {
+        var body = Body(); body[field] = JsonNode.Parse(value);
+        Assert.Throws<HttpError>(() => DecisionPublishServices.Snapshot(body));
+    }
+    [Test]
+    public async Task Usage_updates_are_revisioned_and_legacy_clients_preserve_signals()
+    {
+        var service = Service("usage"); var body = Body();
+        var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
+        Assert.That(created["publisherRunCount"]!.GetValue<int>(), Is.Zero);
+        var reference = created["externalRef"]!.GetValue<string>();
+        body["publisherStarred"] = true; body["publisherRunCount"] = 12; body["revision"] = 1;
+        var updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
+        Assert.That(updated["revision"]!.GetValue<int>(), Is.EqualTo(2));
+        Assert.That(updated["recipeHash"]!.GetValue<string>(), Is.EqualTo(created["recipeHash"]!.GetValue<string>()));
+        Assert.That(updated["contentHash"]!.GetValue<string>(), Is.Not.EqualTo(created["contentHash"]!.GetValue<string>()));
+        body.Remove("publisherStarred"); body.Remove("publisherRunCount"); body["revision"] = 2;
+        var legacy = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
+        Assert.That(legacy["revision"]!.GetValue<int>(), Is.EqualTo(2));
+        Assert.That(legacy["publisherStarred"]!.GetValue<bool>(), Is.True);
+        Assert.That(legacy["publisherRunCount"]!.GetValue<int>(), Is.EqualTo(12));
+    }
+    [Test]
+    public async Task Discovery_sorts_usage_with_stable_pagination_and_filters()
+    {
+        var service = Service("ranking");
+        foreach (var (starred, runs, name) in new[] { (false, 100, "Often run"), (true, 3, "Starred"), (true, 20, "Starred often"), (true, 20, "Tie") })
+        {
+            var body = Body(); body["document"]!["name"] = name; body["publisherStarred"] = starred; body["publisherRunCount"] = runs;
+            // A changed name does not affect execution question keys.
+            await service.Post(new PublishDecision { RequestStream = Stream(body) });
+        }
+        using (var db = factory.Open()) db.UpdateOnly(() => new PublishedDecision { UpdatedAt = new DateTime(2026, 1, 1) }, x => x.PublishedBy == "ranking");
+        var first = Result(await service.Get(new QueryPublishedDecisions { OrderBy = "recommended", Take = 2 }));
+        Assert.That(first["items"]![0]!["name"]!.GetValue<string>(), Is.EqualTo("Tie"));
+        Assert.That(first["items"]![1]!["name"]!.GetValue<string>(), Is.EqualTo("Starred often"));
+        Assert.That(first["hasMore"]!.GetValue<bool>(), Is.True);
+        var next = Result(await service.Get(new QueryPublishedDecisions { OrderBy = "recommended", Skip = 2 }));
+        Assert.That(next["items"]![0]!["name"]!.GetValue<string>(), Is.EqualTo("Starred"));
+        var most = Result(await service.Get(new QueryPublishedDecisions { OrderBy = "most-run" }));
+        Assert.That(most["items"]![0]!["publisherRunCount"]!.GetValue<int>(), Is.EqualTo(100));
+        Assert.That(Result(await service.Get(new QueryPublishedDecisions { OrderBy = "recommended", Tag = "nonexistent" }))["items"]!.AsArray(), Is.Empty);
+    }
+    [Test]
+    public void Tag_catalog_is_public_versioned_and_cacheable()
+    {
+        var response = (HttpResult)Service("anonymous").Get(new GetDecisionTags());
+        var catalog = Result(response);
+        Assert.That(catalog["version"]!.GetValue<int>(), Is.EqualTo(1));
+        var tags = catalog["tags"]!.AsArray();
+        Assert.That(tags.Count, Is.EqualTo(12));
+        Assert.That(tags.Select(x => x!["name"]!.GetValue<string>()).Distinct().Count(), Is.EqualTo(12));
+        Assert.That(response.Headers["Cache-Control"], Does.Contain("max-age"));
+        Assert.That(response.Headers["ETag"], Does.StartWith("\"decision-tags-"));
+        TagOptions.Tags.Add(new DecisionTagDefinition { Name = "custom-domain", Label = "Custom domain", Group = "context" });
+        var changed = (HttpResult)Service("anonymous").Get(new GetDecisionTags());
+        Assert.That(Result(changed)["tags"]!.AsArray().Last()!["name"]!.GetValue<string>(), Is.EqualTo("custom-domain"));
+        Assert.That(changed.Headers["ETag"], Is.Not.EqualTo(response.Headers["ETag"]));
+    }
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Untagged_publications_are_inferred_once_and_preserve_portable_snapshot(bool emptyArray)
+    {
+        var service = Service("auto-tags"); var body = Body();
+        if (emptyArray) body["document"]!["tags"] = new JsonArray(); else body["document"]!.AsObject().Remove("tags");
+        var expected = DecisionPublishServices.Snapshot(body);
+        var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
+        var reference = created["externalRef"]!.GetValue<string>();
+        Assert.That(created["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "content", "verification" }));
+        Assert.That(created["recipeHash"]!.GetValue<string>(), Is.EqualTo(expected.RecipeHash));
+        Assert.That(created["contentHash"]!.GetValue<string>(), Is.EqualTo(expected.ContentHash));
+        await service.Post(new PublishDecision { RequestStream = Stream(body) });
+        Assert.That(tagger.Calls, Is.EqualTo(1), "Recovered creation does not incur another provider call");
+        var detail = Result(await service.Get(new GetPublishedDecision { ExternalRef = reference }));
+        Assert.That(JsonNode.DeepEquals(detail["document"], body["document"]), Is.True);
+        body["revision"] = 1; body["publisherRunCount"] = 20;
+        var updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
+        Assert.That(tagger.Calls, Is.EqualTo(1), "Usage-only updates retain inferred tags");
+        Assert.That(JsonNode.DeepEquals(updated["tags"], created["tags"]), Is.True);
+        body["revision"] = 2; body["document"]!["description"] = "Changed purpose";
+        await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) });
+        Assert.That(tagger.Calls, Is.EqualTo(2), "Changed untagged recipe is evaluated again");
+        body["revision"] = 3; body["document"]!["tags"] = new JsonArray("user-custom");
+        updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
+        Assert.That(tagger.Calls, Is.EqualTo(2));
+        Assert.That(updated["tags"]![0]!.GetValue<string>(), Is.EqualTo("user-custom"));
+    }
+    [Test]
+    public async Task Failed_inference_does_not_block_publication_and_a_later_update_can_try_again()
+    {
+        var service = Service("tag-fallback"); var body = Body(); body["document"]!["tags"] = new JsonArray();
+        tagger.Result = [];
+        var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
+        Assert.That(created["tags"]!.AsArray(), Is.Empty);
+        tagger.Result = ["content", "verification"];
+        body["revision"] = 1; body["publisherRunCount"] = 1;
+        var updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = created["externalRef"]!.GetValue<string>(), RequestStream = Stream(body) }));
+        Assert.That(tagger.Calls, Is.EqualTo(2));
+        Assert.That(updated["tags"]!.AsArray().Count, Is.EqualTo(2));
+    }
+    [Test]
+    public async Task Supplied_tags_bypass_inference()
+    {
+        var body = Body(); body["document"]!["tags"] = new JsonArray("my-custom-tag");
+        var created = Result(await Service("authored-tags").Post(new PublishDecision { RequestStream = Stream(body) }));
+        Assert.That(tagger.Calls, Is.Zero);
+        Assert.That(created["tags"]![0]!.GetValue<string>(), Is.EqualTo("my-custom-tag"));
+    }
+    [Test]
+    public void Migration_defaults_preserve_existing_publications()
+    {
+        using var db = new OrmLiteConnectionFactory(":memory:", SqliteDialect.Provider).Open();
+        db.CreateTable<MyApp.Migrations.Migration1010.PublishedDecision>();
+        db.Insert(new MyApp.Migrations.Migration1010.PublishedDecision { ExternalRef = "existing", CreateIdempotencyKey = "existing" });
+        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherStarred);
+        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherRunCount);
+        var row = db.Single<PublishedDecision>(x => x.ExternalRef == "existing");
+        Assert.That(row.PublisherStarred, Is.False); Assert.That(row.PublisherRunCount, Is.Zero);
+    }
     [Test]
     public void PostgreSQL_migration_has_text_payloads_and_owner_scoped_unique_receipts()
     {
@@ -136,6 +284,8 @@ public class DecisionPublishTests : TestBase
         {
             db.ExecuteSql("SET search_path TO " + schema);
             db.CreateTable<MyApp.Migrations.Migration1010.PublishedDecision>();
+        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherStarred);
+        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherRunCount);
             var cases = JsonNode.Parse(File.ReadAllText(FixturePath))!.AsArray();
             foreach (var fixture in cases.Where(x => x!["valid"]!.GetValue<bool>()))
             {

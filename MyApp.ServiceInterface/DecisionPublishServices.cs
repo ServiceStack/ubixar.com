@@ -15,6 +15,13 @@ namespace MyApp.ServiceInterface;
 
 public class DecisionPublishServices : Service
 {
+    public DecisionPublishingOptions TagOptions { get; }
+    public IDecisionTagger Tagger { get; }
+    public DecisionPublishServices(DecisionPublishingOptions tagOptions, IDecisionTagger tagger)
+    {
+        TagOptions = tagOptions; Tagger = tagger;
+    }
+
     static readonly ConcurrentDictionary<string, (long Minute, int Count)> Rates = new();
     static void Rate(string key, int max)
     {
@@ -46,9 +53,24 @@ public class DecisionPublishServices : Service
         var doc = body["document"]; DecisionDocumentValidator.Document(doc);
         var execution = body["execution"]; DecisionDocumentValidator.Execution(doc!, execution);
         var payload = new JsonObject { ["filename"] = filename, ["document"] = doc!.DeepClone(), ["execution"] = execution!.DeepClone() };
+        var starred = false; var runs = 0;
+        if (body.ContainsKey("publisherStarred"))
+        {
+            if (body["publisherStarred"] is not JsonValue star || !star.TryGetValue<bool>(out starred))
+                throw new HttpError(400, "ValidationError", "publisherStarred: Provide true or false.");
+            payload["publisherStarred"] = starred;
+        }
+        if (body.ContainsKey("publisherRunCount"))
+        {
+            if (body["publisherRunCount"] is not JsonValue count || !count.TryGetValue<int>(out runs) || runs < 0)
+                throw new HttpError(400, "ValidationError", "publisherRunCount: Provide a non-negative integer.");
+            payload["publisherRunCount"] = runs;
+        }
         var documentJson = DecisionDocumentValidator.Serialize(doc);
         return new PublishedDecision
         {
+            PublisherStarred = starred,
+            PublisherRunCount = runs,
             Filename = filename,
             SchemaVersion = 1,
             DocumentJson = documentJson,
@@ -78,6 +100,8 @@ public class DecisionPublishServices : Service
         var url = Request.ResolveAbsoluteUrl("~/d/" + row.ExternalRef);
         return new DecisionPublication
         {
+            PublisherStarred = row.PublisherStarred,
+            PublisherRunCount = row.PublisherRunCount,
             ExternalRef = row.ExternalRef,
             PublishedUrl = url,
             DownloadUrl = url + "/recipe.json",
@@ -121,6 +145,7 @@ public class DecisionPublishServices : Service
         if (await Db.CountAsync<PublishedDecision>(x => x.PublishedBy == owner) >= 1000) throw new HttpError(429, "Quota", "Publisher storage quota reached.");
         row.PublishedBy = owner; row.ExternalRef = PreciseTimestamp.UniqueTimestamp.EncodeBase64Url();
         row.CreateIdempotencyKey = key; row.CreateRequestHash = row.ContentHash; row.Revision = 1; row.PublishedAt = row.UpdatedAt = DateTime.UtcNow;
+        await AssignTags(row);
         // Ensure detail projection fits before committing the publication.
         Json(await Projection(row, true));
         try { row.Id = await Db.InsertAsync(row, selectIdentity: true); }
@@ -141,19 +166,29 @@ public class DecisionPublishServices : Service
     public async Task<object> Put(UpdatePublishedDecision request)
     {
         var owner = Request.GetRequiredUserId(); Rate("publish:" + owner, 20);
-        var body = await Read(request.RequestStream); var row = Snapshot(body);
+        var body = await Read(request.RequestStream);
         var old = await Find(request.ExternalRef);
         if (old.PublishedBy != owner) throw HttpError.Forbidden("Only the publisher can update this recipe.");
         var revision = body["revision"] is JsonValue revisionValue && revisionValue.TryGetValue<int>(out var parsedRevision)
             ? parsedRevision : throw new HttpError(400, "ValidationError", "revision: Provide an integer public revision.");
         if (revision != old.Revision) throw Conflict("The public recipe changed. Review it before updating.");
+        // Legacy clients omit usage. Preserve previously published signals.
+        if (old.PublisherStarred || old.PublisherRunCount > 0 || body.ContainsKey("publisherStarred") || body.ContainsKey("publisherRunCount"))
+        {
+            if (!body.ContainsKey("publisherStarred")) body["publisherStarred"] = old.PublisherStarred;
+            if (!body.ContainsKey("publisherRunCount")) body["publisherRunCount"] = old.PublisherRunCount;
+        }
+        var row = Snapshot(body);
         if (old.ContentHash == row.ContentHash) return Json(await Projection(old, false));
         row.Id = old.Id; row.ExternalRef = old.ExternalRef; row.PublishedBy = owner;
         row.CreateIdempotencyKey = old.CreateIdempotencyKey; row.CreateRequestHash = old.CreateRequestHash;
         row.PublishedAt = old.PublishedAt; row.UpdatedAt = DateTime.UtcNow; row.Revision = revision + 1;
+        await AssignTags(row, old);
         Json(await Projection(row, true));
         var count = await Db.UpdateOnlyFieldsAsync(row, x => new
         {
+            x.PublisherStarred,
+            x.PublisherRunCount,
             x.Filename,
             x.SchemaVersion,
             x.DocumentJson,
@@ -201,7 +236,7 @@ public class DecisionPublishServices : Service
     }
     public async Task<object> Get(QueryPublishedDecisions request) => await Catalog(request, null);
     public async Task<object> Get(MyPublishedDecisions request) => await Catalog(request, Request.GetRequiredUserId());
-    async Task<object> Catalog(QueryPublishedDecisions request, string? owner)
+    async Task<object> Catalog(DecisionCatalogQuery request, string? owner)
     {
         Rate("query:" + Request.UserHostAddress, 120);
         var q = Db.From<PublishedDecision>().Where(x => x.UnpublishedAt == null);
@@ -210,12 +245,31 @@ public class DecisionPublishServices : Service
         if (!string.IsNullOrEmpty(request.Q)) { var search = request.Q.Trim(); if (search.Length > 200) throw new HttpError(400, "ValidationError", "Search must fit in 200 characters."); q.And(x => x.Name.Contains(search) || x.Description.Contains(search)); }
         if (!string.IsNullOrEmpty(request.Tag)) { var tag = JsonSerializer.Serialize(request.Tag, DecisionDocumentValidator.JsonOptions); q.And(x => x.Tags.Contains(tag)); }
         if (request.OrderBy == "name") q.OrderBy(x => x.Name).ThenBy(x => x.Id);
+        else if (request.OrderBy == "recommended") q.OrderByDescending(x => x.PublisherStarred).ThenByDescending(x => x.PublisherRunCount).ThenByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
+        else if (request.OrderBy == "most-run") q.OrderByDescending(x => x.PublisherRunCount).ThenByDescending(x => x.PublisherStarred).ThenByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
         else if (request.OrderBy is null or "newest" or "-updatedAt") q.OrderByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
-        else throw new HttpError(400, "ValidationError", "Order by newest or name.");
+        else throw new HttpError(400, "ValidationError", "Order by recommended, most-run, newest or name.");
         var skip = Math.Clamp(request.Skip, 0, 10000); var take = Math.Clamp(request.Take, 1, 50); q.Limit(skip, take + 1);
         var rows = await Db.SelectAsync(q); var result = new DecisionCatalog { Skip = skip, Take = take, HasMore = rows.Count > take };
         foreach (var row in rows.Take(take)) result.Items.Add(await Projection(row, false));
         return Json(result);
+    }
+    async Task AssignTags(PublishedDecision row, PublishedDecision? previous = null)
+    {
+        if (JsonNode.Parse(row.Tags)!.AsArray().Count != 0) return;
+        // Usage-only updates retain inferred tags without another paid request.
+        if (previous?.RecipeHash == row.RecipeHash && JsonNode.Parse(previous.Tags)!.AsArray().Count != 0) { row.Tags = previous.Tags; return; }
+        var tags = await Tagger.InferTags(JsonNode.Parse(row.DocumentJson)!.AsObject());
+        // Discovery metadata is derived; retain the exact submitted portable snapshot and hashes.
+        row.Tags = JsonSerializer.Serialize(tags, DecisionDocumentValidator.JsonOptions);
+    }
+    public object Get(GetDecisionTags request)
+    {
+        var catalog = TagOptions.Catalog();
+        var etag = Hash(JsonSerializer.Serialize(catalog, DecisionDocumentValidator.JsonOptions));
+        var result = (HttpResult)Json(catalog, "decision-tags-" + etag);
+        result.Headers["Cache-Control"] = "public, max-age=3600";
+        return result;
     }
     public object Get(ViewPublishedDecisions request) => HttpResult.Redirect("/m#recipes");
     public async Task<object> Get(DownloadPublishedDecision request)

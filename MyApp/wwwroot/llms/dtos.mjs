@@ -4765,8 +4765,18 @@ export class DecisionAuthor {
     /** @type {string} */
     displayName;
 }
+export class DecisionTag {
+    /** @param {{name?:string,label?:string,group?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    name;
+    /** @type {string} */
+    label;
+    /** @type {string} */
+    group;
+}
 export class DecisionPublication {
-    /** @param {{externalRef?:string,publishedUrl?:string,downloadUrl?:string,filename?:string,revision?:number,contentHash?:string,recipeHash?:string,publishedAt?:string,updatedAt?:string,author?:DecisionAuthor,name?:string,description?:string,tags?:string[],schemaVersion?:number,questionCount?:number,fieldCount?:number,exampleCount?:number,executedModel?:string,executedAt?:string,document?:any,execution?:any}} [init] */
+    /** @param {{externalRef?:string,publishedUrl?:string,downloadUrl?:string,filename?:string,revision?:number,contentHash?:string,recipeHash?:string,publishedAt?:string,updatedAt?:string,author?:DecisionAuthor,name?:string,description?:string,tags?:string[],schemaVersion?:number,questionCount?:number,fieldCount?:number,exampleCount?:number,executedModel?:string,executedAt?:string,document?:any,execution?:any,publisherStarred?:boolean,publisherRunCount?:number}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {string} */
     externalRef;
@@ -4810,6 +4820,10 @@ export class DecisionPublication {
     document;
     /** @type {?any} */
     execution;
+    /** @type {boolean} */
+    publisherStarred;
+    /** @type {number} */
+    publisherRunCount;
 }
 export class DecisionCatalog {
     /** @param {{items?:DecisionPublication[],skip?:number,take?:number,hasMore?:boolean}} [init] */
@@ -4823,8 +4837,16 @@ export class DecisionCatalog {
     /** @type {boolean} */
     hasMore;
 }
+export class DecisionTagCatalog {
+    /** @param {{version?:number,tags?:DecisionTag[]}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {number} */
+    version;
+    /** @type {DecisionTag[]} */
+    tags = [];
+}
 export class PublishDecision {
-    /** @param {{filename?:string,document?:any,execution?:any,idempotencyKey?:string}} [init] */
+    /** @param {{filename?:string,document?:any,execution?:any,idempotencyKey?:string,publisherStarred?:boolean,publisherRunCount?:number}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {string} */
     filename;
@@ -4834,12 +4856,16 @@ export class PublishDecision {
     execution;
     /** @type {string} */
     idempotencyKey;
+    /** @type {boolean} */
+    publisherStarred;
+    /** @type {number} */
+    publisherRunCount;
     getTypeName() { return 'PublishDecision' }
     getMethod() { return 'POST' }
     createResponse() { return new DecisionPublication() }
 }
 export class UpdatePublishedDecision {
-    /** @param {{externalRef?:string,filename?:string,document?:any,execution?:any,revision?:number}} [init] */
+    /** @param {{externalRef?:string,filename?:string,document?:any,execution?:any,revision?:number,publisherStarred?:boolean,publisherRunCount?:number}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {string} */
     externalRef;
@@ -4851,6 +4877,10 @@ export class UpdatePublishedDecision {
     execution;
     /** @type {number} */
     revision;
+    /** @type {boolean} */
+    publisherStarred;
+    /** @type {number} */
+    publisherRunCount;
     getTypeName() { return 'UpdatePublishedDecision' }
     getMethod() { return 'PUT' }
     createResponse() { return new DecisionPublication() }
@@ -4886,7 +4916,7 @@ export class GetPublishedDecision {
     getMethod() { return 'GET' }
     createResponse() { return new DecisionPublication() }
 }
-export class QueryPublishedDecisions {
+export class DecisionCatalogQuery {
     /** @param {{q?:string,tag?:string,user?:string,skip?:number,take?:number,orderBy?:string}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {?string} */
@@ -4901,16 +4931,26 @@ export class QueryPublishedDecisions {
     take;
     /** @type {?string} */
     orderBy;
+}
+export class QueryPublishedDecisions extends DecisionCatalogQuery {
+    /** @param {{q?:string,tag?:string,user?:string,skip?:number,take?:number,orderBy?:string}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
     getTypeName() { return 'QueryPublishedDecisions' }
     getMethod() { return 'GET' }
     createResponse() { return new DecisionCatalog() }
 }
-export class MyPublishedDecisions extends QueryPublishedDecisions {
+export class MyPublishedDecisions extends DecisionCatalogQuery {
     /** @param {{q?:string,tag?:string,user?:string,skip?:number,take?:number,orderBy?:string}} [init] */
     constructor(init) { super(init); Object.assign(this, init) }
     getTypeName() { return 'MyPublishedDecisions' }
     getMethod() { return 'GET' }
     createResponse() { return new DecisionCatalog() }
+}
+export class GetDecisionTags {
+    constructor(init) { Object.assign(this, init) }
+    getTypeName() { return 'GetDecisionTags' }
+    getMethod() { return 'GET' }
+    createResponse() { return new DecisionTagCatalog() }
 }
 export class ViewPublishedDecisions {
     constructor(init) { Object.assign(this, init) }
