@@ -1109,10 +1109,10 @@ const ProjectGrid = {
 }
 
 const Tabs = [
+    { id: 'projects', label: 'Projects', subtitle: 'Browse the latest published projects' },
     { id: 'media', label: 'Images', subtitle: 'Explore the latest published images' },
     { id: 'audio', label: 'Audio', subtitle: 'Listen to the latest published audio' },
-    { id: 'recipes', label: 'Recipes', subtitle: 'Explore recorded Jev decision recipes' },
-    { id: 'projects', label: 'Projects', subtitle: 'Browse the latest published projects' },
+    { id: 'recipes', label: 'Jev Recipes', subtitle: 'Explore recorded Jev decision recipes' },
 ]
 
 const App = {
