@@ -877,10 +877,36 @@
         const countdownSpan = document.getElementById("countdown");
         const redirectImmediateLink = document.getElementById("redirectImmediateLink");
 
+        let caller = null;
+        const requestedOrigin = urlParams.get("callerOrigin");
+        const connectNonce = urlParams.get("nonce");
+        window.addEventListener("message", (event) => {
+            if (event.data?.type !== "publisher-connect-init" || !connectNonce || event.data.nonce !== connectNonce) return;
+            if (event.source !== (window.opener || (window.parent !== window ? window.parent : null))) return;
+            try {
+                const origin = new URL(requestedOrigin);
+                if (!["https:","http:"].includes(origin.protocol) || origin.origin !== requestedOrigin || event.origin !== requestedOrigin) return;
+                caller = { source: event.source, origin: event.origin };
+                let notice = document.getElementById("publisher-caller");
+                if (!notice) { notice = document.createElement("p"); notice.id = "publisher-caller"; registerForm.prepend(notice); }
+                notice.textContent = "Connect your publisher account to " + caller.origin;
+                if (!document.getElementById("publisher-grant")) {
+                    const label = document.createElement("label");
+                    const grant = document.createElement("input");
+                    grant.type = "checkbox"; grant.id = "publisher-grant";
+                    label.append(grant, document.createTextNode(" Grant publisher access to " + caller.origin));
+                    registerForm.prepend(label);
+                }
+            } catch { /* Invalid caller origins never receive credentials. */ }
+        });
         let generatedApiKey = "";
 
         registerForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+            if (requestedOrigin && (!caller || !document.getElementById("publisher-grant")?.checked)) {
+                showError("Confirm the requesting host before connecting your publisher account.");
+                return;
+            }
 
             const usernameInput = document.getElementById("username");
             const emailInput = document.getElementById("email");
@@ -927,46 +953,9 @@
                     registerScreen.style.display = "none";
                     successScreen.style.display = "block";
 
-                    // Notify parent/opener window via postMessage
-                    const messagePayload = {
-                        type: "register-success",
-                        apiKey: generatedApiKey,
-                        userName: data.userName,
-                        userId: data.userId
-                    };
-                    // If embedded inside an iframe
-                    if (window.parent !== window) {
-                        window.parent.postMessage(messagePayload, "*");
-                    }
-                    // If opened as a popup window
-                    if (window.opener) {
-                        window.opener.postMessage(messagePayload, "*");
-                    }
-
-                    // Handle redirect URL parameter
-                    const redirectUrl = urlParams.get("redirect");
-
-                    if (redirectUrl) {
-                        try {
-                            const parsedRedirect = new URL(redirectUrl);
-                            parsedRedirect.searchParams.set("token", generatedApiKey);
-                            const finalRedirectUrl = parsedRedirect.toString();
-
-                            redirectNotice.style.display = "block";
-                            redirectImmediateLink.href = finalRedirectUrl;
-
-                            let countdown = 3;
-                            const interval = setInterval(() => {
-                                countdown--;
-                                countdownSpan.textContent = countdown;
-                                if (countdown <= 0) {
-                                    clearInterval(interval);
-                                    window.location.href = finalRedirectUrl;
-                                }
-                            }, 1000);
-                        } catch (err) {
-                            console.error("Invalid redirect URL", redirectUrl);
-                        }
+                    if (caller) {
+                        caller.source.postMessage({ type: "register-success", nonce: connectNonce,
+                            apiKey: generatedApiKey, userName: data.userName, userId: data.userId }, caller.origin);
                     }
                 } else {
                     const status = data.responseStatus || {};

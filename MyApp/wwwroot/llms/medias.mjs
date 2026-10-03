@@ -1,3 +1,4 @@
+import RecipeGrid from './recipes.mjs'
 import { ref, computed, inject, onMounted, onUnmounted, reactive, watch } from "vue"
 import { QueryPublishedMedia, QueryPublishedProjects, UpdatePublishedMedia, DeletePublishedMedia,
     UpdatePublishedProject, DeletePublishedProject, GetPublishProjectPosterImage } from "./dtos.mjs"
@@ -1110,11 +1111,13 @@ const ProjectGrid = {
 const Tabs = [
     { id: 'media', label: 'Images', subtitle: 'Explore the latest published images' },
     { id: 'audio', label: 'Audio', subtitle: 'Listen to the latest published audio' },
+    { id: 'recipes', label: 'Recipes', subtitle: 'Explore recorded Jev decision recipes' },
     { id: 'projects', label: 'Projects', subtitle: 'Browse the latest published projects' },
 ]
 
 const App = {
     components: {
+        RecipeGrid,
         SignInModal,
         UserAvatar,
         VisibilityIcon,
@@ -1163,7 +1166,7 @@ const App = {
                     </p>
 
                     <!-- Tabs + sort order -->
-                    <nav class="mt-4 flex items-center gap-1">
+                    <nav class="mt-4 flex flex-wrap items-center gap-1">
                         <button v-for="tab in tabs" :key="tab.id" type="button"
                             @click="selectTab(tab.id)"
                             class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors"
@@ -1172,13 +1175,14 @@ const App = {
                                 : ['hover:bg-gray-200/60 dark:hover:bg-gray-700/40', $styles.muted]">
                             {{ tab.label }}
                         </button>
-                        <select v-model="orderBy" title="Order results"
+                        <select v-if="activeTab !== 'recipes'" v-model="orderBy" title="Order results"
                             class="ml-auto text-sm font-medium rounded-lg px-2.5 py-1.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option v-for="o in orderOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
                         </select>
                     </nav>
                 </div>
 
+                <div v-if="activeTab === 'recipes'"><RecipeGrid/></div>
                 <!-- Panels (lazy-mounted, kept alive via v-show) -->
                 <div v-show="activeTab === 'media'">
                     <MediaGrid v-if="visited.media" ref="mediaGrid" type="Image" :initial-items="seedResults"

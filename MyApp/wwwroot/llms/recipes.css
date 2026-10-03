@@ -1,0 +1,194 @@
+.recipe-public,
+.recipe-card,
+.recipe-filters {
+    --j-line: #ddd;
+    --j-soft: #eee;
+    --j-accent: #4f46e5;
+    --j-muted: #666;
+}
+.dark .recipe-public,
+.dark .recipe-card {
+    --j-line: #374151;
+    --j-soft: #1f2937;
+    --j-muted: #9ca3af;
+}
+.recipe-public {
+    min-height: 100vh;
+    padding: 32px 16px;
+}
+.recipe-public-inner {
+    max-width: 900px;
+    margin: auto;
+}
+.recipe-public h1 {
+    font-size: 32px;
+    margin: 24px 0 12px;
+}
+.recipe-public h3 {
+    font-size: 24px;
+    margin-top: 24px;
+}
+.recipe-public h4 {
+    font-size: 18px;
+    margin-top: 18px;
+}
+.recipe-public pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 400px;
+    overflow: auto;
+    padding: 16px;
+    background: var(--j-soft);
+    border-radius: 8px;
+}
+.recipe-public a {
+    color: var(--j-accent);
+    text-decoration: underline;
+}
+.recipe-actions,
+.recipe-filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+}
+.recipe-public button,
+.recipe-card button,
+.recipe-filters button {
+    padding: 8px 12px;
+    border: 1px solid var(--j-line);
+    border-radius: 8px;
+}
+.recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 16px;
+}
+.recipe-card {
+    padding: 20px;
+    border: 1px solid var(--j-line);
+    border-radius: 12px;
+}
+.recipe-card h3 {
+    font-size: 20px;
+}
+.recipe-card p {
+    margin: 8px 0;
+}
+.recipe-card {
+    overflow-wrap: anywhere;
+}
+.jev-section-heading,
+.jev-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+.jev-help {
+    color: var(--j-muted);
+    font-size: 12px;
+}
+.jev-answer {
+    padding: 22px 0;
+    border-bottom: 1px solid var(--j-line);
+}
+.jev-answer .jev-section-heading {
+    margin-bottom: 7px;
+}
+.jev-answer-value {
+    font-size: 28px;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    margin-bottom: 17px;
+    overflow-wrap: anywhere;
+}
+.jev-answer-value .jev-help {
+    font-weight: 400;
+    letter-spacing: 0;
+    font-size: 12px;
+}
+.jev-probability {
+    margin-top: 12px;
+    font-size: 12px;
+}
+.jev-probability .jev-row {
+    flex-wrap: nowrap;
+    gap: 16px;
+    align-items: start;
+}
+.jev-probability .jev-row > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.jev-probability .jev-row > span:last-child {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.jev-track {
+    height: 5px;
+    background: var(--j-soft);
+    margin-top: 6px;
+    border-radius: 3px;
+}
+.jev-track > div {
+    height: 100%;
+    background: var(--j-accent);
+    border-radius: 3px;
+    transition: width 0.2s;
+}
+.jev-confidence {
+    font-size: 11px;
+    color: var(--j-muted);
+    margin-top: 15px;
+}
+.jev-confidence summary {
+    list-style: none;
+}
+.jev-confidence p {
+    padding-top: 7px;
+    line-height: 1.7;
+}
+.jev-criteria {
+    font-size: 12px;
+    color: var(--j-muted);
+    margin-top: 16px;
+}
+.jev-criteria p {
+    margin-top: 8px;
+    line-height: 1.7;
+}
+.jev-criteria summary {
+    cursor: pointer;
+}
+.jev-score-meter {
+    margin: 8px 0 24px;
+}
+.jev-score-line {
+    position: relative;
+    height: 5px;
+    background: var(--j-soft);
+    margin: 8px 5px 9px;
+}
+.jev-score-line > span {
+    position: absolute;
+    top: -4px;
+    height: 13px;
+    width: 4px;
+    border-radius: 2px;
+    background: var(--j-accent);
+    transform: translateX(-50%);
+}
+.jev-score-ends {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    font-size: 10px;
+    color: var(--j-muted);
+}
+.jev-score-ends span {
+    max-width: 45%;
+}
+.jev-score-ends span:last-child {
+    text-align: right;
+}

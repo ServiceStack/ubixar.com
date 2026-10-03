@@ -22,6 +22,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Update="fixtures\jev-sharing-contract.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Update="workflows\**\*.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>Never</CopyToPublishDirectory>

@@ -10,6 +10,7 @@ namespace MyApp.ServiceInterface;
 
 public class ValidationScripts : ScriptMethods
 {
+    public ITypeValidator DecisionOwner() => new DecisionOwnerValidator();
     public ITypeValidator ActiveUser() => new ActiveUserValidator();
 }
 

@@ -4756,3 +4756,183 @@ export class DeleteThreadReaction {
     createResponse() { return new EmptyResponse() }
 }
 
+// Decision sharing DTOs generated with x mjs from the development publisher.
+export class DecisionAuthor {
+    /** @param {{userName?:string,displayName?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    userName;
+    /** @type {string} */
+    displayName;
+}
+export class DecisionPublication {
+    /** @param {{externalRef?:string,publishedUrl?:string,downloadUrl?:string,filename?:string,revision?:number,contentHash?:string,recipeHash?:string,publishedAt?:string,updatedAt?:string,author?:DecisionAuthor,name?:string,description?:string,tags?:string[],schemaVersion?:number,questionCount?:number,fieldCount?:number,exampleCount?:number,executedModel?:string,executedAt?:string,document?:any,execution?:any}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    /** @type {string} */
+    publishedUrl;
+    /** @type {string} */
+    downloadUrl;
+    /** @type {string} */
+    filename;
+    /** @type {number} */
+    revision;
+    /** @type {string} */
+    contentHash;
+    /** @type {string} */
+    recipeHash;
+    /** @type {string} */
+    publishedAt;
+    /** @type {string} */
+    updatedAt;
+    /** @type {DecisionAuthor} */
+    author;
+    /** @type {string} */
+    name;
+    /** @type {string} */
+    description;
+    /** @type {string[]} */
+    tags = [];
+    /** @type {number} */
+    schemaVersion;
+    /** @type {number} */
+    questionCount;
+    /** @type {number} */
+    fieldCount;
+    /** @type {number} */
+    exampleCount;
+    /** @type {string} */
+    executedModel;
+    /** @type {string} */
+    executedAt;
+    /** @type {?any} */
+    document;
+    /** @type {?any} */
+    execution;
+}
+export class DecisionCatalog {
+    /** @param {{items?:DecisionPublication[],skip?:number,take?:number,hasMore?:boolean}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {DecisionPublication[]} */
+    items = [];
+    /** @type {number} */
+    skip;
+    /** @type {number} */
+    take;
+    /** @type {boolean} */
+    hasMore;
+}
+export class PublishDecision {
+    /** @param {{filename?:string,document?:any,execution?:any,idempotencyKey?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    filename;
+    /** @type {any} */
+    document;
+    /** @type {any} */
+    execution;
+    /** @type {string} */
+    idempotencyKey;
+    getTypeName() { return 'PublishDecision' }
+    getMethod() { return 'POST' }
+    createResponse() { return new DecisionPublication() }
+}
+export class UpdatePublishedDecision {
+    /** @param {{externalRef?:string,filename?:string,document?:any,execution?:any,revision?:number}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    /** @type {string} */
+    filename;
+    /** @type {any} */
+    document;
+    /** @type {any} */
+    execution;
+    /** @type {number} */
+    revision;
+    getTypeName() { return 'UpdatePublishedDecision' }
+    getMethod() { return 'PUT' }
+    createResponse() { return new DecisionPublication() }
+}
+export class UnpublishDecision {
+    /** @param {{externalRef?:string,revision?:number}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    /** @type {number} */
+    revision;
+    getTypeName() { return 'UnpublishDecision' }
+    getMethod() { return 'DELETE' }
+    createResponse() { return new EmptyResponse() }
+}
+export class UnpublishMyDecision {
+    /** @param {{externalRef?:string,revision?:number}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    /** @type {number} */
+    revision;
+    getTypeName() { return 'UnpublishMyDecision' }
+    getMethod() { return 'DELETE' }
+    createResponse() { return new EmptyResponse() }
+}
+export class GetPublishedDecision {
+    /** @param {{externalRef?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    getTypeName() { return 'GetPublishedDecision' }
+    getMethod() { return 'GET' }
+    createResponse() { return new DecisionPublication() }
+}
+export class QueryPublishedDecisions {
+    /** @param {{q?:string,tag?:string,user?:string,skip?:number,take?:number,orderBy?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {?string} */
+    q;
+    /** @type {?string} */
+    tag;
+    /** @type {?string} */
+    user;
+    /** @type {number} */
+    skip;
+    /** @type {number} */
+    take;
+    /** @type {?string} */
+    orderBy;
+    getTypeName() { return 'QueryPublishedDecisions' }
+    getMethod() { return 'GET' }
+    createResponse() { return new DecisionCatalog() }
+}
+export class MyPublishedDecisions extends QueryPublishedDecisions {
+    /** @param {{q?:string,tag?:string,user?:string,skip?:number,take?:number,orderBy?:string}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
+    getTypeName() { return 'MyPublishedDecisions' }
+    getMethod() { return 'GET' }
+    createResponse() { return new DecisionCatalog() }
+}
+export class ViewPublishedDecisions {
+    constructor(init) { Object.assign(this, init) }
+    getTypeName() { return 'ViewPublishedDecisions' }
+    getMethod() { return 'GET' }
+    createResponse() { return '' }
+}
+export class DownloadPublishedDecision {
+    /** @param {{externalRef?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    getTypeName() { return 'DownloadPublishedDecision' }
+    getMethod() { return 'GET' }
+    createResponse() { return new Blob() }
+}
+export class ViewPublishedDecision {
+    /** @param {{externalRef?:string}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    getTypeName() { return 'ViewPublishedDecision' }
+    getMethod() { return 'GET' }
+    createResponse() { return '' }
+}
