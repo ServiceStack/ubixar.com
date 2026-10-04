@@ -37,6 +37,26 @@ public class PublishedDecision
     public string CreateRequestHash { get; set; } = "";
 }
 
+[CompositeIndex(nameof(DecisionId), nameof(UserId), Unique = true)]
+public class DecisionStar
+{
+    [AutoIncrement] public long Id { get; set; }
+    [Index] public long DecisionId { get; set; }
+    [Index] public string UserId { get; set; } = "";
+}
+public class DecisionStars
+{
+    public string ExternalRef { get; set; } = "";
+    public int StarCount { get; set; }
+    public bool Starred { get; set; }
+}
+[ValidateRequest("DecisionOwner()"), Route("/publish/decision/{ExternalRef}/star", "PUT")]
+public class SetDecisionStar : IPut, IReturn<DecisionStars>
+{
+    public string ExternalRef { get; set; } = "";
+    public bool Starred { get; set; }
+}
+
 // Stream requests enforce envelope limits before any JSON deserialization.
 [ValidateApiKey, Route("/publish/decision", "POST")]
 public class PublishDecision : IPost, IReturn<DecisionPublication>, IRequiresRequestStream
@@ -110,9 +130,8 @@ public class DecisionAuthor
     public string UserName { get; set; } = "";
     public string DisplayName { get; set; } = "";
 }
-public class DecisionPublication
+public class DecisionPublication : DecisionStars
 {
-    public string ExternalRef { get; set; } = "";
     public string PublishedUrl { get; set; } = "";
     public string DownloadUrl { get; set; } = "";
     public string Filename { get; set; } = "";
@@ -135,7 +154,6 @@ public class DecisionPublication
     public JsonElement? Document { get; set; }
     public JsonElement? Execution { get; set; }
     public bool PublisherStarred { get; set; }
-    public int PublisherRunCount { get; set; }
 }
 public class DecisionCatalog
 {

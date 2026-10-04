@@ -111,7 +111,8 @@ public class DecisionPublishServices : Service
         return new DecisionPublication
         {
             PublisherStarred = row.PublisherStarred,
-            PublisherRunCount = row.PublisherRunCount,
+            StarCount = (int)await Db.CountAsync<DecisionStar>(x => x.DecisionId == row.Id && (!row.PublisherStarred || x.UserId != row.PublishedBy)) + (row.PublisherStarred ? 1 : 0),
+            Starred = await ViewerStarred(row),
             ExternalRef = row.ExternalRef,
             PublishedUrl = url,
             DownloadUrl = url + ".json",
@@ -136,11 +137,69 @@ public class DecisionPublishServices : Service
             Execution = detail ? JsonDocument.Parse(row.ExecutionJson).RootElement.Clone() : null
         };
     }
+    async Task<string?> ViewerId()
+    {
+        if (Request.Items.TryGetValue("decision-viewer", out var cached)) return cached as string;
+        var viewer = Request.GetApiKey()?.UserAuthId ?? Request.GetUserId();
+        // Public reads accept an optional publisher key to include that person's star state.
+        if (viewer == null && Request.Headers["Authorization"]?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true &&
+            await new DecisionOwnerValidator().IsValidAsync(Request.Dto ?? new object(), Request))
+            viewer = Request.GetApiKey()?.UserAuthId;
+        Request.Items["decision-viewer"] = viewer;
+        return viewer;
+    }
+    async Task<bool> ViewerStarred(PublishedDecision row)
+    {
+        var viewer = await ViewerId();
+        return viewer != null && await Db.ExistsAsync<DecisionStar>(x => x.DecisionId == row.Id && x.UserId == viewer);
+    }
+    public async Task<object> Put(SetDecisionStar request)
+    {
+        var viewer = Request.GetRequiredUserId(); Rate("star:" + viewer, 60);
+        if (Request.GetApiKey() == null)
+        {
+            var expected = new Uri(Request.ResolveAbsoluteUrl("~/")).GetLeftPart(UriPartial.Authority);
+            if (Request.Headers["Origin"] != expected || Request.Headers["X-Recipe-Star"] != "1")
+                throw HttpError.Forbidden("Use the recipe page to star recipes.");
+        }
+        var row = await Find(request.ExternalRef);
+        if (request.Starred)
+        {
+            if (!await Db.ExistsAsync<DecisionStar>(x => x.DecisionId == row.Id && x.UserId == viewer))
+            {
+                try { await Db.InsertAsync(new DecisionStar { DecisionId = row.Id, UserId = viewer }); }
+                catch
+                {
+                    // A concurrent retry of the same person's star is still one star.
+                    if (!await Db.ExistsAsync<DecisionStar>(x => x.DecisionId == row.Id && x.UserId == viewer)) throw;
+                }
+            }
+        }
+        else await Db.DeleteAsync<DecisionStar>(x => x.DecisionId == row.Id && x.UserId == viewer);
+        row = await Find(request.ExternalRef);
+        var state = new DecisionStars {
+            ExternalRef = row.ExternalRef,
+            StarCount = (int)await Db.CountAsync<DecisionStar>(x => x.DecisionId == row.Id && (!row.PublisherStarred || x.UserId != row.PublishedBy)) + (row.PublisherStarred ? 1 : 0),
+            Starred = await ViewerStarred(row)
+        };
+        return Json(state);
+    }
+    string StarScoreSql(SqlExpression<PublishedDecision> q)
+    {
+        var stars = Db.From<DecisionStar>();
+        var table = Db.GetDialectProvider().GetQuotedTableName(typeof(DecisionStar).GetModelMetadata());
+        var decision = stars.Column<DecisionStar>(x => x.DecisionId, prefixTable: true);
+        var voter = stars.Column<DecisionStar>(x => x.UserId, prefixTable: true);
+        var id = q.Column<PublishedDecision>(x => x.Id, prefixTable: true);
+        var owner = q.Column<PublishedDecision>(x => x.PublishedBy, prefixTable: true);
+        var publisherStar = q.Column<PublishedDecision>(x => x.PublisherStarred, prefixTable: true);
+        return $"((SELECT COUNT(*) FROM {table} WHERE {decision} = {id} AND ({voter} <> {owner} OR {publisherStar} = FALSE)) + CASE WHEN {publisherStar} = TRUE THEN 1 ELSE 0 END)";
+    }
     object Json(object value, string? etag = null)
     {
         var content = JsonSerializer.Serialize(value, DecisionDocumentValidator.JsonOptions);
         if (Encoding.UTF8.GetByteCount(content) > DecisionDocumentValidator.EnvelopeLimit) throw new HttpError(413, "TooLarge", "Publication detail exceeds size limit.");
-        var result = new HttpResult(content, "application/json"); result.Headers["Cache-Control"] = "no-cache, must-revalidate";
+        var result = new HttpResult(content, "application/json"); result.Headers["Cache-Control"] = "private, no-cache, must-revalidate";
         if (etag != null) result.Headers["ETag"] = '"' + etag + '"';
         return result;
     }
@@ -243,7 +302,8 @@ public class DecisionPublishServices : Service
     public async Task<object> Get(GetPublishedDecision request)
     {
         Rate("query:" + Request.UserHostAddress, 120); var row = await Find(request.ExternalRef);
-        return Json(await Projection(row, true), row.Revision + "-" + row.ContentHash);
+        var projection = await Projection(row, true);
+        return Json(projection, row.Revision + "-" + row.ContentHash + "-" + projection.StarCount + "-" + projection.Starred);
     }
     public async Task<object> Get(QueryPublishedDecisions request) => await Catalog(request, null);
     public async Task<object> Get(MyPublishedDecisions request) => await Catalog(request, Request.GetRequiredUserId());
@@ -261,10 +321,14 @@ public class DecisionPublishServices : Service
             var legacy = JsonSerializer.Serialize(DecisionPublishingOptions.TagKey(label), DecisionDocumentValidator.JsonOptions);
             q.And(x => x.Tags.Contains(tag) || x.Tags.ToLower().Contains(lower) || x.Tags.ToLower().Contains(legacy));
         }
+        var stars = StarScoreSql(q);
+        var runs = q.Column<PublishedDecision>(x => x.PublisherRunCount, prefixTable: true);
+        var updated = q.Column<PublishedDecision>(x => x.UpdatedAt, prefixTable: true);
+        var idColumn = q.Column<PublishedDecision>(x => x.Id, prefixTable: true);
         if (request.OrderBy == "name") q.OrderBy(x => x.Name).ThenBy(x => x.Id);
-        else if (request.OrderBy == "recommended") q.OrderByDescending(x => x.PublisherStarred).ThenByDescending(x => x.PublisherRunCount).ThenByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
-        else if (request.OrderBy == "most-run") q.OrderByDescending(x => x.PublisherRunCount).ThenByDescending(x => x.PublisherStarred).ThenByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
-        else if (request.OrderBy is null or "newest" or "-updatedAt") q.OrderByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
+        else if (request.OrderBy is null or "recommended") q.UnsafeOrderBy($"{stars} DESC, {runs} DESC, {updated} DESC, {idColumn} DESC");
+        else if (request.OrderBy == "most-run") q.UnsafeOrderBy($"{runs} DESC, {stars} DESC, {updated} DESC, {idColumn} DESC");
+        else if (request.OrderBy is "newest" or "-updatedAt") q.OrderByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
         else throw new HttpError(400, "ValidationError", "Order by recommended, most-run, newest or name.");
         var skip = Math.Clamp(request.Skip, 0, 10000); var take = Math.Clamp(request.Take, 1, 50); q.Limit(skip, take + 1);
         var rows = await Db.SelectAsync(q); var result = new DecisionCatalog { Skip = skip, Take = take, HasMore = rows.Count > take };

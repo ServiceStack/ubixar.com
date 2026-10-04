@@ -1,15 +1,17 @@
+import RecipeStar from './RecipeStar.mjs'
 import { loadDecisionTags } from './decisionTags.mjs'
 import { ref, onMounted } from 'vue'
 import { formatDate, count } from './recipeFormat.mjs'
 export const RecipeCard = {
+    components: { RecipeStar },
     props: { item: Object, mine: Boolean },
     emits: ['remove'],
     template: `<article class="recipe-card">
-      <div class="recipe-card-body"><div class="recipe-card-top"><span class="recipe-eyebrow">Decision recipe</span><div class="recipe-card-controls"><a v-if="item.publisherStarred" :href="'/d/'+item.externalRef" class="recipe-favourite" title="Publisher favourite" aria-label="Publisher favourite">★</a><button v-if="mine" type="button" class="recipe-danger" @click="$emit('remove',item)">Stop sharing</button></div></div>
+      <div class="recipe-card-body"><div class="recipe-card-top"><span class="recipe-eyebrow">Decision recipe</span><div class="recipe-card-controls"><RecipeStar :recipe="item"/><button v-if="mine" type="button" class="recipe-danger" @click="$emit('remove',item)">Stop sharing</button></div></div>
       <h3><a class="recipe-card-link" :href="'/d/'+item.externalRef">{{item.name}}</a></h3><p class="recipe-card-description">{{item.description}}</p>
       <div class="recipe-tags"><a v-if="item.content" :href="'/m?tag='+encodeURIComponent(item.content)+'#recipes'" :aria-label="'Content: '+item.content">{{item.content}}</a><a v-for="tag in item.tags" :key="tag" :href="'/m?tag='+encodeURIComponent(tag)+'#recipes'">{{tag}}</a></div>
       <p class="recipe-card-meta">{{item.author.displayName || item.author.userName}} · {{count(item.questionCount,'question')}}</p>
-      <p class="recipe-card-meta">{{item.publisherRunCount||0}} recorded publisher runs · Updated {{formatDate(item.updatedAt)}}</p></div>
+      <p class="recipe-card-meta">Updated {{formatDate(item.updatedAt)}}</p></div>
     </article>`,
     setup() {
         return { formatDate, count }
@@ -23,7 +25,7 @@ export default {
         <label class="recipe-search">Search<input v-model="q" placeholder="Name or description" aria-label="Search recipes"/></label>
         <label>Tag<input v-model="tag" list="decision-gallery-tags" placeholder="Any tag" aria-label="Recipe tag"/></label><datalist id="decision-gallery-tags"><option v-for="item in tags" :key="item.label" :value="item.label"></option></datalist>
         <label>Author<input v-model="user" placeholder="Any author" aria-label="Recipe author"/></label>
-        <label>Sort by<select v-model="order" aria-label="Recipe ordering"><option value="recommended">Recommended</option><option value="most-run">Most run by publisher</option><option value="newest">Newest</option><option value="name">Name</option></select></label><button type="submit" class="recipe-primary" :disabled="busy">Search</button>
+        <label>Sort by<select v-model="order" aria-label="Recipe ordering"><option value="recommended">Recommended</option><option value="most-run">Most run</option><option value="newest">Newest</option><option value="name">Name</option></select></label><button type="submit" class="recipe-primary" :disabled="busy">Search</button>
       </form>
       <div v-if="error" class="recipe-notice recipe-error" role="alert"><div><h3>Unable to load recipes</h3><p>{{error}}</p></div><a v-if="needsSignIn" class="recipe-button" href="/Account/Login?ReturnUrl=%2Fm%23recipes">Sign in</a><button v-else type="button" @click="load(false)">Try again</button></div>
       <div class="recipe-grid" :aria-busy="busy"><RecipeCard v-for="item in items" :key="item.externalRef" :item="item" :mine="mine" @remove="remove"/></div>

@@ -77,7 +77,7 @@ public class DecisionPublishTests : TestBase
         // Frozen migration creates a table compatible with the runtime projection.
         db.CreateTable<MyApp.Migrations.Migration1010.PublishedDecision>();
         db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherStarred);
-        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherRunCount); db.CreateTable<User>();
+        db.AddColumn<MyApp.Migrations.Migration1011.PublishedDecision>(x => x.PublisherRunCount); db.CreateTable<User>(); db.CreateTable<MyApp.Migrations.Migration1012.DecisionStar>();
     }
     [TearDown]
     public void Cleanup() { host.Dispose(); File.Delete(dbPath); }
@@ -147,7 +147,7 @@ public class DecisionPublishTests : TestBase
     {
         var service = Service("usage"); var body = Body();
         var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
-        Assert.That(created["publisherRunCount"]!.GetValue<int>(), Is.Zero);
+        Assert.That(created.ContainsKey("publisherRunCount"), Is.False);
         var reference = created["externalRef"]!.GetValue<string>();
         body["publisherStarred"] = true; body["publisherRunCount"] = 12; body["revision"] = 1;
         var updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
@@ -158,7 +158,8 @@ public class DecisionPublishTests : TestBase
         var legacy = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
         Assert.That(legacy["revision"]!.GetValue<int>(), Is.EqualTo(2));
         Assert.That(legacy["publisherStarred"]!.GetValue<bool>(), Is.True);
-        Assert.That(legacy["publisherRunCount"]!.GetValue<int>(), Is.EqualTo(12));
+        Assert.That(legacy.ContainsKey("publisherRunCount"), Is.False);
+        using var db = factory.Open(); Assert.That(db.Single<PublishedDecision>(x => x.ExternalRef == reference).PublisherRunCount, Is.EqualTo(12));
     }
     [Test]
     public async Task Discovery_sorts_usage_with_stable_pagination_and_filters()
@@ -178,8 +179,84 @@ public class DecisionPublishTests : TestBase
         var next = Result(await service.Get(new QueryPublishedDecisions { OrderBy = "recommended", Skip = 2 }));
         Assert.That(next["items"]![0]!["name"]!.GetValue<string>(), Is.EqualTo("Starred"));
         var most = Result(await service.Get(new QueryPublishedDecisions { OrderBy = "most-run" }));
-        Assert.That(most["items"]![0]!["publisherRunCount"]!.GetValue<int>(), Is.EqualTo(100));
+        Assert.That(most["items"]![0]!["name"]!.GetValue<string>(), Is.EqualTo("Often run"));
+        Assert.That(most["items"]!.AsArray().All(item => !item!.AsObject().ContainsKey("publisherRunCount")), Is.True);
         Assert.That(Result(await service.Get(new QueryPublishedDecisions { OrderBy = "recommended", Tag = "nonexistent" }))["items"]!.AsArray(), Is.Empty);
+    }
+    [Test]
+    public async Task Community_stars_are_unique_per_person_and_can_be_removed()
+    {
+        var owner = Service("star-owner"); var body = Body(); body["publisherStarred"] = true;
+        var published = Result(await owner.Post(new PublishDecision { RequestStream = Stream(body) }));
+        var reference = published["externalRef"]!.GetValue<string>();
+        Assert.That(published["starCount"]!.GetValue<int>(), Is.EqualTo(1));
+        var reader = Service("star-reader");
+        for (var i = 0; i < 2; i++) {
+            var state = Result(await reader.Put(new SetDecisionStar { ExternalRef = reference, Starred = true }));
+            Assert.That(state["starCount"]!.GetValue<int>(), Is.EqualTo(2));
+            Assert.That(state["starred"]!.GetValue<bool>(), Is.True);
+        }
+        var other = Service("star-reader-2");
+        Assert.That(Result(await other.Put(new SetDecisionStar { ExternalRef = reference, Starred = true }))["starCount"]!.GetValue<int>(), Is.EqualTo(3));
+        for (var i = 0; i < 2; i++) {
+            var state = Result(await reader.Put(new SetDecisionStar { ExternalRef = reference, Starred = false }));
+            Assert.That(state["starCount"]!.GetValue<int>(), Is.EqualTo(2));
+            Assert.That(state["starred"]!.GetValue<bool>(), Is.False);
+        }
+        Assert.That(Result(await other.Get(new GetPublishedDecision { ExternalRef = reference }))["starred"]!.GetValue<bool>(), Is.True);
+        owner.Request.Items.Remove(Keywords.ApiKey);
+        var anonymous = (HttpResult)await owner.Get(new GetPublishedDecision { ExternalRef = reference });
+        var publicDetail = Result(anonymous);
+        Assert.That(publicDetail["starred"]!.GetValue<bool>(), Is.False);
+        Assert.That(publicDetail.ContainsKey("publisherRunCount"), Is.False);
+        Assert.That(anonymous.Headers["Cache-Control"], Does.StartWith("private"));
+    }
+    [Test]
+    public async Task Publisher_favourite_counts_once_and_community_stars_survive_updates()
+    {
+        var owner = Service("favourite-owner"); var body = Body(); body["publisherStarred"] = true;
+        var published = Result(await owner.Post(new PublishDecision { RequestStream = Stream(body) }));
+        var reference = published["externalRef"]!.GetValue<string>();
+        var ownStar = Result(await owner.Put(new SetDecisionStar { ExternalRef = reference, Starred = true }));
+        Assert.That(ownStar["starCount"]!.GetValue<int>(), Is.EqualTo(1));
+        var reader = Service("favourite-reader");
+        await reader.Put(new SetDecisionStar { ExternalRef = reference, Starred = true });
+        body["publisherStarred"] = false; body["revision"] = 1;
+        var updated = Result(await owner.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
+        Assert.That(updated["starCount"]!.GetValue<int>(), Is.EqualTo(2));
+        var removed = Result(await owner.Put(new SetDecisionStar { ExternalRef = reference, Starred = false }));
+        Assert.That(removed["starCount"]!.GetValue<int>(), Is.EqualTo(1));
+        var detail = Result(await reader.Get(new GetPublishedDecision { ExternalRef = reference }));
+        Assert.That(detail["revision"]!.GetValue<int>(), Is.EqualTo(2));
+        Assert.That(detail["recipeHash"]!.GetValue<string>(), Is.EqualTo(published["recipeHash"]!.GetValue<string>()));
+        Assert.That(detail["starred"]!.GetValue<bool>(), Is.True);
+        await owner.Delete(new UnpublishDecision { ExternalRef = reference, Revision = 2 });
+        Assert.That(Assert.ThrowsAsync<HttpError>(async () => await reader.Put(new SetDecisionStar { ExternalRef = reference, Starred = true }))!.Status, Is.EqualTo(404));
+    }
+    [Test]
+    public async Task Discovery_combines_community_stars_with_publisher_star_and_keeps_runs_private()
+    {
+        var owner = Service("community-ranking"); var refs = new Dictionary<string,string>();
+        foreach (var (name, runs, favourite) in new[] { ("Popular", 2, false), ("Publisher favourite", 5, true), ("Most run", 100, false) }) {
+            var body = Body(); body["document"]!["name"] = name; body["publisherRunCount"] = runs; body["publisherStarred"] = favourite;
+            refs[name] = Result(await owner.Post(new PublishDecision { RequestStream = Stream(body) }))["externalRef"]!.GetValue<string>();
+        }
+        await Service("ranking-reader-1").Put(new SetDecisionStar { ExternalRef = refs["Popular"], Starred = true });
+        await Service("ranking-reader-2").Put(new SetDecisionStar { ExternalRef = refs["Popular"], Starred = true });
+        var recommended = Result(await owner.Get(new QueryPublishedDecisions { OrderBy = "recommended" }))["items"]!.AsArray();
+        Assert.That(recommended.Select(row => row!["name"]!.GetValue<string>()), Is.EqualTo(new[] { "Popular", "Publisher favourite", "Most run" }));
+        var most = Result(await owner.Get(new QueryPublishedDecisions { OrderBy = "most-run" }))["items"]!.AsArray();
+        Assert.That(most[0]!["name"]!.GetValue<string>(), Is.EqualTo("Most run"));
+        Assert.That(recommended.All(row => !row!.AsObject().ContainsKey("publisherRunCount")), Is.True);
+    }
+    [Test]
+    public void Star_storage_rejects_duplicate_voters_and_requires_authenticated_writes()
+    {
+        using var db = factory.Open();
+        db.Insert(new DecisionStar { DecisionId = 42, UserId = "same-person" });
+        Assert.Throws<Microsoft.Data.Sqlite.SqliteException>(() => db.Insert(new DecisionStar { DecisionId = 42, UserId = "same-person" }));
+        var service = Service("anonymous"); service.Request.Items.Remove(Keywords.ApiKey);
+        Assert.That(Assert.ThrowsAsync<HttpError>(async () => await service.Put(new SetDecisionStar { ExternalRef = "missing", Starred = true }))!.Status, Is.EqualTo(401));
     }
     [Test]
     public void Tag_catalog_is_public_versioned_and_cacheable()

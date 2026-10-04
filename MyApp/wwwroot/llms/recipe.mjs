@@ -1,9 +1,10 @@
+import RecipeStar from './RecipeStar.mjs'
 import { ref, onMounted } from 'vue'
 import PublicationPreview from './PublicationPreview.mjs'
 import RecordedAnswers from './RecordedAnswers.mjs'
 import { formatDate, count } from './recipeFormat.mjs'
 const App = {
-    components: { PublicationPreview, RecordedAnswers },
+    components: { PublicationPreview, RecordedAnswers, RecipeStar },
     template: `<main class="recipe-public"><div class="recipe-public-inner">
       <a class="recipe-back" href="/m#recipes">← Browse recipes</a>
       <p v-if="error" class="recipe-notice recipe-error" role="alert">{{error}}</p>
@@ -14,9 +15,9 @@ const App = {
           <p v-if="recipe.content" class="recipe-muted">Content: {{recipe.content}}</p><div class="recipe-tags" v-if="recipe.tags?.length"><a v-for="tag in recipe.tags" :key="tag" :href="'/m?tag='+encodeURIComponent(tag)+'#recipes'">{{tag}}</a></div>
           <div class="recipe-meta"><span>{{recipe.author.displayName || recipe.author.userName}}</span><span>{{recipe.filename}}</span><span>Revision {{recipe.revision}}</span><span>{{count(recipe.fieldCount,'field')}} · {{count(recipe.questionCount,'question')}}</span></div>
           <div class="recipe-meta"><span>Published {{formatDate(recipe.publishedAt)}}</span><span v-if="recipe.updatedAt!==recipe.publishedAt">Updated {{formatDate(recipe.updatedAt)}}</span></div>
-          <div class="recipe-actions"><button type="button" class="recipe-primary" @click="instructions=!instructions" :aria-expanded="instructions" aria-controls="recipe-import-instructions">Import into Jev</button><button type="button" @click="copy">{{copied?'Copied':'Copy link'}}</button><a class="recipe-button" :href="recipe.downloadUrl" download>Download JSON</a></div>
+          <div class="recipe-actions"><RecipeStar :recipe="recipe"/><button type="button" class="recipe-primary" @click="instructions=!instructions" :aria-expanded="instructions" aria-controls="recipe-import-instructions">Import into Jev</button><button type="button" @click="copy">{{copied?'Copied':'Copy link'}}</button><a class="recipe-button" :href="recipe.downloadUrl" download>Download JSON</a></div>
           <span class="recipe-sr-only" role="status">{{copied?'Link copied':''}}</span>
-          <section v-if="instructions" id="recipe-import-instructions" class="recipe-import"><h2>Import into Jev</h2><p>Open Decision Studio → Import recipe → From JSON. Paste this link and review the recipe before importing. You can also download the JSON and import it from a file.</p><div class="recipe-actions"><input readonly :value="link" aria-label="Recipe share link" @focus="$event.target.select()"/><button type="button" @click="copy">Copy link</button></div></section>
+          <section v-if="instructions" id="recipe-import-instructions" class="recipe-import"><h2>Import into Jev</h2><p>Open Decision Studio → Import recipe → From JSON. Paste this link and import the recipe. You can also download the JSON and import it from a file.</p><div class="recipe-actions"><input readonly :value="link" aria-label="Recipe share link" @focus="$event.target.select()"/><button type="button" @click="copy">Copy link</button></div></section>
         </header>
         <PublicationPreview :document="recipe.document" :execution="recipe.execution" :show-recipe="false"/>
         <details v-if="recipe.document.examples?.length" class="recipe-details recipe-additional"><summary>Usage examples · {{recipe.document.examples.length}}</summary>

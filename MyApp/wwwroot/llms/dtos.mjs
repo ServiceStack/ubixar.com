@@ -4773,11 +4773,20 @@ export class DecisionTag {
     /** @type {string} */
     group;
 }
-export class DecisionPublication {
-    /** @param {{externalRef?:string,publishedUrl?:string,downloadUrl?:string,filename?:string,revision?:number,contentHash?:string,recipeHash?:string,publishedAt?:string,updatedAt?:string,author?:DecisionAuthor,name?:string,description?:string,content?:string,tags?:string[],schemaVersion?:number,questionCount?:number,fieldCount?:number,exampleCount?:number,executedModel?:string,executedAt?:string,document?:any,execution?:any,publisherStarred?:boolean,publisherRunCount?:number}} [init] */
+export class DecisionStars {
+    /** @param {{externalRef?:string,starCount?:number,starred?:boolean}} [init] */
     constructor(init) { Object.assign(this, init) }
     /** @type {string} */
     externalRef;
+    /** @type {number} */
+    starCount;
+    /** @type {boolean} */
+    starred;
+}
+
+export class DecisionPublication extends DecisionStars {
+    /** @param {{publishedUrl?:string,downloadUrl?:string,filename?:string,revision?:number,contentHash?:string,recipeHash?:string,publishedAt?:string,updatedAt?:string,author?:DecisionAuthor,name?:string,description?:string,content?:string,tags?:string[],schemaVersion?:number,questionCount?:number,fieldCount?:number,exampleCount?:number,executedModel?:string,executedAt?:string,document?:any,execution?:any,publisherStarred?:boolean,externalRef?:string,starCount?:number,starred?:boolean}} [init] */
+    constructor(init) { super(init); Object.assign(this, init) }
     /** @type {string} */
     publishedUrl;
     /** @type {string} */
@@ -4822,8 +4831,6 @@ export class DecisionPublication {
     execution;
     /** @type {boolean} */
     publisherStarred;
-    /** @type {number} */
-    publisherRunCount;
 }
 export class DecisionCatalog {
     /** @param {{items?:DecisionPublication[],skip?:number,take?:number,hasMore?:boolean}} [init] */
@@ -4975,4 +4982,18 @@ export class ViewPublishedDecision {
     getTypeName() { return 'ViewPublishedDecision' }
     getMethod() { return 'GET' }
     createResponse() { return '' }
+}
+
+
+// @Route("/publish/decision/{ExternalRef}/star", "PUT")
+export class SetDecisionStar {
+    /** @param {{externalRef?:string,starred?:boolean}} [init] */
+    constructor(init) { Object.assign(this, init) }
+    /** @type {string} */
+    externalRef;
+    /** @type {boolean} */
+    starred;
+    getTypeName() { return 'SetDecisionStar' }
+    getMethod() { return 'PUT' }
+    createResponse() { return new DecisionStars() }
 }
