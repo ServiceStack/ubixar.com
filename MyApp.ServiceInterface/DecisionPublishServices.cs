@@ -114,7 +114,7 @@ public class DecisionPublishServices : Service
             PublisherRunCount = row.PublisherRunCount,
             ExternalRef = row.ExternalRef,
             PublishedUrl = url,
-            DownloadUrl = url + "/recipe.json",
+            DownloadUrl = url + ".json",
             Filename = row.Filename,
             Revision = row.Revision,
             ContentHash = row.ContentHash,
@@ -304,6 +304,10 @@ public class DecisionPublishServices : Service
     }
     public async Task<object> Get(ViewPublishedDecision request)
     {
+        // ServiceStack routes .json through this viewer's format-suffix endpoint.
+        if (Request.RawUrl.Split('?')[0].EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            return await Get(new DownloadPublishedDecision { ExternalRef = request.ExternalRef.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                ? request.ExternalRef[..^5] : request.ExternalRef });
         var row = await Find(request.ExternalRef);
         var html = await PublishedViewerShell.Render(VirtualFileSources, Request, "recipe.mjs");
         html = html.Replace("<title>llms.py</title>", "<title>" + System.Net.WebUtility.HtmlEncode(row.Name) + " · Jev recipe</title>");
