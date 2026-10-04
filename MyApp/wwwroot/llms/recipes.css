@@ -640,8 +640,31 @@
     border-color: var(--recipe-border);
     overflow: hidden;
 }
-.recipe-card:hover {
+.recipe-card:hover,
+.recipe-card:focus-within {
     border-color: var(--recipe-accent);
+}
+/* The native title link covers the card; tags and owner controls stay above it. */
+.recipe-card {
+    position: relative;
+    isolation: isolate;
+}
+.recipe-card-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+}
+.recipe-card .recipe-tags a,
+.recipe-card-controls {
+    position: relative;
+    z-index: 1;
+}
+.recipe-card-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 .recipe-card-body {
     padding: 20px;
@@ -655,7 +678,8 @@
     align-items: center;
 }
 .recipe-card-top .recipe-favourite {
-    font-size: 11px;
+    font-size: 16px;
+    line-height: 1;
     color: #b45309;
 }
 .dark .recipe-card-top .recipe-favourite {
@@ -681,35 +705,16 @@
     font-size: 11px;
     margin: 8px 0 0;
 }
-.recipe-card-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    padding: 14px 20px;
-    border-top: 1px solid var(--recipe-border);
-    background: var(--recipe-soft);
-}
-.recipe-card-actions .recipe-card-open {
-    margin-right: auto;
-    font-size: 12px;
-    font-weight: 600;
-}
-.recipe-card-actions button {
+.recipe-card-controls button {
     padding: 5px 8px;
     min-height: 30px;
     font-size: 11px;
 }
-.recipe-card-actions .recipe-danger {
+.recipe-card-controls .recipe-danger {
     color: #b91c1c;
 }
-.dark .recipe-card-actions .recipe-danger {
+.dark .recipe-card-controls .recipe-danger {
     color: #fca5a5;
-}
-.recipe-card .recipe-copy-status {
-    margin: 0;
-    padding: 8px 20px;
-    font-size: 12px;
 }
 .recipe-notice {
     display: flex;
