@@ -14,9 +14,9 @@ namespace MyApp.Tests;
 public class DecisionTaggerTests
 {
     static DecisionPublishingOptions Options() => new() { Tags = [
-        new() { Name = "topic-a", Label = "Topic A", Group = "content", Description = "The recipe evaluates A." },
-        new() { Name = "topic-b", Group = "content" },
-        new() { Name = "task-c" }, new() { Name = "task-d" }, new() { Name = "task-e" }
+        new() { Label = "Topic A", Group = "content", Description = "The recipe evaluates A." },
+        new() { Label = "Topic B", Group = "content" },
+        new() { Label = "Task C" }, new() { Label = "Task D" }, new() { Label = "Task E" }
     ] };
     static JsonObject Answers(params double[] scores) => new() { ["answers"] = new JsonObject(
         scores.Select((score, i) => new KeyValuePair<string, JsonNode?>("tag_" + i,
@@ -50,20 +50,21 @@ public class DecisionTaggerTests
             Assert.That(body["questions"]!.AsObject().Count, Is.EqualTo(options.Tags.Count));
             Assert.That(body["questions"]!["tag_0"]!["type"]!.GetValue<string>(), Is.EqualTo("noul"));
             Assert.That(body["questions"]!["tag_0"]!["criteria"]!["true"]!.GetValue<string>(), Is.EqualTo(options.Tags[0].Description));
+            Assert.That(body["questions"]!["tag_0"]!["instructions"]!.GetValue<string>(), Does.Contain("'Topic A'").And.Not.Contain("topic-a"));
             Assert.That(body.ContainsKey("messages"), Is.False);
             Assert.That(body.ToJsonString(), Does.Not.Contain("fixture-secret"));
             return Response(Answers(.51, .99, .8, .95, .5));
         });
         using var http = new HttpClient(handler);
-        Assert.That(await Tagger(http, options).InferTags(recipe), Is.EqualTo(new[] { "topic-b", "task-d", "task-c" }));
+        Assert.That(await Tagger(http, options).InferTags(recipe), Is.EqualTo(new[] { "Topic B", "Task D", "Task C" }));
         Assert.That(recipe.ToJsonString(), Is.EqualTo(original)); Assert.That(handler.Calls, Is.EqualTo(1));
     }
     [Test]
     public void Selection_uses_strict_threshold_top_three_and_configured_tie_order()
     {
         var options = Options();
-        Assert.That(JevDecisionTagger.SelectTags(Answers(.5, .49, 0, 1, .50001), options), Is.EqualTo(new[] { "task-d", "task-e" }));
-        Assert.That(JevDecisionTagger.SelectTags(Answers(.9, .9, .9, .9, .9), options), Is.EqualTo(new[] { "topic-a", "task-c", "task-d", "task-e" }));
+        Assert.That(JevDecisionTagger.SelectTags(Answers(.5, .49, 0, 1, .50001), options), Is.EqualTo(new[] { "Task D", "Task E" }));
+        Assert.That(JevDecisionTagger.SelectTags(Answers(.9, .9, .9, .9, .9), options), Is.EqualTo(new[] { "Topic A", "Task C", "Task D", "Task E" }));
         Assert.That(JevDecisionTagger.SelectTags(Answers(.5, .2, 0, .49, .5), options), Is.Empty);
     }
     [TestCase("-0.1")]
@@ -138,16 +139,15 @@ public class DecisionTaggerTests
     public void Appsettings_can_define_custom_candidates_and_invalid_catalogues_fail_early()
     {
         var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes("""
-            { "DecisionPublishing": { "Tags": [{ "Name": "my-domain", "Description": "Core purpose concerns my domain." }] } }
+            { "DecisionPublishing": { "Tags": [{ "Label": "My domain", "Description": "Core purpose concerns my domain." }] } }
             """))).Build();
         var options = config.GetSection("DecisionPublishing").Get<DecisionPublishingOptions>()!;
         Assert.DoesNotThrow(options.Validate);
-        Assert.That(options.Catalog().Tags.Single().Name, Is.EqualTo("my-domain"));
-        Assert.That(options.Catalog().Tags.Single().Label, Is.EqualTo("my-domain"));
+        Assert.That(options.Catalog().Tags.Single().Label, Is.EqualTo("My domain"));
         Assert.That(JevDecisionTagger.RequestBody(new JsonObject(), options)["questions"]!["tag_0"]!["criteria"]!["true"]!.GetValue<string>(), Is.EqualTo(options.Tags[0].Description));
-        options.Tags.Add(new DecisionTagDefinition { Name = "my-domain" });
+        options.Tags.Add(new DecisionTagDefinition { Label = "my-domain" });
         Assert.Throws<InvalidOperationException>(options.Validate);
-        options.Tags = [new() { Name = "BAD tag" }]; Assert.Throws<InvalidOperationException>(options.Validate);
+        options.Tags = [new() { Label = " " }]; Assert.Throws<InvalidOperationException>(options.Validate);
         options.Tags = []; options.TaggingTimeoutSeconds = 30; Assert.Throws<InvalidOperationException>(options.Validate);
     }
 }

@@ -101,13 +101,12 @@ public class DecisionPublishServices : Service
     {
         var user = await Db.SingleByIdAsync<User>(row.PublishedBy);
         var url = Request.ResolveAbsoluteUrl("~/d/" + row.ExternalRef);
-        var discoveryTags = JsonSerializer.Deserialize<List<string>>(row.Tags) ?? [];
+        var discoveryTags = (JsonSerializer.Deserialize<List<string>>(row.Tags) ?? []).Select(TagOptions.CanonicalLabel).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var document = JsonNode.Parse(row.DocumentJson)!.AsObject();
-        var content = document["content"]?.GetValue<string>();
+        var content = TagOptions.CanonicalLabel(document["content"]?.GetValue<string>() ?? "");
         var legacy = !document.ContainsKey("content");
-        var contentNames = new HashSet<string>(TagOptions.Tags.Where(DecisionPublishingOptions.IsContent).Select(tag => tag.Name));
         if (string.IsNullOrEmpty(content) && (legacy || (document["tags"] as JsonArray)?.Count is null or 0))
-            content = discoveryTags.FirstOrDefault(contentNames.Contains);
+            content = discoveryTags.FirstOrDefault(TagOptions.IsContentLabel);
 
         return new DecisionPublication
         {
@@ -126,7 +125,7 @@ public class DecisionPublishServices : Service
             Name = row.Name,
             Description = row.Description,
             Content = content ?? "",
-            Tags = discoveryTags.Where(tag => tag != content && (!legacy || !contentNames.Contains(tag))).ToList(),
+            Tags = discoveryTags.Where(tag => tag != content && (!legacy || !TagOptions.IsContentLabel(tag))).ToList(),
             SchemaVersion = row.SchemaVersion,
             QuestionCount = row.QuestionCount,
             FieldCount = row.FieldCount,
@@ -255,7 +254,13 @@ public class DecisionPublishServices : Service
         if (owner != null) q.And(x => x.PublishedBy == owner);
         if (!string.IsNullOrEmpty(request.User)) { var user = await Db.SingleAsync<User>(x => x.UserName == request.User); var id = user?.Id ?? "missing"; q.And(x => x.PublishedBy == id); }
         if (!string.IsNullOrEmpty(request.Q)) { var search = request.Q.Trim(); if (search.Length > 200) throw new HttpError(400, "ValidationError", "Search must fit in 200 characters."); q.And(x => x.Name.Contains(search) || x.Description.Contains(search)); }
-        if (!string.IsNullOrEmpty(request.Tag)) { var tag = JsonSerializer.Serialize(request.Tag, DecisionDocumentValidator.JsonOptions); q.And(x => x.Tags.Contains(tag)); }
+        if (!string.IsNullOrWhiteSpace(request.Tag)) {
+            var label = TagOptions.CanonicalLabel(request.Tag.Trim());
+            var tag = JsonSerializer.Serialize(label, DecisionDocumentValidator.JsonOptions);
+            var lower = tag.ToLowerInvariant();
+            var legacy = JsonSerializer.Serialize(DecisionPublishingOptions.TagKey(label), DecisionDocumentValidator.JsonOptions);
+            q.And(x => x.Tags.Contains(tag) || x.Tags.ToLower().Contains(lower) || x.Tags.ToLower().Contains(legacy));
+        }
         if (request.OrderBy == "name") q.OrderBy(x => x.Name).ThenBy(x => x.Id);
         else if (request.OrderBy == "recommended") q.OrderByDescending(x => x.PublisherStarred).ThenByDescending(x => x.PublisherRunCount).ThenByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
         else if (request.OrderBy == "most-run") q.OrderByDescending(x => x.PublisherRunCount).ThenByDescending(x => x.PublisherStarred).ThenByDescending(x => x.UpdatedAt).ThenByDescending(x => x.Id);
@@ -270,16 +275,15 @@ public class DecisionPublishServices : Service
     {
         var document = JsonNode.Parse(row.DocumentJson)!.AsObject();
         if ((document["tags"] as JsonArray)?.Count > 0) return;
-        var suppliedContent = document["content"]?.GetValue<string>();
-        var contentNames = new HashSet<string>(TagOptions.Tags.Where(DecisionPublishingOptions.IsContent).Select(tag => tag.Name));
+        var suppliedContent = TagOptions.CanonicalLabel(document["content"]?.GetValue<string>() ?? "");
         // Usage-only updates retain successful inferred tags without another paid request.
         // A content value alone must not prevent retrying a previously empty tag result.
         if (previous?.RecipeHash == row.RecipeHash && JsonNode.Parse(previous.Tags)!.AsArray()
-            .Any(tag => tag!.GetValue<string>() != suppliedContent && !contentNames.Contains(tag.GetValue<string>())))
+            .Any(tag => TagOptions.CanonicalLabel(tag!.GetValue<string>()) != suppliedContent && !TagOptions.IsContentLabel(tag.GetValue<string>())))
         { row.Tags = previous.Tags; return; }
-        var inferred = await Tagger.InferTags(document);
+        var inferred = (await Tagger.InferTags(document)).Select(TagOptions.CanonicalLabel).ToList();
         var tags = string.IsNullOrEmpty(suppliedContent) ? inferred : new[] { suppliedContent }.Concat(
-            inferred.Where(name => !TagOptions.Tags.Any(tag => tag.Name == name && DecisionPublishingOptions.IsContent(tag)))).Distinct().ToList();
+            inferred.Where(name => !TagOptions.IsContentLabel(name))).Distinct().ToList();
         // Discovery metadata is derived; retain the exact submitted portable snapshot and hashes.
         row.Tags = JsonSerializer.Serialize(tags, DecisionDocumentValidator.JsonOptions);
     }

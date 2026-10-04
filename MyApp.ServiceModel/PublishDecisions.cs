@@ -154,7 +154,6 @@ public class DecisionTagCatalog
 }
 public class DecisionTag
 {
-    public string Name { get; set; } = "";
     public string Label { get; set; } = "";
     public string Group { get; set; } = "";
 }

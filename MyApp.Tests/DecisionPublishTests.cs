@@ -186,15 +186,16 @@ public class DecisionPublishTests : TestBase
     {
         var response = (HttpResult)Service("anonymous").Get(new GetDecisionTags());
         var catalog = Result(response);
-        Assert.That(catalog["version"]!.GetValue<int>(), Is.EqualTo(2));
+        Assert.That(catalog["version"]!.GetValue<int>(), Is.EqualTo(3));
         var tags = catalog["tags"]!.AsArray();
         Assert.That(tags.Count, Is.EqualTo(12));
-        Assert.That(tags.Select(x => x!["name"]!.GetValue<string>()).Distinct().Count(), Is.EqualTo(12));
+        Assert.That(tags.All(tag => !tag!.AsObject().ContainsKey("name")), Is.True);
+        Assert.That(tags.Select(x => x!["label"]!.GetValue<string>()).Distinct().Count(), Is.EqualTo(12));
         Assert.That(response.Headers["Cache-Control"], Does.Contain("max-age"));
         Assert.That(response.Headers["ETag"], Does.StartWith("\"decision-tags-"));
-        TagOptions.Tags.Add(new DecisionTagDefinition { Name = "custom-domain", Label = "Custom domain", Group = "context" });
+        TagOptions.Tags.Add(new DecisionTagDefinition { Label = "Custom domain", Group = "context" });
         var changed = (HttpResult)Service("anonymous").Get(new GetDecisionTags());
-        Assert.That(Result(changed)["tags"]!.AsArray().Last()!["name"]!.GetValue<string>(), Is.EqualTo("custom-domain"));
+        Assert.That(Result(changed)["tags"]!.AsArray().Last()!["label"]!.GetValue<string>(), Is.EqualTo("Custom domain"));
         Assert.That(changed.Headers["ETag"], Is.Not.EqualTo(response.Headers["ETag"]));
     }
     [TestCase(false)]
@@ -206,8 +207,8 @@ public class DecisionPublishTests : TestBase
         var expected = DecisionPublishServices.Snapshot(body);
         var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
         var reference = created["externalRef"]!.GetValue<string>();
-        Assert.That(created["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "verification" }));
-        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("content"));
+        Assert.That(created["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "Verification" }));
+        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("Content"));
         Assert.That(created["recipeHash"]!.GetValue<string>(), Is.EqualTo(expected.RecipeHash));
         Assert.That(created["contentHash"]!.GetValue<string>(), Is.EqualTo(expected.ContentHash));
         await service.Post(new PublishDecision { RequestStream = Stream(body) });
@@ -225,6 +226,29 @@ public class DecisionPublishTests : TestBase
         updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = reference, RequestStream = Stream(body) }));
         Assert.That(tagger.Calls, Is.EqualTo(2));
         Assert.That(updated["tags"]![0]!.GetValue<string>(), Is.EqualTo("user-custom"));
+    }
+    [Test]
+    public async Task Labels_drive_discovery_and_filter_older_slug_values_without_changing_documents()
+    {
+        TagOptions.Tags.Add(new DecisionTagDefinition { Label = "Risk analysis" });
+        var service = Service("label-values"); var body = Body();
+        body["document"]!["content"] = "email";
+        body["document"]!["tags"] = new JsonArray("risk-analysis", "sentiment", "Author Tag");
+        var expected = DecisionPublishServices.Snapshot(body);
+        var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
+        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("Email"));
+        Assert.That(created["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "Risk analysis", "Sentiment", "Author Tag" }));
+        Assert.That(created["recipeHash"]!.GetValue<string>(), Is.EqualTo(expected.RecipeHash));
+        var detail = Result(await service.Get(new GetPublishedDecision { ExternalRef = created["externalRef"]!.GetValue<string>() }));
+        Assert.That(JsonNode.DeepEquals(detail["document"], body["document"]), Is.True);
+        foreach (var filter in new[] { "Risk analysis", "risk-analysis", "RISK ANALYSIS", "Email", "email", "Author Tag" })
+            Assert.That(Result(await service.Get(new QueryPublishedDecisions { Tag = filter }))["items"]!.AsArray().Count, Is.EqualTo(1), filter);
+        body["idempotencyKey"] = "labels_new_value_123";
+        body["document"]!["content"] = "Email";
+        body["document"]!["tags"] = new JsonArray("Risk analysis");
+        await service.Post(new PublishDecision { RequestStream = Stream(body) });
+        Assert.That(Result(await service.Get(new QueryPublishedDecisions { Tag = "Risk analysis" }))["items"]!.AsArray().Count, Is.EqualTo(2));
+        Assert.That(tagger.Calls, Is.Zero);
     }
     [Test]
     public async Task Explicit_content_and_three_custom_tags_survive_discovery_and_download()
@@ -250,14 +274,14 @@ public class DecisionPublishTests : TestBase
         body["document"]!["tags"] = new JsonArray();
         tagger.Result = [];
         var created = Result(await service.Post(new PublishDecision { RequestStream = Stream(body) }));
-        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("email"));
+        Assert.That(created["content"]!.GetValue<string>(), Is.EqualTo("Email"));
         Assert.That(created["tags"]!.AsArray(), Is.Empty);
         tagger.Result = ["news", "sentiment", "verification", "routing"];
         body["revision"] = 1; body["publisherRunCount"] = 2;
         var updated = Result(await service.Put(new UpdatePublishedDecision { ExternalRef = created["externalRef"]!.GetValue<string>(), RequestStream = Stream(body) }));
         Assert.That(tagger.Calls, Is.EqualTo(2));
-        Assert.That(updated["content"]!.GetValue<string>(), Is.EqualTo("email"));
-        Assert.That(updated["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "sentiment", "verification", "routing" }));
+        Assert.That(updated["content"]!.GetValue<string>(), Is.EqualTo("Email"));
+        Assert.That(updated["tags"]!.AsArray().Select(x => x!.GetValue<string>()), Is.EqualTo(new[] { "Sentiment", "Verification", "Routing" }));
     }
     [Test]
     public async Task Failed_inference_does_not_block_publication_and_a_later_update_can_try_again()

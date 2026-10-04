@@ -4766,10 +4766,8 @@ export class DecisionAuthor {
     displayName;
 }
 export class DecisionTag {
-    /** @param {{name?:string,label?:string,group?:string}} [init] */
+    /** @param {{label?:string,group?:string}} [init] */
     constructor(init) { Object.assign(this, init) }
-    /** @type {string} */
-    name;
     /** @type {string} */
     label;
     /** @type {string} */

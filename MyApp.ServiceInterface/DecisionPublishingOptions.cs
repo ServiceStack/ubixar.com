@@ -15,21 +15,24 @@ public class DecisionPublishingOptions
         if (TaggingTimeoutSeconds is < 1 or > 12 || string.IsNullOrWhiteSpace(TaggingModel) || TaggingModel.Length > 120)
             throw new InvalidOperationException("DecisionPublishing: configure a model and tagging timeout between 1 and 12 seconds.");
         if (Tags == null || Tags.Count > 100 || Tags.Any(tag => tag == null ||
-            string.IsNullOrEmpty(tag.Name) || tag.Name.Length > 40 || !Regex.IsMatch(tag.Name, @"^[a-z0-9]+(?:-[a-z0-9]+)*$") ||
-            tag.Label == null || tag.Label.Length > 80 || tag.Description == null || tag.Description.Length > 1000 ||
-            tag.Group is not ("content" or "tag" or "context" or "task")) || Tags.Select(tag => tag.Name).Distinct().Count() != Tags.Count)
-            throw new InvalidOperationException("DecisionPublishing: provide up to 100 unique lowercase/hyphenated tags with content or tag groups.");
+            string.IsNullOrWhiteSpace(tag.Label) || tag.Label.Length > 40 || tag.Label.Trim() != tag.Label || Regex.IsMatch(tag.Label, @"[\x00-\x1f,]") || tag.Description == null || tag.Description.Length > 1000 ||
+            tag.Group is not ("content" or "tag" or "context" or "task")) || Tags.Select(tag => TagKey(tag.Label)).Distinct().Count() != Tags.Count)
+            throw new InvalidOperationException("DecisionPublishing: provide up to 100 unique tag labels of up to 40 characters with content or tag groups.");
     }
 
     public static bool IsContent(DecisionTagDefinition tag) => tag.Group is "content" or "context";
 
-    public DecisionTagCatalog Catalog() => new() { Version = 2, Tags = Tags.Select(tag => new DecisionTag {
-        Name = tag.Name, Label = string.IsNullOrWhiteSpace(tag.Label) ? tag.Name : tag.Label, Group = IsContent(tag) ? "content" : "tag"
+    // Accept older lowercase/hyphenated recipe values without maintaining another tag name.
+    public static string TagKey(string label) => Regex.Replace(label.Trim(), @"\s+", "-").ToLowerInvariant();
+    public string CanonicalLabel(string value) => Tags.FirstOrDefault(tag => TagKey(tag.Label) == TagKey(value))?.Label ?? value;
+    public bool IsContentLabel(string value) => Tags.Any(tag => IsContent(tag) && TagKey(tag.Label) == TagKey(value));
+
+    public DecisionTagCatalog Catalog() => new() { Version = 3, Tags = Tags.Select(tag => new DecisionTag {
+        Label = tag.Label, Group = IsContent(tag) ? "content" : "tag"
     }).ToList() };
 }
 public class DecisionTagDefinition
 {
-    public string Name { get; set; } = "";
     public string Label { get; set; } = "";
     public string Group { get; set; } = "tag";
     public string Description { get; set; } = "";

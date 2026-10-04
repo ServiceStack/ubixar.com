@@ -21,7 +21,7 @@ export default {
       <div class="recipe-gallery-intro"><div><p class="recipe-eyebrow">Decision Studio</p><h2>{{mine?'My shared recipes':'Discover decision recipes'}}</h2><p>Browse recorded examples, review their results, and import a recipe into Jev.</p></div><button type="button" :aria-pressed="mine" @click="mine=!mine;load(false)">{{mine?'All recipes':'My recipes'}}</button></div>
       <form class="recipe-filters" @submit.prevent="load(false)">
         <label class="recipe-search">Search<input v-model="q" placeholder="Name or description" aria-label="Search recipes"/></label>
-        <label>Tag<input v-model="tag" list="decision-gallery-tags" placeholder="Any tag" aria-label="Recipe tag"/></label><datalist id="decision-gallery-tags"><option v-for="item in tags" :key="item.name" :value="item.name"></option></datalist>
+        <label>Tag<input v-model="tag" list="decision-gallery-tags" placeholder="Any tag" aria-label="Recipe tag"/></label><datalist id="decision-gallery-tags"><option v-for="item in tags" :key="item.label" :value="item.label"></option></datalist>
         <label>Author<input v-model="user" placeholder="Any author" aria-label="Recipe author"/></label>
         <label>Sort by<select v-model="order" aria-label="Recipe ordering"><option value="recommended">Recommended</option><option value="most-run">Most run by publisher</option><option value="newest">Newest</option><option value="name">Name</option></select></label><button type="submit" class="recipe-primary" :disabled="busy">Search</button>
       </form>

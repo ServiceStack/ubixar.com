@@ -88,18 +88,18 @@ It adds default false/zero columns without changing frozen Migration1010 or exis
 
 ## Configurable catalogue and automatic tagging
 
-Edit `DecisionPublishing.Tags` in `MyApp/appsettings.json`. Each entry has `Name`, an
-optional `Label`, `Group` (`context` or `task`, default `task`) and an optional
+Edit `DecisionPublishing.Tags` in `MyApp/appsettings.json`. Each entry has one `Label` (up to 40 characters),
+`Group` (`content` or `tag`, default `tag`) and an optional
 `Description` explaining when that tag applies. This same list drives the public
 tag catalogue and the inference candidates; its public ETag changes with the catalogue.
-Configuration is validated at startup; restart the server after changing it. Existing client caches refresh within 24 hours.
+Configuration is validated at startup; restart the server after changing it. The version 3 catalogue refreshes older client caches immediately. Existing lowercase or hyphenated recipe values still match their labels in discovery filters; original portable documents are preserved.
 
 For a document with no tags (missing or empty array), the publisher sends one raw
 HTTP POST to `https://openrouter.ai/api/alpha/decisions`, using the configured
 `TaggingModel`. Each candidate is a Noul question about the submitted recipe. It
-keeps at most three tags with probabilities **strictly greater than 0.5**, ordered
+keeps at most one content label and three tag labels with probabilities **strictly greater than 0.5**, ordered
 by probability; ties use configured order. If fewer qualify, it keeps fewer.
-Only configured tag names may be selected. Authored/custom tags bypass inference.
+Only configured tag labels may be selected. The label is both the displayed and saved value; there is no separate name or slug. Authored/custom tags bypass inference.
 
 The server uses `Providers:OPENROUTER_API_KEY`, falling back to the environment
 variable `OPENROUTER_API_KEY`. No API key belongs in the public tag configuration.
