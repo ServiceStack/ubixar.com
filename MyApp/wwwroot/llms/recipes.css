@@ -43,7 +43,7 @@
 }
 .recipe-public a {
     color: var(--j-accent);
-    text-decoration: underline;
+    text-decoration: none;
 }
 .recipe-actions,
 .recipe-filters {
@@ -332,7 +332,7 @@
 }
 .recipe-public a:hover,
 .recipe-gallery a:hover {
-    text-decoration: underline;
+    text-decoration: none;
 }
 .recipe-tags a {
     display: inline-block;
@@ -342,6 +342,11 @@
     color: var(--recipe-tag-text);
     font-size: 12px;
     overflow-wrap: anywhere;
+}
+.recipe-tags a:hover,
+.recipe-tags a:focus-visible {
+    background: var(--recipe-accent);
+    color: var(--recipe-surface);
 }
 .recipe-actions {
     margin: 22px 0 0;
