@@ -234,8 +234,21 @@ public class PublishServices(
                """;
     }
 
-    public string Get(ViewPublishedProjects request)
+    public async Task<string> Get(ViewPublishedProjects request)
     {
+        if (!string.IsNullOrEmpty(request.UserName))
+        {
+            var viewerHtml = await GetViewerHtml("medias.mjs");
+            return viewerHtml.Replace(
+                "<script id=\"data\"></script>",
+                $"""
+                 <script id="data">
+                 window.STATE.user = {GetAuthUser().ToJson() ?? "null"};
+                 window.ARGS.projectUser = {request.UserName.ToJson()};
+                 </script>
+                 """);
+        }
+
         Response.Redirect(Request.ResolveAbsoluteUrl("~/m#projects"));
         return """
                <html>

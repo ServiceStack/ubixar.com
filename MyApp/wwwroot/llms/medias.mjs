@@ -1009,6 +1009,7 @@ const ProjectGrid = {
     `,
     props: {
         orderBy: { type: String, default: '-publishedAt' },
+        user: { type: String, default: '' },
     },
     setup(props) {
         const client = inject('client')
@@ -1033,6 +1034,7 @@ const ProjectGrid = {
             loadError.value = ''
             try {
                 const api = await client.api(new QueryPublishedProjects({
+                    user: props.user || undefined,
                     skip: items.value.length,
                     take: PageSize,
                     // '-id' tiebreak keeps pagination stable (reactionsCount adds its own server-side)
@@ -1194,7 +1196,7 @@ const App = {
                         :initial-tag="audioInitialTag" sync-url @filter-changed="onFilterChanged" empty-text="No audio yet" />
                 </div>
                 <div v-show="activeTab === 'projects'">
-                    <ProjectGrid v-if="visited.projects" ref="projectGrid" :order-by="orderBy" />
+                    <ProjectGrid v-if="visited.projects" ref="projectGrid" :order-by="orderBy" :user="projectUser" />
                 </div>
             </div>
         </div>
@@ -1204,6 +1206,7 @@ const App = {
         const ctx = inject('ctx')
         const results = inject('results', null)
         const error = inject('error', null)
+        const projectUser = inject('projectUser', '')
 
         const tabs = Tabs
         const tabIds = tabs.map(t => t.id)
@@ -1215,9 +1218,10 @@ const App = {
         const initialCategory = searchParams.get('category') || ''
 
         const initialHash = (location.hash || '').replace('#', '')
-        // The tag/category filter applies to the initially-active tab (e.g. #audio from an
-        // audio detail page opens the Audio tab), defaulting to the Images grid
-        const activeTab = ref(tabIds.includes(initialHash) ? initialHash : 'media')
+        // User project routes default to Projects; other gallery routes default to Images.
+        // An explicit hash selects the tab receiving the initial tag/category filter.
+        const defaultTab = projectUser ? 'projects' : 'media'
+        const activeTab = ref(tabIds.includes(initialHash) ? initialHash : defaultTab)
 
         // Route the initial filter to the grid matching the active tab so an audio tag opens
         // the Audio grid filtered, not the Images grid (categories only apply to images)
@@ -1232,7 +1236,9 @@ const App = {
         })
 
         const activeSubtitle = computed(() =>
-            tabs.find(t => t.id === activeTab.value)?.subtitle || '')
+            activeTab.value === 'projects' && projectUser
+                ? `Browse published projects by ${projectUser}`
+                : tabs.find(t => t.id === activeTab.value)?.subtitle || '')
 
         const mediaGrid = ref(null)
         const audioGrid = ref(null)
@@ -1294,7 +1300,7 @@ const App = {
             visited[id] = true
             // Build an absolute URL: the page has a <base href> so a bare '#id' would resolve against it
             const base = location.pathname + location.search
-            const url = id === 'media' ? base : base + '#' + id
+            const url = id === defaultTab ? base : base + '#' + id
             if (location.pathname + location.search + location.hash !== url) {
                 history.replaceState(null, '', url)
             }
@@ -1302,7 +1308,7 @@ const App = {
 
         function onHashChange() {
             const hash = (location.hash || '').replace('#', '')
-            const id = tabIds.includes(hash) ? hash : 'media'
+            const id = tabIds.includes(hash) ? hash : defaultTab
             if (id !== activeTab.value) {
                 activeTab.value = id
                 visited[id] = true
@@ -1391,6 +1397,7 @@ const App = {
             mediaGrid,
             audioGrid,
             projectGrid,
+            projectUser,
             onRatingsChanged,
             orderBy,
             orderOptions,

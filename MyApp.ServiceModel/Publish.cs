@@ -301,7 +301,11 @@ public class ViewPublishedThreads : QueryBase, IGet, IReturn<string> { }
 
 [Tag(Tags.Publish)]
 [Route("/p", "GET")]
-public class ViewPublishedProjects : QueryBase, IGet, IReturn<string> { }
+[Route("/p/{UserName}", "GET")]
+public class ViewPublishedProjects : QueryBase, IGet, IReturn<string>
+{
+    public string? UserName { get; set; }
+}
 
 [SystemJson(UseSystemJson.Never)]
 [Tag(Tags.Publish)]
